@@ -6,9 +6,8 @@ const {
   primaryKey,
 } = require("drizzle-orm/sqlite-core");
 
-/* =======================
-   MATERIA
-======================= */
+// Materia
+
 const materia = sqliteTable("materia", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   tipo: text("tipo").notNull(),
@@ -19,17 +18,15 @@ const materia = sqliteTable("materia", {
     .default(0), // 0 = false, 1 = true
 });
 
-/* =======================
-   CARRERA
-======================= */
+// Carrera
+
 const carrera = sqliteTable("carrera", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   nombre: text("nombre").notNull(),
 });
 
-/* =======================
-   GRUPO
-======================= */
+// Grupo
+
 const grupo = sqliteTable("grupo", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   codigo: integer("codigo").notNull(),
@@ -43,14 +40,13 @@ const grupo = sqliteTable("grupo", {
     .references(() => materia.id),
 });
 
-/* =======================
-   HORARIO
-======================= */
+// Horario
+
 const horario = sqliteTable(
   "horario",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
-    dia: text("dia").notNull(),          // lunes, martes, etc
+    dia: text("dia").notNull(),          
     modulo: integer("modulo").notNull(), // 1,2,3,4...
 
     idGrupo: integer("id_grupo")
@@ -64,9 +60,8 @@ const horario = sqliteTable(
   })
 );
 
-/* =======================
-   PROFESOR
-======================= */
+// Profesor
+
 const profesor = sqliteTable("profesor", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   nombre: text("nombre").notNull(),
@@ -74,17 +69,15 @@ const profesor = sqliteTable("profesor", {
   correo: text("correo").notNull(),
 });
 
-/* =======================
-   REQUERIMIENTO SALON
-======================= */
+// Requerimiento Salon
+
 const requerimientoSalon = sqliteTable("requerimiento_salon", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   caracteristicas: text("caracteristicas"),
 });
 
-/* =======================
-   MATERIA <-> REQ SALON
-======================= */
+// Materia <-> Requerimiento Salon
+
 const materiaReqSalon = sqliteTable(
   "materia_req_salon",
   {
@@ -100,9 +93,8 @@ const materiaReqSalon = sqliteTable(
   })
 );
 
-/* =======================
-   PROFESOR <-> GRUPO
-======================= */
+// Profesor <-> Grupo
+
 const profesorGrupo = sqliteTable(
   "profesor_grupo",
   {
