@@ -1,7 +1,12 @@
 // db/db.js
-const path = require("path");
-const Database = require("better-sqlite3");
-const { drizzle } = require("drizzle-orm/better-sqlite3");
+import path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Base en la carpeta del proyecto
 const dbPath = path.join(__dirname, "..", "calendario.db");
@@ -11,6 +16,9 @@ const sqlite = new Database(dbPath);
 
 // Habilitar foreign keys
 sqlite.pragma("foreign_keys = ON");
+
+// Habilitar WAL para reducir bloqueos en lecturas/escrituras simultáneas
+sqlite.pragma("journal_mode = WAL");
 
 /* =========================
    CREACIÓN DE TABLAS
@@ -35,7 +43,6 @@ CREATE TABLE IF NOT EXISTS profesor (
   apellido TEXT NOT NULL,
   correo TEXT NOT NULL
 );
-
 CREATE TABLE IF NOT EXISTS requerimiento_salon (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   caracteristicas TEXT
@@ -79,6 +86,4 @@ CREATE TABLE IF NOT EXISTS profesor_grupo (
 );
 `);
 
-const db = drizzle(sqlite);
-
-module.exports = { db };
+export const db = drizzle(sqlite);
