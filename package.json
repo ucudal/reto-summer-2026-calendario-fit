@@ -10,5 +10,7 @@
   },
   "dependencies": {
     "sqlite3": "^5.1.7"
-  }
+  },
+  
+    "type": "module"
 }

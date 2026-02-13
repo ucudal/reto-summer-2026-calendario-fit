@@ -1,49 +1,13 @@
-const { initDb } = require("./database");
+import { initDb } from "./database.js";
+import { docentesMigration } from "../modules/docentes/docentes.migrations.js";
+// más adelante:
+// import { alumnosMigration } from "../modules/alumnos/alumnos.migrations.js";
 
-function runMigrations() {
+export function runMigrations() {
   const db = initDb();
 
   db.serialize(() => {
-    db.run(`
-      CREATE TABLE IF NOT EXISTS categories (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE
-      );
-    `);
-
-    db.run(`
-      CREATE TABLE IF NOT EXISTS expenses (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        amount REAL NOT NULL,
-        category TEXT NOT NULL,
-        date TEXT NOT NULL,
-        description TEXT,
-        created_at TEXT NOT NULL
-      );
-    `);
-
-    db.run(`
-      CREATE INDEX IF NOT EXISTS idx_expenses_date
-      ON expenses(date);
-    `);
-
-    const defaultCategories = [
-      "Comida",
-      "Transporte",
-      "Vivienda",
-      "Servicios",
-      "Salud",
-      "Educación",
-      "Ocio",
-      "Suscripciones",
-      "Ropa",
-      "Otros"
-    ];
-
-    for (const cat of defaultCategories) {
-      db.run(`INSERT OR IGNORE INTO categories (name) VALUES (?)`, [cat]);
-    }
+    docentesMigration(db);
+    // alumnosMigration(db);
   });
 }
-
-module.exports = { runMigrations };

@@ -1,6 +1,9 @@
-const path = require("path");
-const { app } = require("electron");
-const sqlite3 = require("sqlite3").verbose();
+import path from "path";
+import { app } from "electron";
+import sqlite3 from "sqlite3";
+
+const { verbose } = sqlite3;
+const SQLite3 = verbose();
 
 function getDbPath() {
   return path.join(app.getPath("userData"), "calendariofit.sqlite");
@@ -11,7 +14,7 @@ let db;
 function initDb() {
   if (db) return db;
 
-  db = new sqlite3.Database(getDbPath(), (err) => {
+  db = new SQLite3.Database(getDbPath(), (err) => {
     if (err) console.error("Error abriendo SQLite:", err);
   });
 
@@ -23,4 +26,4 @@ function initDb() {
   return db;
 }
 
-module.exports = { initDb };
+export { initDb };
