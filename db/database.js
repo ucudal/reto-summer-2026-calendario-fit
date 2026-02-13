@@ -43,7 +43,6 @@ CREATE TABLE IF NOT EXISTS profesor (
   apellido TEXT NOT NULL,
   correo TEXT NOT NULL
 );
-
 CREATE TABLE IF NOT EXISTS requerimiento_salon (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   caracteristicas TEXT

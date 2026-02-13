@@ -2,6 +2,8 @@
 import { docentesMigration } from "../modules/docentes/docentes.migrations.js";
 // más adelante:
 // import { alumnosMigration } from "../modules/alumnos/alumnos.migrations.js";
+/*
+const { initDb } = require("./database");
 
 export function runMigrations() {
   const db = db;
@@ -13,3 +15,4 @@ export function runMigrations() {
 }
 
 module.exports = { runMigrations };*/
+
