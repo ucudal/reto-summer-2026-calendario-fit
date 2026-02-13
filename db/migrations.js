@@ -1,3 +1,4 @@
+/*
 const { initDb } = require("./database");
 
 function runMigrations() {
@@ -47,3 +48,4 @@ function runMigrations() {
 }
 
 module.exports = { runMigrations };
+ */
