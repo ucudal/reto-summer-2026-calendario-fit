@@ -1,7 +1,5 @@
-import { initDb } from "./database.js";
-import { docentesMigration } from "../modules/docentes/docentes.migrations.js";
-// más adelante:
-// import { alumnosMigration } from "../modules/alumnos/alumnos.migrations.js";
+/*
+const { initDb } = require("./database");
 
 export function runMigrations() {
   const db = initDb();
@@ -11,3 +9,5 @@ export function runMigrations() {
     // alumnosMigration(db);
   });
 }
+
+module.exports = { runMigrations };*/
