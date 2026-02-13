@@ -122,3 +122,43 @@ ipcMain.handle("expenses:listByMonth", async (event, { year, month }) => {
 
   return { rows, total: totalRow?.total ?? 0 };
 });
+
+// --- IPC: Crear materia ---
+ipcMain.handle("materias:create", async (event, payload) => {
+  const db = initDb();
+  const now = new Date().toISOString();
+
+  if (!payload.name || !payload.name.trim()) {
+    throw new Error("Nombre de materia requerido");
+  }
+
+  const result = await runAsync(
+    db,
+    `
+    INSERT INTO materias (name, description, created_at)
+    VALUES (?, ?, ?)
+    `,
+    [
+      payload.name.trim(),
+      payload.description?.trim() || null,
+      now
+    ]
+  );
+
+  return { id: result.lastID };
+});
+
+// --- IPC: Listar materias ---
+ipcMain.handle("materias:list", async () => {
+  const db = initDb();
+  const rows = await allAsync(
+    db,
+    `
+    SELECT id, name, description, created_at
+    FROM materias
+    ORDER BY created_at DESC
+    `
+  );
+
+  return rows;
+});

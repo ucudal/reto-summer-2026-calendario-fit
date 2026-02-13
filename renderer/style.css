@@ -27,3 +27,46 @@ button { cursor: pointer; padding: 8px 12px; }
 .modal form { display: grid; gap: 10px; }
 .modal label { display: grid; gap: 6px; }
 .actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+.materias-section {
+  padding: 16px;
+  background: #f9f9f9;
+  border-bottom: 1px solid #ddd;
+}
+
+.materias-section h2 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+}
+
+.materias-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.materia-card {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.materia-card h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.materia-card p {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+}
+
+textarea {
+  font-family: system-ui, Arial;
+  padding: 8px;
+  resize: vertical;
+}

@@ -4,5 +4,8 @@ contextBridge.exposeInMainWorld("api", {
   createExpense: (expense) => ipcRenderer.invoke("expenses:create", expense),
   listExpensesByMonth: ({ year, month }) =>
     ipcRenderer.invoke("expenses:listByMonth", { year, month }),
-  listCategories: () => ipcRenderer.invoke("categories:list")
+  listCategories: () => ipcRenderer.invoke("categories:list"),
+  
+  createMateria: (materia) => ipcRenderer.invoke("materias:create", materia),
+  listMaterias: () => ipcRenderer.invoke("materias:list")
 });

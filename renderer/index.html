@@ -17,8 +17,15 @@
         <select id="yearSelect"></select>
       </label>
       <button id="addBtn">Agregar gasto</button>
+      <button id="addMateriaBtn">Agregar materia</button>
     </div>
   </header>
+
+  <!-- Sección de Materias -->
+  <section class="materias-section">
+    <h2>Materias</h2>
+    <div id="materiasContainer" class="materias-list"></div>
+  </section>
 
   <section class="summary">
     <div>Total del mes: <strong id="totalLabel">$0.00</strong></div>
@@ -64,6 +71,28 @@
 
         <div class="actions">
           <button type="button" id="cancelBtn">Cancelar</button>
+          <button type="submit">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Alta de materia -->
+  <div id="modalMateriaBackdrop" class="backdrop hidden">
+    <div class="modal">
+      <h2>Nueva materia</h2>
+
+      <form id="materiaForm">
+        <label>Nombre*:
+          <input id="materiaNameInput" type="text" required />
+        </label>
+
+        <label>Descripción:
+          <textarea id="materiaDescriptionInput" rows="3" placeholder="Opcional"></textarea>
+        </label>
+
+        <div class="actions">
+          <button type="button" id="cancelMateriaBtn">Cancelar</button>
           <button type="submit">Guardar</button>
         </div>
       </form>

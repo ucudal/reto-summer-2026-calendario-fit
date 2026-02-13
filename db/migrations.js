@@ -27,6 +27,15 @@ function runMigrations() {
       ON expenses(date);
     `);
 
+    db.run(`
+      CREATE TABLE IF NOT EXISTS materias (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT,
+        created_at TEXT NOT NULL
+      );
+    `);
+
     const defaultCategories = [
       "Comida",
       "Transporte",
