@@ -3,7 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 
-import { runMigrations } from "./db/migrations.js";
+//import { runMigrations } from "./db/migrations.js";
 import { registerAllHandlers } from "./modules/registerHandlers.js";
 
 // recrear __dirname en ES Modules
@@ -25,7 +25,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  runMigrations();
+  //runMigrations();
   registerAllHandlers();
   createWindow();
 });

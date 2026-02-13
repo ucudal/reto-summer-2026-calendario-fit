@@ -1,14 +1,9 @@
 // db/schema.js
-const {
-  sqliteTable,
-  integer,
-  text,
-  primaryKey,
-} = require("drizzle-orm/sqlite-core");
+import { sqliteTable, integer, text, primaryKey, unique } from "drizzle-orm/sqlite-core";
 
 // Materia
 
-const materia = sqliteTable("materia", {
+export const materia = sqliteTable("materia", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   tipo: text("tipo").notNull(),
   creditos: integer("creditos").notNull(),
@@ -20,14 +15,14 @@ const materia = sqliteTable("materia", {
 
 // Carrera
 
-const carrera = sqliteTable("carrera", {
+export const carrera = sqliteTable("carrera", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   nombre: text("nombre").notNull(),
 });
 
 // Grupo
 
-const grupo = sqliteTable("grupo", {
+export const grupo = sqliteTable("grupo", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   codigo: integer("codigo").notNull(),
   cupos: integer("cupos").notNull(),
@@ -42,7 +37,7 @@ const grupo = sqliteTable("grupo", {
 
 // Horario
 
-const horario = sqliteTable(
+export const horario = sqliteTable(
   "horario",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
@@ -62,7 +57,7 @@ const horario = sqliteTable(
 
 // Profesor
 
-const profesor = sqliteTable("profesor", {
+export const profesor = sqliteTable("profesor", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   nombre: text("nombre").notNull(),
   apellido: text("apellido").notNull(),
@@ -113,14 +108,3 @@ const profesorGrupo = sqliteTable(
     pk: primaryKey({ columns: [table.idProfesor, table.idGrupo] }),
   })
 );
-
-module.exports = {
-  materia,
-  carrera,
-  grupo,
-  horario,
-  profesor,
-  requerimientoSalon,
-  materiaReqSalon,
-  profesorGrupo,
-};

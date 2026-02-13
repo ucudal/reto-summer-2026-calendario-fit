@@ -16,7 +16,7 @@ export function altaDocente(data) {
   return crearDocente({
     nombre: data.nombre.trim(),
     apellido: data.apellido.trim(),
-    email: data.email.trim().toLowerCase()
+    correo: data.correo.trim().toLowerCase()
   });
 }
 
@@ -36,11 +36,10 @@ export function actualizarDocente(data) {
     throw new Error("Docente no encontrado");
   }
 
-  return modificarDocente({
-    id: data.id,
+  return modificarDocente(data.id, {
     nombre: data.nombre.trim(),
     apellido: data.apellido.trim(),
-    email: data.email.trim().toLowerCase()
+    correo: data.correo.trim().toLowerCase()
   });
 }
 
@@ -94,11 +93,11 @@ function validarDocente(data) {
     throw new Error("El apellido es obligatorio");
   }
 
-  if (!data.email || data.email.trim() === "") {
-    throw new Error("El email es obligatorio");
+  if (!data.correo || data.correo.trim() === "") {
+    throw new Error("El correo es obligatorio");
   }
 
-  if (!validarEmail(data.email)) {
+  if (!validarEmail(data.correo)) {
     throw new Error("Email inválido");
   }
 }

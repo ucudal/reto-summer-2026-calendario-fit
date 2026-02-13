@@ -1,14 +1,16 @@
-import { initDb } from '../../db/database.js';
+import { db } from '../../db/database.js';
+import { profesor } from "../../db/schema.js"; 
+import { asc, eq } from "drizzle-orm";
 
-let db = initDb();
 /**
  * Crear docente
  */
-export function crearDocente(data) {
-  return db.prepare(`
-    INSERT INTO docentes (nombre, apellido, email)
-    VALUES (?, ?, ?)
-  `).run(data.nombre, data.apellido, data.email);
+export function crearDocente(docente) {
+  return db.insert(profesor).values({
+    nombre: docente.nombre,
+    apellido: docente.apellido,
+    correo: docente.correo
+  }).run();
 }
 
 
@@ -16,27 +18,20 @@ export function crearDocente(data) {
  * Eliminar docente
  */
 export function eliminarDocente(id) {
-  return db.prepare(`
-    DELETE FROM docentes
-    WHERE id = ?
-  `).run(id);
+  return db.delete(profesor)
+    .where(eq(profesor.id, id))
+    .run();
 }
 
 
 /**
  * Modificar docente
  */
-export function modificarDocente(data) {
-  return db.prepare(`
-    UPDATE docentes
-    SET nombre = ?, apellido = ?, email = ?
-    WHERE id = ?
-  `).run(
-    data.nombre,
-    data.apellido,
-    data.email,
-    data.id
-  );
+export function modificarDocente(id, datos) {
+  return db.update(profesor)
+    .set(datos)
+    .where(eq(profesor.id, id))
+    .run();
 }
 
 
@@ -44,16 +39,10 @@ export function modificarDocente(data) {
  * Obtener docente por ID
  */
 export function obtenerDocentePorId(id) {
-  return new Promise((resolve, reject) => {
-    db.get(
-      `SELECT id, nombre, apellido, email FROM docentes WHERE id = ?`,
-      [id],
-      (err, row) => {
-        if (err) return reject(err);
-        resolve(row);
-      }
-    );
-  });
+  return db.select()
+    .from(profesor)
+    .where(eq(profesor.id, id))
+    .get(); // Devuelve el primer resultado encontrado
 }
 
 
@@ -61,18 +50,13 @@ export function obtenerDocentePorId(id) {
  * Listar todos los docentes
  */
 export function listarDocentes() {
-  return new Promise((resolve, reject) => {
-    db.all(
-      `
-      SELECT id, nombre, apellido, email
-      FROM docentes
-      ORDER BY apellido ASC, nombre ASC
-      `,
-      [],
-      (err, rows) => {
-        if (err) return reject(err);
-        resolve(rows);
-      }
-    );
-  });
+  return db.select({
+    id: profesor.id,
+    nombre: profesor.nombre,
+    apellido: profesor.apellido,
+    correo: profesor.correo
+  })
+  .from(profesor)
+  .orderBy(asc(profesor.apellido), asc(profesor.nombre))
+  .all(); // .all() es correcto para better-sqlite3
 }

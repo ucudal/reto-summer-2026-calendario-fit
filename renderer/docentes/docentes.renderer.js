@@ -7,6 +7,7 @@ const inputNombre = document.getElementById("docente-nombre");
 const inputApellido = document.getElementById("docente-apellido");
 const inputEmail = document.getElementById("docente-email");
 const inputId = document.getElementById("docente-id");
+const form = document.getElementById("docente-form");
 
 // ==============================
 // LISTAR
@@ -31,14 +32,10 @@ async function listarDocentes() {
         <td>${docente.id}</td>
         <td>${docente.nombre}</td>
         <td>${docente.apellido}</td>
-        <td>${docente.email}</td>
+        <td>${docente.correo}</td>
         <td>
-          <button onclick="editarDocente(${docente.id})">
-            Editar
-          </button>
-          <button onclick="eliminarDocente(${docente.id})">
-            Eliminar
-          </button>
+          <button class="btn-editar" data-id="${docente.id}">Editar</button>
+          <button class="btn-eliminar" data-id="${docente.id}">Eliminar</button>
         </td>
       `;
 
@@ -58,13 +55,14 @@ async function guardarDocente() {
     const id = inputId.value;
 
     const data = {
-        id: id ? Number(id) : undefined,
-        nombre: document.getElementById("docente-nombre").value.trim(),
-        apellido: document.getElementById("docente-apellido").value.trim(),
-        email: document.getElementById("docente-email").value.trim()
+        nombre: inputNombre.value.trim(),
+        apellido: inputApellido.value.trim(),
+        correo: inputEmail.value.trim()
     };
 
-    if (!data.nombre || !data.apellido || !data.email) {
+    if (id) data.id = Number(id);
+
+    if (!data.nombre || !data.apellido || !data.correo) {
         alert("Todos los campos son obligatorios");
         return;
     }
@@ -82,8 +80,9 @@ async function guardarDocente() {
             throw new Error(response.error);
         }
 
-        limpiarFormulario();
-        listarDocentes();
+        // Limpiar el formulario de manera nativa y recargar la lista
+        form.reset();
+        await listarDocentes();
 
     } catch (error) {
         console.error("Error al guardar docente:", error);
@@ -93,45 +92,58 @@ async function guardarDocente() {
 
 
 // ==============================
-// EDITAR
+// EDITAR / ELIMINAR (delegación)
 // ==============================
 
-window.editarDocente = async function (id) {
-    try {
-        const response = await window.api.docentes.obtener(id);
+// Delegación en tbody (`tablaDocentes`) para manejar botones creados dinámicamente.
+tablaDocentes.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
 
-        if (!response.success) {
-            throw new Error(response.error);
+    const idAttr = btn.dataset.id;
+    const id = idAttr ? Number(idAttr) : null;
+
+    // ELIMINAR
+    if (btn.classList.contains('btn-eliminar')) {
+        const confirmar = confirm("¿Seguro que querés eliminar este docente?");
+        if (!confirmar) return;
+
+        try {
+            const response = await window.api.docentes.eliminar(id);
+            if (!response || !response.success) {
+                throw new Error((response && response.error) || 'Error al eliminar');
+            }
+            // Limpiar formulario tras eliminación exitosa
+            form.reset();
+            await listarDocentes();
+        } catch (error) {
+            console.error('Error al eliminar docente:', error);
+            alert(error.message || error);
         }
 
-        const docente = response.data;
-
-        inputId.value = docente.id;
-        document.getElementById("docente-nombre").value = docente.nombre;
-        document.getElementById("docente-apellido").value = docente.apellido;
-        document.getElementById("docente-email").value = docente.email;
-
-    } catch (error) {
-        console.error("Error al obtener docente:", error);
+        return;
     }
-}
 
+    // EDITAR
+    if (btn.classList.contains('btn-editar')) {
+        try {
+            const response = await window.api.docentes.obtener(id);
+            if (!response || !response.success) {
+                throw new Error((response && response.error) || 'Error al obtener docente');
+            }
+            const docente = response.data;
 
-// ==============================
-// ELIMINAR
-// ==============================
-
-window.eliminarDocente = async function (id) {
-    const confirmar = confirm("¿Seguro que querés eliminar este docente?");
-    if (!confirmar) return;
-
-    try {
-        await window.api.docentes.eliminar(id);
-        listarDocentes();
-    } catch (error) {
-        console.error("Error al eliminar docente:", error);
+            inputId.value = docente.id;
+            inputNombre.value = docente.nombre;
+            inputApellido.value = docente.apellido;
+            inputEmail.value = docente.correo;
+            inputNombre.focus();
+        } catch (error) {
+            console.error('Error al obtener docente:', error);
+            alert(error.message || error);
+        }
     }
-}
+});
 
 // ==============================
 // LIMPIAR FORMULARIO

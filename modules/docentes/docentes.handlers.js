@@ -36,6 +36,7 @@ export function registerDocentesHandlers() {
 
   // Eliminar
   ipcMain.handle('docentes:eliminar', async (event, id) => {
+    console.time('docentes:eliminar');
     try {
       const result = bajaDocente(id);
       return { success: true, data: result };
