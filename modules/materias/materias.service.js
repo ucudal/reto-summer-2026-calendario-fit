@@ -9,8 +9,8 @@ export function altaMateria(data) {
     return crearMateria({
         nombre: data.nombre.trim(),
         tipo: data.tipo.trim(),
-        creditos: data.creditos.trim(),
-        tieneContrasemestre: data.tieneContrasemestre.trim()  
+        creditos: data.creditos,
+        tieneContrasemestre: data.tieneContrasemestre  
     });
 }
 
@@ -31,11 +31,8 @@ function validarMateria(data) {
     throw new Error("El tipo es obligatorio");
   }
 
-  if (!data.creditos || data.creditos.trim() === "") {
+  if (!data.creditos) {
     throw new Error("Los creditos son obligatorios");
   }
 
-  if (!data.tieneContrasemestre || data.tieneContrasemestre.trim() === "") {
-    throw new Error("Tiene contrasemestre es obligatorio");
-  }
 }
