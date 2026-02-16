@@ -39,9 +39,8 @@ function closeModal() {
 
 // --- Materias ---
 async function loadMaterias() {
-  //const materias = await window.api.listMaterias();
-  const materias = [{name:"calculo", description: "calculo 1 primer semestre"}, {name: "algebra", description: "algebra 2 contrasemestre"}];
-  
+  console.log("materias")
+  const materias = await window.api.materias.listar();
   materiasContainer.innerHTML = "";
   
   if (!materias.length) {
@@ -88,7 +87,7 @@ materiaForm.addEventListener("submit", async (e) => {
     return;
   }
   
-  await window.api.createMateria({ name, description });
+  await window.api.materia.crear({ name, description });
   
   closeMateriaModal();
   await loadMaterias();
@@ -98,5 +97,10 @@ btnAtras.addEventListener("click", () => {
     window.location.href = "./../index.html";
 });
 
-// init
-loadMaterias();
+// ==============================
+// INICIALIZAR
+// ==============================
+
+document.addEventListener("DOMContentLoaded", () => {
+    loadMaterias();
+});
