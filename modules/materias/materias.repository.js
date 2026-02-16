@@ -26,6 +26,6 @@ export function listarMaterias() {
     tieneContrasemestre: materia.tieneContrasemestre
   })
   .from(materia)
-  .orderBy(asc(profesor.nombre))
+  .orderBy(asc(materia.nombre))
   .all(); 
 }

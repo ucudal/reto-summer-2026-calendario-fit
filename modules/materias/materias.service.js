@@ -10,7 +10,7 @@ export function altaMateria(data) {
         nombre: data.nombre.trim(),
         tipo: data.tipo.trim(),
         creditos: data.creditos.trim(),
-        tieneComtrasemestre: data.tieneComtrasemestre.trim()  
+        tieneContrasemestre: data.tieneContrasemestre.trim()  
     });
 }
 
@@ -22,6 +22,7 @@ export async function obtenerMaterias() {
  * Validaciones básicas
  */
 function validarMateria(data) {
+    console.log(data);
   if (!data.nombre || data.nombre.trim() === "") {
     throw new Error("El nombre es obligatorio");
   }
@@ -34,7 +35,7 @@ function validarMateria(data) {
     throw new Error("Los creditos son obligatorios");
   }
 
-  if (!data.tiene_comtrasemestre || data.tiene_comtrasemestre.trim() === "") {
+  if (!data.tieneContrasemestre || data.tieneContrasemestre.trim() === "") {
     throw new Error("Tiene contrasemestre es obligatorio");
   }
 }
