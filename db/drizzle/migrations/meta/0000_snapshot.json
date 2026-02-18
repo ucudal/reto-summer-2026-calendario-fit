@@ -1,0 +1,817 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "8fb475a8-de21-422b-a473-6caf57fa468c",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "carreras": {
+      "name": "carreras",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "nombre": {
+          "name": "nombre",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "carreras_nombre_unico_idx": {
+          "name": "carreras_nombre_unico_idx",
+          "columns": [
+            "nombre"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "materias": {
+      "name": "materias",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "creditos": {
+          "name": "creditos",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "nombre": {
+          "name": "nombre",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tiene_correlativa": {
+          "name": "tiene_correlativa",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        }
+      },
+      "indexes": {
+        "materias_nombre_unico_idx": {
+          "name": "materias_nombre_unico_idx",
+          "columns": [
+            "nombre"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "profesores": {
+      "name": "profesores",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "nombre": {
+          "name": "nombre",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "apellido": {
+          "name": "apellido",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "correo": {
+          "name": "correo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "disponibilidad": {
+          "name": "disponibilidad",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "profesores_correo_unico_idx": {
+          "name": "profesores_correo_unico_idx",
+          "columns": [
+            "correo"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "salones": {
+      "name": "salones",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "nombre": {
+          "name": "nombre",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "edificio": {
+          "name": "edificio",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "aforo": {
+          "name": "aforo",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "horarios": {
+      "name": "horarios",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "hora_desde": {
+          "name": "hora_desde",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "hora_hasta": {
+          "name": "hora_hasta",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "dia": {
+          "name": "dia",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "modulo": {
+          "name": "modulo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "requerimientos_salon": {
+      "name": "requerimientos_salon",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "caracteristicas": {
+          "name": "caracteristicas",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "grupos": {
+      "name": "grupos",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "codigo": {
+          "name": "codigo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id_materia": {
+          "name": "id_materia",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "hora": {
+          "name": "hora",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "es_contracorriente": {
+          "name": "es_contracorriente",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "cupo": {
+          "name": "cupo",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "grupos_codigo_unico_idx": {
+          "name": "grupos_codigo_unico_idx",
+          "columns": [
+            "codigo"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "grupos_id_materia_materias_id_fk": {
+          "name": "grupos_id_materia_materias_id_fk",
+          "tableFrom": "grupos",
+          "tableTo": "materias",
+          "columnsFrom": [
+            "id_materia"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "materia_carrera": {
+      "name": "materia_carrera",
+      "columns": {
+        "id_materia": {
+          "name": "id_materia",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id_carrera": {
+          "name": "id_carrera",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "plan": {
+          "name": "plan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "semestre": {
+          "name": "semestre",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "anio": {
+          "name": "anio",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "materia_carrera_id_materia_materias_id_fk": {
+          "name": "materia_carrera_id_materia_materias_id_fk",
+          "tableFrom": "materia_carrera",
+          "tableTo": "materias",
+          "columnsFrom": [
+            "id_materia"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "materia_carrera_id_carrera_carreras_id_fk": {
+          "name": "materia_carrera_id_carrera_carreras_id_fk",
+          "tableFrom": "materia_carrera",
+          "tableTo": "carreras",
+          "columnsFrom": [
+            "id_carrera"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "materia_carrera_id_materia_id_carrera_pk": {
+          "columns": [
+            "id_materia",
+            "id_carrera"
+          ],
+          "name": "materia_carrera_id_materia_id_carrera_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "materia_salon": {
+      "name": "materia_salon",
+      "columns": {
+        "id_materia": {
+          "name": "id_materia",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id_salon": {
+          "name": "id_salon",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "plan": {
+          "name": "plan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "semestre": {
+          "name": "semestre",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "anio": {
+          "name": "anio",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "materia_salon_id_materia_materias_id_fk": {
+          "name": "materia_salon_id_materia_materias_id_fk",
+          "tableFrom": "materia_salon",
+          "tableTo": "materias",
+          "columnsFrom": [
+            "id_materia"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "materia_salon_id_salon_salones_id_fk": {
+          "name": "materia_salon_id_salon_salones_id_fk",
+          "tableFrom": "materia_salon",
+          "tableTo": "salones",
+          "columnsFrom": [
+            "id_salon"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "materia_salon_id_materia_id_salon_pk": {
+          "columns": [
+            "id_materia",
+            "id_salon"
+          ],
+          "name": "materia_salon_id_materia_id_salon_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "grupo_horario": {
+      "name": "grupo_horario",
+      "columns": {
+        "id_grupo": {
+          "name": "id_grupo",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id_horario": {
+          "name": "id_horario",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "grupo_horario_id_grupo_grupos_id_fk": {
+          "name": "grupo_horario_id_grupo_grupos_id_fk",
+          "tableFrom": "grupo_horario",
+          "tableTo": "grupos",
+          "columnsFrom": [
+            "id_grupo"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "grupo_horario_id_horario_horarios_id_fk": {
+          "name": "grupo_horario_id_horario_horarios_id_fk",
+          "tableFrom": "grupo_horario",
+          "tableTo": "horarios",
+          "columnsFrom": [
+            "id_horario"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "grupo_horario_id_grupo_id_horario_pk": {
+          "columns": [
+            "id_grupo",
+            "id_horario"
+          ],
+          "name": "grupo_horario_id_grupo_id_horario_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "profesor_grupo": {
+      "name": "profesor_grupo",
+      "columns": {
+        "id_profesor": {
+          "name": "id_profesor",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id_grupo": {
+          "name": "id_grupo",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "cargo": {
+          "name": "cargo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "confirmado": {
+          "name": "confirmado",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "es_principal": {
+          "name": "es_principal",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "profesor_grupo_id_profesor_profesores_id_fk": {
+          "name": "profesor_grupo_id_profesor_profesores_id_fk",
+          "tableFrom": "profesor_grupo",
+          "tableTo": "profesores",
+          "columnsFrom": [
+            "id_profesor"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "profesor_grupo_id_grupo_grupos_id_fk": {
+          "name": "profesor_grupo_id_grupo_grupos_id_fk",
+          "tableFrom": "profesor_grupo",
+          "tableTo": "grupos",
+          "columnsFrom": [
+            "id_grupo"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "profesor_grupo_id_profesor_id_grupo_pk": {
+          "columns": [
+            "id_profesor",
+            "id_grupo"
+          ],
+          "name": "profesor_grupo_id_profesor_id_grupo_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "salon_grupo": {
+      "name": "salon_grupo",
+      "columns": {
+        "id_salon": {
+          "name": "id_salon",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id_grupo": {
+          "name": "id_grupo",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "salon_grupo_id_salon_salones_id_fk": {
+          "name": "salon_grupo_id_salon_salones_id_fk",
+          "tableFrom": "salon_grupo",
+          "tableTo": "salones",
+          "columnsFrom": [
+            "id_salon"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "salon_grupo_id_grupo_grupos_id_fk": {
+          "name": "salon_grupo_id_grupo_grupos_id_fk",
+          "tableFrom": "salon_grupo",
+          "tableTo": "grupos",
+          "columnsFrom": [
+            "id_grupo"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "salon_grupo_id_salon_id_grupo_pk": {
+          "columns": [
+            "id_salon",
+            "id_grupo"
+          ],
+          "name": "salon_grupo_id_salon_id_grupo_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "salon_requerimiento_salon": {
+      "name": "salon_requerimiento_salon",
+      "columns": {
+        "id_salon": {
+          "name": "id_salon",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id_requerimiento_salon": {
+          "name": "id_requerimiento_salon",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "salon_requerimiento_salon_id_salon_salones_id_fk": {
+          "name": "salon_requerimiento_salon_id_salon_salones_id_fk",
+          "tableFrom": "salon_requerimiento_salon",
+          "tableTo": "salones",
+          "columnsFrom": [
+            "id_salon"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "salon_requerimiento_salon_id_requerimiento_salon_requerimientos_salon_id_fk": {
+          "name": "salon_requerimiento_salon_id_requerimiento_salon_requerimientos_salon_id_fk",
+          "tableFrom": "salon_requerimiento_salon",
+          "tableTo": "requerimientos_salon",
+          "columnsFrom": [
+            "id_requerimiento_salon"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "salon_requerimiento_salon_id_salon_id_requerimiento_salon_pk": {
+          "columns": [
+            "id_salon",
+            "id_requerimiento_salon"
+          ],
+          "name": "salon_requerimiento_salon_id_salon_id_requerimiento_salon_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "grupo_requerimiento_salon": {
+      "name": "grupo_requerimiento_salon",
+      "columns": {
+        "id_grupo": {
+          "name": "id_grupo",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id_requerimiento_salon": {
+          "name": "id_requerimiento_salon",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "grupo_requerimiento_salon_id_grupo_grupos_id_fk": {
+          "name": "grupo_requerimiento_salon_id_grupo_grupos_id_fk",
+          "tableFrom": "grupo_requerimiento_salon",
+          "tableTo": "grupos",
+          "columnsFrom": [
+            "id_grupo"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "grupo_requerimiento_salon_id_requerimiento_salon_requerimientos_salon_id_fk": {
+          "name": "grupo_requerimiento_salon_id_requerimiento_salon_requerimientos_salon_id_fk",
+          "tableFrom": "grupo_requerimiento_salon",
+          "tableTo": "requerimientos_salon",
+          "columnsFrom": [
+            "id_requerimiento_salon"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "grupo_requerimiento_salon_id_grupo_id_requerimiento_salon_pk": {
+          "columns": [
+            "id_grupo",
+            "id_requerimiento_salon"
+          ],
+          "name": "grupo_requerimiento_salon_id_grupo_id_requerimiento_salon_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}
