@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "8fb475a8-de21-422b-a473-6caf57fa468c",
+  "id": "9d0caf64-27c7-4ebd-8a98-432b04e58f36",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "carreras": {
@@ -120,13 +120,6 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
-        },
-        "disponibilidad": {
-          "name": "disponibilidad",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
         }
       },
       "indexes": {
@@ -191,29 +184,15 @@
           "notNull": true,
           "autoincrement": true
         },
-        "hora_desde": {
-          "name": "hora_desde",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "hora_hasta": {
-          "name": "hora_hasta",
-          "type": "text",
+        "modulo": {
+          "name": "modulo",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "dia": {
           "name": "dia",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "modulo": {
-          "name": "modulo",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -274,15 +253,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "hora": {
-          "name": "hora",
+        "horas_anuales": {
+          "name": "horas_anuales",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "es_contracorriente": {
-          "name": "es_contracorriente",
+        "es_contrasemestre": {
+          "name": "es_contrasemestre",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -405,86 +384,6 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "materia_salon": {
-      "name": "materia_salon",
-      "columns": {
-        "id_materia": {
-          "name": "id_materia",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "id_salon": {
-          "name": "id_salon",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "plan": {
-          "name": "plan",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "semestre": {
-          "name": "semestre",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "anio": {
-          "name": "anio",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "materia_salon_id_materia_materias_id_fk": {
-          "name": "materia_salon_id_materia_materias_id_fk",
-          "tableFrom": "materia_salon",
-          "tableTo": "materias",
-          "columnsFrom": [
-            "id_materia"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        },
-        "materia_salon_id_salon_salones_id_fk": {
-          "name": "materia_salon_id_salon_salones_id_fk",
-          "tableFrom": "materia_salon",
-          "tableTo": "salones",
-          "columnsFrom": [
-            "id_salon"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        }
-      },
-      "compositePrimaryKeys": {
-        "materia_salon_id_materia_id_salon_pk": {
-          "columns": [
-            "id_materia",
-            "id_salon"
-          ],
-          "name": "materia_salon_id_materia_id_salon_pk"
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
     "grupo_horario": {
       "name": "grupo_horario",
       "columns": {
@@ -561,8 +460,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "cargo": {
-          "name": "cargo",
+        "carga": {
+          "name": "carga",
           "type": "text",
           "primaryKey": false,
           "notNull": false,

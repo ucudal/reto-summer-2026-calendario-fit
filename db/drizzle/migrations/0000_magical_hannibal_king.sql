@@ -17,8 +17,7 @@ CREATE TABLE `profesores` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`nombre` text NOT NULL,
 	`apellido` text NOT NULL,
-	`correo` text NOT NULL,
-	`disponibilidad` text
+	`correo` text NOT NULL
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `profesores_correo_unico_idx` ON `profesores` (`correo`);--> statement-breakpoint
@@ -31,10 +30,8 @@ CREATE TABLE `salones` (
 --> statement-breakpoint
 CREATE TABLE `horarios` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`hora_desde` text NOT NULL,
-	`hora_hasta` text NOT NULL,
-	`dia` text NOT NULL,
-	`modulo` text NOT NULL
+	`modulo` integer NOT NULL,
+	`dia` text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `requerimientos_salon` (
@@ -46,8 +43,8 @@ CREATE TABLE `grupos` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`codigo` text NOT NULL,
 	`id_materia` integer NOT NULL,
-	`hora` text,
-	`es_contracorriente` integer DEFAULT false NOT NULL,
+	`horas_anuales` text,
+	`es_contrasemestre` integer DEFAULT false NOT NULL,
 	`cupo` integer,
 	FOREIGN KEY (`id_materia`) REFERENCES `materias`(`id`) ON UPDATE cascade ON DELETE restrict
 );
@@ -64,17 +61,6 @@ CREATE TABLE `materia_carrera` (
 	FOREIGN KEY (`id_carrera`) REFERENCES `carreras`(`id`) ON UPDATE cascade ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE TABLE `materia_salon` (
-	`id_materia` integer NOT NULL,
-	`id_salon` integer NOT NULL,
-	`plan` text NOT NULL,
-	`semestre` integer NOT NULL,
-	`anio` integer NOT NULL,
-	PRIMARY KEY(`id_materia`, `id_salon`),
-	FOREIGN KEY (`id_materia`) REFERENCES `materias`(`id`) ON UPDATE cascade ON DELETE cascade,
-	FOREIGN KEY (`id_salon`) REFERENCES `salones`(`id`) ON UPDATE cascade ON DELETE cascade
-);
---> statement-breakpoint
 CREATE TABLE `grupo_horario` (
 	`id_grupo` integer NOT NULL,
 	`id_horario` integer NOT NULL,
@@ -86,7 +72,7 @@ CREATE TABLE `grupo_horario` (
 CREATE TABLE `profesor_grupo` (
 	`id_profesor` integer NOT NULL,
 	`id_grupo` integer NOT NULL,
-	`cargo` text,
+	`carga` text,
 	`confirmado` integer DEFAULT false NOT NULL,
 	`es_principal` integer DEFAULT false NOT NULL,
 	PRIMARY KEY(`id_profesor`, `id_grupo`),
