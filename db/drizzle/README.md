@@ -19,5 +19,5 @@
 ```bash
 npm run db:generate -- genera migraciones
 npm run db:migrate -- las impacta y en caso que no exista la base las crea
-npx drizzle-kit studio --Fijate que la estructura que queres correcta
+npx drizzle-kit studio --Fijate que la estructura que correcta
 ```
