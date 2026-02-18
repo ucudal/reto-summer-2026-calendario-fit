@@ -20,7 +20,6 @@ const {
 } = require("./base");
 const {
   materiaCarrera,
-  materiaSalon,
   grupoHorario,
   profesorGrupo,
   salonGrupo,
@@ -41,8 +40,7 @@ const gruposRelations = relations(grupos, ({ one, many }) => ({
 
 const materiasRelations = relations(materias, ({ many }) => ({
   grupos: many(grupos),
-  carreras: many(materiaCarrera),
-  salones: many(materiaSalon)
+  carreras: many(materiaCarrera)
 }));
 
 const carrerasRelations = relations(carreras, ({ many }) => ({
@@ -55,7 +53,6 @@ const profesoresRelations = relations(profesores, ({ many }) => ({
 
 const salonesRelations = relations(salones, ({ many }) => ({
   grupos: many(salonGrupo),
-  materias: many(materiaSalon),
   requerimientos: many(salonRequerimientoSalon)
 }));
 

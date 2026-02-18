@@ -7,4 +7,5 @@
 --   es_contrasemestre
 
 ALTER TABLE grupos RENAME COLUMN hora TO horas_anuales;
+--> statement-breakpoint
 ALTER TABLE grupos RENAME COLUMN es_contracorriente TO es_contrasemestre;
