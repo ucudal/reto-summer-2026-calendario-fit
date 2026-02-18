@@ -3,12 +3,20 @@
   "version": "1.0.0",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
   },
   "devDependencies": {
+    "drizzle-kit": "^0.31.6",
     "electron": "^31.0.0"
   },
   "dependencies": {
+    "@babel/standalone": "^7.28.4",
+    "@libsql/client": "^0.17.0",
+    "drizzle-orm": "^0.44.7",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "sqlite3": "^5.1.7"
   }
 }
