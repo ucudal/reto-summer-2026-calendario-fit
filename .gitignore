@@ -1,4 +1,10 @@
+# Base de datos local
 local-dev.sqlite
+
+# Archivos temporales SQLite
+*.db-shm
+*.db-wal
+*.sqlite
 package-lock.json
 # Logs
 logs
