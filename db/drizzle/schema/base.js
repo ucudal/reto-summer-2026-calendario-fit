@@ -8,12 +8,12 @@
   - Las relaciones complejas (muchos-a-muchos) NO van aca, van en links.js.
 */
 
-const {sqliteTable, integer, text, uniqueIndex} = require("drizzle-orm/sqlite-core");
+import { sqliteTable, integer, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 // ------------------------------
 // Tabla: carreras
 // ------------------------------
-const carreras = sqliteTable(
+export const carreras = sqliteTable(
     "carreras",
     {
         id: integer("id").primaryKey({autoIncrement: true}),
@@ -33,7 +33,7 @@ const carreras = sqliteTable(
 // - creditos
 // - nombre
 // - tiene contrasemestre ???
-const materias = sqliteTable(
+export const materias = sqliteTable(
     "materias",
     {
         id: integer("id").primaryKey({autoIncrement: true}),
@@ -56,7 +56,7 @@ const materias = sqliteTable(
 // - ape
 // - correo
 // - disponibilidad
-const profesores = sqliteTable(
+export const profesores = sqliteTable(
     "profesores",
     {
         id: integer("id").primaryKey({autoIncrement: true}),
@@ -77,7 +77,7 @@ const profesores = sqliteTable(
 // - nom
 // - edificio
 // - aforo
-const salones = sqliteTable("salones", {
+export const salones = sqliteTable("salones", {
     id: integer("id").primaryKey({autoIncrement: true}),
     nombre: text("nombre").notNull(),
     edificio: text("edificio").notNull(),
@@ -92,7 +92,7 @@ const salones = sqliteTable("salones", {
 // - hora_hasta
 // - dia
 // - modulo
-const horarios = sqliteTable("horarios", {
+export const horarios = sqliteTable("horarios", {
     id: integer("id").primaryKey({autoIncrement: true}),
     modulo: integer("modulo").notNull(), //@todo y esto?
     dia: text("dia").notNull(),
@@ -104,7 +104,7 @@ const horarios = sqliteTable("horarios", {
 // ------------------------------
 // - id
 // - caracteristicas
-const requerimientosSalon = sqliteTable("requerimientos_salon", {
+export const requerimientosSalon = sqliteTable("requerimientos_salon", {
     id: integer("id").primaryKey({autoIncrement: true}),
     caracteristicas: text("caracteristicas").notNull()
 });
@@ -117,7 +117,7 @@ const requerimientosSalon = sqliteTable("requerimientos_salon", {
 // - id_materia
 // - es contrasemestre
 //@todo de aca saque modulo, entiendo que no tiene sentido
-const grupos = sqliteTable(
+export const grupos = sqliteTable(
     "grupos",
     {
         id: integer("id").primaryKey({autoIncrement: true}),
@@ -135,12 +135,3 @@ const grupos = sqliteTable(
     })
 );
 
-module.exports = {
-    carreras,
-    materias,
-    profesores,
-    salones,
-    horarios,
-    requerimientosSalon,
-    grupos
-};
