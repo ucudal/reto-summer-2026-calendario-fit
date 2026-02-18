@@ -1,5 +1,7 @@
 # Base de datos local
 local-dev.sqlite
+local-dev.sqlite-shm
+local-dev.sqlite-wal
 
 # Archivos temporales SQLite
 *.db-shm
