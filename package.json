@@ -17,7 +17,8 @@
     "@electron/rebuild": "^4.0.3",
     "concurrently": "^8.2.2",
     "drizzle-kit": "^0.31.6",
-    "electron": "^31.0.0"
+    "electron": "^31.0.0",
+    "electron-rebuild": "^3.2.9"
   },
   "dependencies": {
     "@babel/standalone": "^7.28.4",
