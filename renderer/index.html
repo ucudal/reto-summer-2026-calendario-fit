@@ -1,104 +1,63 @@
+
 <!doctype html>
 <html>
-<head>
-  <meta charset="utf-8" />
-  <title>CalendarioFIT</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <header class="topbar">
-    <h1>CalendarioFIT - Gastos</h1>
+  <head>
+    <meta charset="utf-8" />
+    <title>CalendarioFIT</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>CalendarioFIT - Materias</h1>
 
-    <div class="filters">
-      <label>Mes:
-        <select id="monthSelect"></select>
-      </label>
-      <label>Año:
-        <select id="yearSelect"></select>
-      </label>
-      <button id="addBtn">Agregar gasto</button>
-      <button id="addMateriaBtn">Agregar materia</button>
+      <div class="filters">
+        <button id="addMateriaBtn">Agregar materia</button>
+      </div>
+    </header>
+
+    <!-- Sección de Materias -->
+    <section class="materias-section">
+      <h2>Materias</h2>
+      <div id="materiasContainer" class="materias-list"></div>
+    </section>
+
+    <!-- Modal Alta de materia -->
+    <div id="modalMateriaBackdrop" class="backdrop hidden">
+      <div class="modal">
+        <h2>Nueva materia</h2>
+
+        <form id="materiaForm">
+          <label
+            >Nombre*:
+            <input id="materiaNameInput" type="text" required />
+          </label>
+          <label>
+            Creditos*:
+            <input
+              type="number"
+              id="materiaCreditosInput"
+              step="0.01"
+              required
+            />
+          </label>
+
+          <label
+            >Descripción:
+            <textarea
+              id="materiaDescriptionInput"
+              rows="3"
+              placeholder="Opcional"
+            ></textarea>
+          </label>
+
+          <div class="actions">
+            <button type="button" id="cancelMateriaBtn">Cancelar</button>
+            <button type="submit">Guardar</button>
+          </div>
+        </form>
+      </div>
     </div>
-  </header>
 
-  <!-- Sección de Materias -->
-  <section class="materias-section">
-    <h2>Materias</h2>
-    <div id="materiasContainer" class="materias-list"></div>
-  </section>
-
-  <section class="summary">
-    <div>Total del mes: <strong id="totalLabel">$0.00</strong></div>
-  </section>
-
-  <main>
-    <table>
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Categoría</th>
-          <th>Monto</th>
-          <th>Descripción</th>
-        </tr>
-      </thead>
-      <tbody id="expensesTbody"></tbody>
-    </table>
-  </main>
-
-  <!-- Modal Alta de gasto -->
-  <div id="modalBackdrop" class="backdrop hidden">
-    <div class="modal">
-      <h2>Nuevo gasto</h2>
-
-      <form id="expenseForm">
-        <label>Monto*:
-          <input id="amountInput" type="number" step="0.01" min="0" required />
-        </label>
-
-        <label>Categoría*:
-          <select id="categoryInput" required>
-            <option value="">Cargando...</option>
-          </select>
-        </label>
-
-        <label>Fecha*:
-          <input id="dateInput" type="date" required />
-        </label>
-
-        <label>Descripción:
-          <input id="descriptionInput" type="text" placeholder="Opcional" />
-        </label>
-
-        <div class="actions">
-          <button type="button" id="cancelBtn">Cancelar</button>
-          <button type="submit">Guardar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal Alta de materia -->
-  <div id="modalMateriaBackdrop" class="backdrop hidden">
-    <div class="modal">
-      <h2>Nueva materia</h2>
-
-      <form id="materiaForm">
-        <label>Nombre*:
-          <input id="materiaNameInput" type="text" required />
-        </label>
-
-        <label>Descripción:
-          <textarea id="materiaDescriptionInput" rows="3" placeholder="Opcional"></textarea>
-        </label>
-
-        <div class="actions">
-          <button type="button" id="cancelMateriaBtn">Cancelar</button>
-          <button type="submit">Guardar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <script src="renderer.js"></script>
-</body>
+    <script src="renderer.js"></script>
+  </body>
 </html>
