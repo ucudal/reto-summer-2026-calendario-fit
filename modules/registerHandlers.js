@@ -1,4 +1,4 @@
-﻿import { registerDocentesHandlers } from "./docentes/docentes.handlers.js";
+import { registerDocentesHandlers } from "./docentes/docentes.handlers.js";
 import { registrarMateriasHandlers } from "./materias/materias.handlers.js";
 import { registerCarrerasHandlers } from "./carreras/carreras.handlers.js";
 // más adelante:

@@ -1,39 +1,39 @@
 import { db } from '../../db/database.js';
-import { carrera } from '../../db/schema.js';
+import { carreras } from "../../db/drizzle/schema/base.js";
 import { asc, eq } from 'drizzle-orm';
 
 export function crearCarrera(data) {
-  return db.insert(carrera).values({
+  return db.insert(carreras).values({
     nombre: data.nombre
   }).run();
 }
 
 export function modificarCarrera(id, data) {
-  return db.update(carrera)
+  return db.update(carreras)
     .set(data)
-    .where(eq(carrera.id, id))
+    .where(eq(carreras.id, id))
     .run();
 }
 
 export function eliminarCarrera(id) {
-  return db.delete(carrera)
-    .where(eq(carrera.id, id))
+  return db.delete(carreras)
+    .where(eq(carreras.id, id))
     .run();
 }
 
 export function obtenerCarreraPorId(id) {
   return db.select()
-    .from(carrera)
-    .where(eq(carrera.id, id))
+    .from(carreras)
+    .where(eq(carreras.id, id))
     .get();
 }
 
 export function listarCarreras() {
   return db.select({
-    id: carrera.id,
-    nombre: carrera.nombre
+    id: carreras.id,
+    nombre: carreras.nombre
   })
-  .from(carrera)
-  .orderBy(asc(carrera.nombre))
+  .from(carreras)
+  .orderBy(asc(carreras.nombre))
   .all();
 }
