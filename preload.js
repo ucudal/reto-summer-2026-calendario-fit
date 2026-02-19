@@ -14,5 +14,12 @@ contextBridge.exposeInMainWorld("api", {
   materias: {
     crear: (data) => ipcRenderer.invoke('materias:crear', data),
     listar: () => ipcRenderer.invoke('materias:listar')
+  },
+
+  //Expose Mostrar Mensajes
+  mensajes: {
+    mostrar: (mensaje, tipo = "warning") => ipcRenderer.invoke('mensajes:mostrar', { mensaje, tipo }),
+    confirmar: (mensaje) => ipcRenderer.invoke('mensajes:confirmar', { mensaje })
   }
+  
 });
