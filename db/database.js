@@ -13,7 +13,7 @@ const dbPath = path.join(__dirname, "", "local-dev.sqlite");
 console.log("DB PATH:", dbPath);
 
 // Añadir timeout para evitar bloqueos largos; 5000 ms es razonable
-const sqlite = new Database(dbPath, { timeout: 5000 });
+export const sqlite = new Database(dbPath, { timeout: 5000 });
 
 // Habilitar foreign keys
 sqlite.pragma("foreign_keys = ON");

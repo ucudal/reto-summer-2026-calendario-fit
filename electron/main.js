@@ -2,6 +2,7 @@ import { app, BrowserWindow } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
 import { initializeDatabase } from "../db/init.js";
+import { runMigrations } from "../db/runMigrations.js";
 
 
 //import { runMigrations } from "./db/migrations.js";
@@ -29,7 +30,7 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
-  //runMigrations();
+  runMigrations();
   await initializeDatabase();
   registerAllHandlers();
   createWindow();
