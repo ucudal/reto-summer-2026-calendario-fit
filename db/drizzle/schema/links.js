@@ -8,8 +8,8 @@
     probablemente sea una tabla puente.
 */
 
-const { sqliteTable, integer, text, primaryKey } = require("drizzle-orm/sqlite-core");
-const {
+import { sqliteTable, integer, text, primaryKey } from "drizzle-orm/sqlite-core";
+import {
   carreras,
   materias,
   profesores,
@@ -17,7 +17,7 @@ const {
   horarios,
   requerimientosSalon,
   grupos
-} = require("./base");
+} from "./base.js";
 
 // ------------------------------
 // Tabla puente: materia_carrera
@@ -28,7 +28,7 @@ const {
 // - plan
 // - semestre
 // - anio
-const materiaCarrera = sqliteTable(
+export const materiaCarrera = sqliteTable(
   "materia_carrera",
   {
     idMateria: integer("id_materia").notNull().references(() => materias.id, {
@@ -80,7 +80,7 @@ const materiaCarrera = sqliteTable(
 // ------------------------------
 // Tabla puente: grupo_horario
 // ------------------------------
-const grupoHorario = sqliteTable(
+export const grupoHorario = sqliteTable(
   "grupo_horario",
   {
     idGrupo: integer("id_grupo").notNull().references(() => grupos.id, {
@@ -104,7 +104,7 @@ const grupoHorario = sqliteTable(
 // - cargo
 // - confirmado
 // - es_principal
-const profesorGrupo = sqliteTable(
+export const profesorGrupo = sqliteTable(
   "profesor_grupo",
   {
     idProfesor: integer("id_profesor").notNull().references(() => profesores.id, {
@@ -127,7 +127,7 @@ const profesorGrupo = sqliteTable(
 // ------------------------------
 // Tabla puente: salon_grupo
 // ------------------------------
-const salonGrupo = sqliteTable(
+export const salonGrupo = sqliteTable(
   "salon_grupo",
   {
     idSalon: integer("id_salon").notNull().references(() => salones.id, {
@@ -147,7 +147,7 @@ const salonGrupo = sqliteTable(
 // ------------------------------
 // Tabla puente: salon_requerimiento_salon
 // ------------------------------
-const salonRequerimientoSalon = sqliteTable(
+export const salonRequerimientoSalon = sqliteTable(
   "salon_requerimiento_salon",
   {
     idSalon: integer("id_salon").notNull().references(() => salones.id, {
@@ -170,7 +170,7 @@ const salonRequerimientoSalon = sqliteTable(
 // ------------------------------
 // Tabla puente: grupo_requerimiento_salon
 // ------------------------------
-const grupoRequerimientoSalon = sqliteTable(
+export const grupoRequerimientoSalon = sqliteTable(
   "grupo_requerimiento_salon",
   {
     idGrupo: integer("id_grupo").notNull().references(() => grupos.id, {
@@ -189,13 +189,3 @@ const grupoRequerimientoSalon = sqliteTable(
     pk: primaryKey({ columns: [table.idGrupo, table.idRequerimientoSalon] })
   })
 );
-
-module.exports = {
-  materiaCarrera,
-  // materiaSalon,
-  grupoHorario,
-  profesorGrupo,
-  salonGrupo,
-  salonRequerimientoSalon,
-  grupoRequerimientoSalon
-};

@@ -63,7 +63,8 @@ async function guardarDocente() {
     if (id) data.id = Number(id);
 
     if (!data.nombre || !data.apellido || !data.correo) {
-        alert("Todos los campos son obligatorios");
+        await window.api.mensajes.mostrar("Todos los campos son obligatorios");
+        window.focus();
         return;
     }
 
@@ -86,7 +87,7 @@ async function guardarDocente() {
 
     } catch (error) {
         console.error("Error al guardar docente:", error);
-        alert(error.message);
+        await window.api.mensajes.mostrar(error.message);
     }
 }
 
@@ -105,7 +106,7 @@ tablaDocentes.addEventListener('click', async (e) => {
 
     // ELIMINAR
     if (btn.classList.contains('btn-eliminar')) {
-        const confirmar = confirm("¿Seguro que querés eliminar este docente?");
+        const confirmar = await window.api.mensajes.confirmar("¿Seguro que querés eliminar este docente?");
         if (!confirmar) return;
 
         try {
@@ -118,7 +119,7 @@ tablaDocentes.addEventListener('click', async (e) => {
             await listarDocentes();
         } catch (error) {
             console.error('Error al eliminar docente:', error);
-            alert(error.message || error);
+            await window.api.mensajes.mostrar(error.message || error);
         }
 
         return;
@@ -140,7 +141,7 @@ tablaDocentes.addEventListener('click', async (e) => {
             inputNombre.focus();
         } catch (error) {
             console.error('Error al obtener docente:', error);
-            alert(error.message || error);
+            await window.api.mensajes.mostrar(error.message || error);
         }
     }
 });

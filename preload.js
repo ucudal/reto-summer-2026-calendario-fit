@@ -1,4 +1,4 @@
-﻿const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("api", {
   // Expose de ABM Docentes
@@ -12,6 +12,14 @@ contextBridge.exposeInMainWorld("api", {
 
   // Expose Materias
   materias: {
+    crear: (data) => ipcRenderer.invoke('materias:crear', data),
+    listar: () => ipcRenderer.invoke('materias:listar')
+  },
+
+  //Expose Mostrar Mensajes
+  mensajes: {
+    mostrar: (mensaje, tipo = "warning") => ipcRenderer.invoke('mensajes:mostrar', { mensaje, tipo }),
+    confirmar: (mensaje) => ipcRenderer.invoke('mensajes:confirmar', { mensaje }),
     crear: (data) => ipcRenderer.invoke("materias:crear", data),
     listar: () => ipcRenderer.invoke("materias:listar")
   },
@@ -24,4 +32,5 @@ contextBridge.exposeInMainWorld("api", {
     obtener: (id) => ipcRenderer.invoke("carreras:obtener", id),
     listar: () => ipcRenderer.invoke("carreras:listar")
   }
+  
 });
