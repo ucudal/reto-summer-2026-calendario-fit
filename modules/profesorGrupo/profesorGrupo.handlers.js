@@ -1,8 +1,8 @@
-const { ipcMain } = require('electron');
-const service = require('./profesorGrupo.service');
+import { ipcMain } from 'electron';
+import * as service from './profesorGrupo.service.js';
 
-function registerProfesorGrupoHandlers() {
-    
+export function registerProfesorGrupoHandlers() {
+
     ipcMain.handle("profesotrGrupo:asignar", async (_, data) => {
         try {
             return await service.asignarProfesorAGrupo(data);
@@ -25,7 +25,3 @@ function registerProfesorGrupoHandlers() {
         }
     });
 }
-
-module.exports = {
-    registerProfesorGrupoHandlers
-};
