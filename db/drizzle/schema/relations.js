@@ -8,8 +8,8 @@
   - Solo le explica a Drizzle como se conectan las tablas.
 */
 
-const { relations } = require("drizzle-orm");
-const {
+import { relations } from "drizzle-orm";
+import {
   carreras,
   materias,
   profesores,
@@ -17,17 +17,17 @@ const {
   horarios,
   requerimientosSalon,
   grupos
-} = require("./base");
-const {
+} from "./base.js";
+import {
   materiaCarrera,
   grupoHorario,
   profesorGrupo,
   salonGrupo,
   salonRequerimientoSalon,
   grupoRequerimientoSalon
-} = require("./links");
+} from "./links.js";
 
-const gruposRelations = relations(grupos, ({ one, many }) => ({
+export const gruposRelations = relations(grupos, ({ one, many }) => ({
   materia: one(materias, {
     fields: [grupos.idMateria],
     references: [materias.id]
@@ -38,39 +38,30 @@ const gruposRelations = relations(grupos, ({ one, many }) => ({
   requerimientos: many(grupoRequerimientoSalon)
 }));
 
-const materiasRelations = relations(materias, ({ many }) => ({
+export const materiasRelations = relations(materias, ({ many }) => ({
   grupos: many(grupos),
   carreras: many(materiaCarrera)
 }));
 
-const carrerasRelations = relations(carreras, ({ many }) => ({
+export const carrerasRelations = relations(carreras, ({ many }) => ({
   materias: many(materiaCarrera)
 }));
 
-const profesoresRelations = relations(profesores, ({ many }) => ({
+export const profesoresRelations = relations(profesores, ({ many }) => ({
   grupos: many(profesorGrupo)
 }));
 
-const salonesRelations = relations(salones, ({ many }) => ({
+export const salonesRelations = relations(salones, ({ many }) => ({
   grupos: many(salonGrupo),
   requerimientos: many(salonRequerimientoSalon)
 }));
 
-const horariosRelations = relations(horarios, ({ many }) => ({
+export const horariosRelations = relations(horarios, ({ many }) => ({
   grupos: many(grupoHorario)
 }));
 
-const requerimientosSalonRelations = relations(requerimientosSalon, ({ many }) => ({
+export const requerimientosSalonRelations = relations(requerimientosSalon, ({ many }) => ({
   grupos: many(grupoRequerimientoSalon),
   salones: many(salonRequerimientoSalon)
 }));
 
-module.exports = {
-  gruposRelations,
-  materiasRelations,
-  carrerasRelations,
-  profesoresRelations,
-  salonesRelations,
-  horariosRelations,
-  requerimientosSalonRelations
-};
