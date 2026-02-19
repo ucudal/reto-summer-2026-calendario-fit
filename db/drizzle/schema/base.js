@@ -128,7 +128,9 @@ export const grupos = sqliteTable(
         }),
         horasSemestrales: text("horas_anuales"), //@todo es text o integer o bool?
         esContrasemestre: integer("es_contrasemestre", {mode: "boolean"}).notNull().default(false), //aporta para decir que se esta dictando contrasemestre
-        cupo: integer("cupo")
+        cupo: integer("cupo"),
+        semestre: integer("semestre").notNull(),
+        anio: integer("anio").notNull()
     },
     (table) => ({
         codigoUnicoIdx: uniqueIndex("grupos_codigo_unico_idx").on(table.codigo)
