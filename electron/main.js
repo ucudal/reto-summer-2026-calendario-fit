@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 
 
 //import { runMigrations } from "./db/migrations.js";
-import { registerAllHandlers } from "./modules/registerHandlers.js";
+import { registerAllHandlers } from "../modules/registerHandlers.js";
 
 // recrear __dirname en ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -21,7 +21,10 @@ function createWindow() {
     }
   });
 
-  win.loadFile(path.join(__dirname, "renderer", "index.html"));
+  //win.loadFile(path.join(__dirname, "renderer(old)", "index.html"));
+  win.loadURL("http://localhost:5173");
+  //Para production 
+  //mainWindow.loadFile("renderer/dist/index.html");
 }
 
 app.whenReady().then(() => {
