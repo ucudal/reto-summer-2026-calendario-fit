@@ -1,0 +1,92 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>ABM Carreras</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    .form-container {
+      margin-bottom: 30px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      width: 400px;
+    }
+
+    .form-group {
+      margin-bottom: 10px;
+    }
+
+    input {
+      width: 100%;
+      padding: 5px;
+    }
+
+    button {
+      margin-right: 5px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 600px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f4f4f4;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Gestión de Carreras</h1>
+
+  <div class="form-container">
+    <form id="carrera-form">
+      <input type="hidden" id="carrera-id" />
+
+      <div class="form-group">
+        <label>Nombre</label>
+        <input type="text" id="carrera-nombre" />
+      </div>
+
+      <div>
+        <button id="btn-guardar-carrera">Guardar</button>
+      </div>
+    </form>
+
+    <button id="btn-atras">Atras</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="tabla-carreras">
+    </tbody>
+  </table>
+
+  <script src="./carreras.renderer.js"></script>
+
+</body>
+</html>
