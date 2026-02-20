@@ -99,7 +99,7 @@ materiaForm.addEventListener("submit", async (e) => {
 
   console.log(data);
   if (!data.nombre) {
-    alert("Nombre requerido.");
+    await window.api.mensajes.mostrar("Nombre requerido.");
     return;
   }
 

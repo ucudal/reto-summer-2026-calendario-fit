@@ -12,7 +12,8 @@ const __dirname = dirname(__filename);
 const dbPath = path.join(__dirname, "", "local-dev.sqlite");
 console.log("DB PATH:", dbPath);
 
-const sqlite = new Database(dbPath);
+// Añadir timeout para evitar bloqueos largos; 5000 ms es razonable
+export const sqlite = new Database(dbPath, { timeout: 5000 });
 
 // Habilitar foreign keys
 sqlite.pragma("foreign_keys = ON");
@@ -20,5 +21,7 @@ sqlite.pragma("foreign_keys = ON");
 // Habilitar WAL para reducir bloqueos en lecturas/escrituras simultáneas
 sqlite.pragma("journal_mode = WAL");
 
+// Registrar busy_timeout adicional por si algo lo necesita (en ms)
+sqlite.pragma("busy_timeout = 5000");
 
 export const db = drizzle(sqlite);

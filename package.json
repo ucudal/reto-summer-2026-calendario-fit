@@ -1,13 +1,21 @@
 {
   "name": "calendariofit",
   "version": "1.0.0",
-  "main": "main.js",
+  "type": "module",
+  "main": "./electron/main.js",
   "scripts": {
     "start": "electron .",
+    "postinstall": "electron-rebuild -f -w better-sqlite3",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "dev:react": "cd renderer && npm run dev",
+    "build:react": "cd renderer && npm run build",
+    "dev:electron": "electron electron/main.js",
+    "dev": "concurrently \"npm run dev:react\" \"npm run dev:electron\""
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.0.3",
+    "concurrently": "^8.2.2",
     "drizzle-kit": "^0.31.6",
     "electron": "^31.0.0",
     "electron-rebuild": "^3.2.9"
@@ -18,8 +26,6 @@
     "better-sqlite3": "^12.6.2",
     "drizzle-orm": "^0.44.7",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "sqlite3": "^5.1.7"
-  },
-  "type": "module"
+    "react-dom": "^18.3.1"
+  }
 }
