@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>ABM Grupos</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+
+  <h1>Gestión de Grupos</h1>
+
+  <div class="controls">
+    <button id="btn-add-grupo">Agregar Grupo</button>
+    <button id="btn-atras">Atras</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Materia</th>
+        <th>Tipo</th>
+        <th>Cupo</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="tabla-grupos">
+      <!-- dinámico -->
+    </tbody>
+  </table>
+
+  <!-- Modal add/edit -->
+  <div id="modalBackdrop" class="backdrop hidden">
+    <div class="modal" role="dialog" aria-modal="true">
+      <form id="grupo-form">
+        <input type="hidden" id="grupo-id" />
+
+        <div class="form-group">
+          <label for="grupo-codigo">Código</label>
+          <input id="grupo-codigo" type="text" />
+        </div>
+
+        <div class="form-group">
+          <label for="grupo-materia">Materia</label>
+          <select id="grupo-materia"></select>
+        </div>
+
+        <div class="form-group">
+          <label for="grupo-horas">Horas semestrales</label>
+          <input id="grupo-horas" type="number" min="0" />
+        </div>
+
+        <div class="form-group">
+          <label><input id="grupo-contra" type="checkbox" /> Contrasemestre</label>
+        </div>
+
+        <div class="form-group">
+          <label for="grupo-cupo">Cupo</label>
+          <input id="grupo-cupo" type="number" min="1" />
+        </div>
+
+        <div class="form-group">
+          <label for="grupo-semestre">Semestre</label>
+          <input id="grupo-semestre" type="number" min="1" />
+        </div>
+
+        <div class="form-group">
+          <label for="grupo-anio">Año</label>
+          <input id="grupo-anio" type="number" min="1900" />
+        </div>
+
+        <div style="text-align:right;">
+          <button type="button" id="btn-cancel">Cancelar</button>
+          <button id="btn-save">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="./grupos.renderer.js"></script>
+</body>
+</html>
