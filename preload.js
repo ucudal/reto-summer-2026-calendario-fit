@@ -12,16 +12,16 @@ contextBridge.exposeInMainWorld("api", {
 
   // Expose Materias
   materias: {
-    crear: (data) => ipcRenderer.invoke('materias:crear', data),
-    listar: () => ipcRenderer.invoke('materias:listar')
+    crear: (data) => ipcRenderer.invoke("materias:crear", data),
+    actualizar: (data) => ipcRenderer.invoke("materias:actualizar", data),
+    eliminar: (id) => ipcRenderer.invoke("materias:eliminar", id),
+    listar: () => ipcRenderer.invoke("materias:listar")
   },
 
   //Expose Mostrar Mensajes
   mensajes: {
     mostrar: (mensaje, tipo = "warning") => ipcRenderer.invoke('mensajes:mostrar', { mensaje, tipo }),
     confirmar: (mensaje) => ipcRenderer.invoke('mensajes:confirmar', { mensaje }),
-    crear: (data) => ipcRenderer.invoke("materias:crear", data),
-    listar: () => ipcRenderer.invoke("materias:listar")
   },
 
   // Expose de ABM Carreras

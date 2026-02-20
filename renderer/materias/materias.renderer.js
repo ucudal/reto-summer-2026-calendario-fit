@@ -1,53 +1,47 @@
+// ==============================
+// ELEMENTOS DOM
+// ==============================
 
-const addBtn = document.getElementById("addBtn");
 const btnAtras = document.getElementById("btn-atras");
 const addMateriaBtn = document.getElementById("addMateriaBtn");
 
 const materiasContainer = document.getElementById("materiasContainer");
 
-const backdrop = document.getElementById("modalBackdrop");
-const form = document.getElementById("expenseForm");
-const cancelBtn = document.getElementById("cancelBtn");
-
 const materiaBackdrop = document.getElementById("modalMateriaBackdrop");
 const materiaForm = document.getElementById("materiaForm");
 const cancelMateriaBtn = document.getElementById("cancelMateriaBtn");
 
-
+const modalTitle = document.getElementById("modalTitle");
+const materiaIdInput = document.getElementById("materiaIdInput");
 const materiaNameInput = document.getElementById("materiaNameInput");
 const materiaTipoInput = document.getElementById("materiaTipoInput");
 const materiaCreditosInput = document.getElementById("materiaCreditosInput");
 const materiaTCInput = document.getElementById("materiaTCInput");
 
+// ==============================
+// UTIL
+// ==============================
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (m) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+    "&": "&amp;", "<": "&lt;", ">": "&gt;",
+    '"': "&quot;", "'": "&#039;"
   }[m]));
 }
 
+// ==============================
+// LISTAR
+// ==============================
 
-
-function openModal() {
-  backdrop.classList.remove("hidden");
-  amountInput.value = "";
-  categoryInput.value = ""; // reset
-  descriptionInput.value = "";
-  amountInput.focus();
-}
-
-function closeModal() {
-  backdrop.classList.add("hidden");
-}
-
-
-// --- Materias ---
 async function loadMaterias() {
   const response = await window.api.materias.listar();
 
-  const materias = response.data;
-  //const materias = [{name:"calculo", description: "calculo 1 primer semestre"}, {name: "algebra", description: "algebra 2 contrasemestre"}];
+  if (!response.success) {
+    await window.api.mensajes.mostrar(response.error);
+    return;
+  }
 
+  const materias = response.data;
   materiasContainer.innerHTML = "";
 
   if (!materias.length) {
@@ -56,31 +50,80 @@ async function loadMaterias() {
   }
 
   for (const materia of materias) {
+
     const card = document.createElement("div");
     card.className = "materia-card";
+
     card.innerHTML = `
       <h3>${escapeHtml(materia.nombre)}</h3>
-      ${materia.description ? `<p>${escapeHtml(materia.description)}</p>` : ""}
+      <p><strong>Tipo:</strong> ${escapeHtml(materia.tipo)}</p>
+      <p><strong>Créditos:</strong> ${materia.creditos}</p>
+      <p><strong>Contrasemestre:</strong> ${materia.tieneContrasemestre ? "Sí" : "No"}</p>
+      <div class="card-actions">
+        <button class="edit-btn">Editar</button>
+        <button class="delete-btn">Eliminar</button>
+      </div>
     `;
+
+    // EDITAR
+    card.querySelector(".edit-btn").addEventListener("click", () => {
+      openEditModal(materia);
+    });
+
+    // ELIMINAR
+    card.querySelector(".delete-btn").addEventListener("click", async () => {
+      const confirmar = await window.api.mensajes.confirmar("¿Eliminar esta materia?");
+      if (!confirmar) return;
+
+      const result = await window.api.materias.eliminar(materia.id);
+
+      if (!result.success) {
+        await window.api.mensajes.mostrar(result.error);
+        return;
+      }
+
+      await loadMaterias();
+    });
+
     materiasContainer.appendChild(card);
   }
 }
 
-function openMateriaModal() {
+// ==============================
+// MODAL
+// ==============================
+
+function openCreateModal() {
+  modalTitle.textContent = "Nueva materia";
+  materiaIdInput.value = "";
+  materiaForm.reset();
   materiaBackdrop.classList.remove("hidden");
-  materiaNameInput.value = "";
-  materiaTipoInput.value = "";
-  materiaCreditosInput.value = "";
-  materiaTCInput.value = "";
   materiaNameInput.focus();
+}
+
+function openEditModal(materia) {
+  modalTitle.textContent = "Editar materia";
+  materiaIdInput.value = materia.id;
+  materiaNameInput.value = materia.nombre;
+  materiaTipoInput.value = materia.tipo;
+  materiaCreditosInput.value = materia.creditos;
+  materiaTCInput.checked = Boolean(materia.tieneContrasemestre);
+
+  materiaBackdrop.classList.remove("hidden");
 }
 
 function closeMateriaModal() {
   materiaBackdrop.classList.add("hidden");
 }
 
-addMateriaBtn.addEventListener("click", openMateriaModal);
+// ==============================
+// EVENTOS
+// ==============================
+
+addMateriaBtn.addEventListener("click", openCreateModal);
+
 cancelMateriaBtn.addEventListener("click", closeMateriaModal);
+
 materiaBackdrop.addEventListener("click", (e) => {
   if (e.target === materiaBackdrop) closeMateriaModal();
 });
@@ -88,24 +131,30 @@ materiaBackdrop.addEventListener("click", (e) => {
 materiaForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
+  const id = materiaIdInput.value;
+
   const data = {
     nombre: materiaNameInput.value.trim(),
     tipo: materiaTipoInput.value.trim(),
+    creditos: Number(materiaCreditosInput.value),
+    tieneContrasemestre: materiaTCInput.checked
   };
-  const creditos = materiaCreditosInput.value.trim();
-  const tieneContrasemestre = materiaTCInput.value.trim();
-  data.creditos = Number(creditos);
-  data.tieneContrasemestre = Number(tieneContrasemestre);
 
-  console.log(data);
-  if (!data.nombre) {
-    alert("Nombre requerido.");
-    return;
+  let result;
+
+  if (id) {
+    result = await window.api.materias.actualizar({
+      id: Number(id),
+      datos: data
+    });
+  } else {
+    result = await window.api.materias.crear(data);
   }
 
-  data.creditos
-
-  await window.api.materias.crear( data );
+  if (!result.success) {
+    await window.api.mensajes.mostrar(result.error);
+    return;
+  }
 
   closeMateriaModal();
   await loadMaterias();
@@ -116,9 +165,7 @@ btnAtras.addEventListener("click", () => {
 });
 
 // ==============================
-// INICIALIZAR
+// INIT
 // ==============================
 
-document.addEventListener("DOMContentLoaded", () => {
-  loadMaterias();
-});
+document.addEventListener("DOMContentLoaded", loadMaterias);
