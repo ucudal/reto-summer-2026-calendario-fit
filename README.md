@@ -8,3 +8,5 @@ Repositorio para reto de calendario Fit, se utilizará javascript, html y css, s
 
 2. npm run start
 (este comando corre la aplicacion)
+
+ESTO MUESTRA UN CAMBIO PARA EL PR (ELIMINAR DESPUES)

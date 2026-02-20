@@ -1,26 +1,24 @@
-const path = require("path");
-const { app } = require("electron");
-const sqlite3 = require("sqlite3").verbose();
+// db/db.js
+import path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
 
-function getDbPath() {
-  return path.join(app.getPath("userData"), "calendariofit.sqlite");
-}
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-let db;
+// Base en la carpeta del proyecto
+const dbPath = path.join(__dirname, "", "local-dev.sqlite");
+console.log("DB PATH:", dbPath);
 
-function initDb() {
-  if (db) return db;
+const sqlite = new Database(dbPath);
 
-  db = new sqlite3.Database(getDbPath(), (err) => {
-    if (err) console.error("Error abriendo SQLite:", err);
-  });
+// Habilitar foreign keys
+sqlite.pragma("foreign_keys = ON");
 
-  db.serialize(() => {
-    db.run("PRAGMA journal_mode = WAL;");
-    db.run("PRAGMA foreign_keys = ON;");
-  });
+// Habilitar WAL para reducir bloqueos en lecturas/escrituras simultáneas
+sqlite.pragma("journal_mode = WAL");
 
-  return db;
-}
 
-module.exports = { initDb };
+export const db = drizzle(sqlite);
