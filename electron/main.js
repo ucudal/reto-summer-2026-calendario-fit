@@ -14,8 +14,8 @@ const __dirname = path.dirname(__filename);
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1000,
-    height: 700,
+    width: 1820,
+    height: 1080,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -23,17 +23,38 @@ function createWindow() {
     }
   });
 
-  //win.loadFile(path.join(__dirname, "renderer(old)", "index.html"));
-  win.loadURL("http://localhost:5173");
-  //Para production 
-  //mainWindow.loadFile("renderer/dist/index.html");
+  const fallbackFile = path.join(__dirname, "..", "front", "index.html");
+  const devUrl = process.env.ELECTRON_RENDERER_URL || "http://localhost:5173";
+  let triedFallback = false;
+
+  // Si falla el URL (por ejemplo Vite apagado), carga front/index.html.
+  win.webContents.on("did-fail-load", () => {
+    if (triedFallback) return;
+    triedFallback = true;
+    win.loadFile(fallbackFile).catch((error) => {
+      console.error("No se pudo cargar el fallback front/index.html:", error);
+    });
+  });
+
+  win
+    .loadURL(devUrl)
+    .catch(() => {
+      if (triedFallback) return;
+      triedFallback = true;
+      return win.loadFile(fallbackFile);
+    });
 }
 
 app.whenReady().then(async () => {
-  runMigrations();
-  await initializeDatabase();
-  registerAllHandlers();
-  createWindow();
+  try {
+    runMigrations();
+    await initializeDatabase();
+    registerAllHandlers();
+    createWindow();
+  } catch (error) {
+    console.error("Error al iniciar la app:", error);
+    app.quit();
+  }
 });
 
 app.on("window-all-closed", () => {
