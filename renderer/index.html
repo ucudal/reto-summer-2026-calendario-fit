@@ -1,63 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Inicio</title>
+</head>
 
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>CalendarioFIT</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <header class="topbar">
-      <h1>CalendarioFIT - Materias</h1>
+<body>
 
-      <div class="filters">
-        <button id="addMateriaBtn">Agregar materia</button>
-      </div>
-    </header>
+  <h1>Página Principal</h1>
 
-    <!-- Sección de Materias -->
-    <section class="materias-section">
-      <h2>Materias</h2>
-      <div id="materiasContainer" class="materias-list"></div>
-    </section>
+  <button id="btn-docentes">Ir a Docentes</button>
+  <button id="btn-materias">Ir a Materias</button>
+  <button id="btn-carreras">Ir a Carreras</button>
+  <button id="btn-grupos">Ir a Grupos</button>
+  <button id="btn-requerimientos">Ir a Requerimientos</button>
+  <script>
+    document.getElementById("btn-docentes").addEventListener("click", () => {
+      window.location.href = "./docentes/docentes.html";
+    });
+    document.getElementById("btn-materias").addEventListener("click", () => {
+      window.location.href = "./materias/materias.html";
+    });
+    document.getElementById("btn-carreras").addEventListener("click", () => {
+      window.location.href = "./carreras/carreras.html";
+    });
+    document.getElementById("btn-grupos").addEventListener("click", () => {
+      window.location.href = "./grupos/grupos.html";
+    });
+    document.getElementById("btn-requerimientos").addEventListener("click", () => {
+      window.location.href = "./requerimientos/requerimientos.html";
+    });
+  </script>
 
-    <!-- Modal Alta de materia -->
-    <div id="modalMateriaBackdrop" class="backdrop hidden">
-      <div class="modal">
-        <h2>Nueva materia</h2>
-
-        <form id="materiaForm">
-          <label
-            >Nombre*:
-            <input id="materiaNameInput" type="text" required />
-          </label>
-          <label>
-            Creditos*:
-            <input
-              type="number"
-              id="materiaCreditosInput"
-              step="0.01"
-              required
-            />
-          </label>
-
-          <label
-            >Descripción:
-            <textarea
-              id="materiaDescriptionInput"
-              rows="3"
-              placeholder="Opcional"
-            ></textarea>
-          </label>
-
-          <div class="actions">
-            <button type="button" id="cancelMateriaBtn">Cancelar</button>
-            <button type="submit">Guardar</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <script src="renderer.js"></script>
-  </body>
+</body>
 </html>
