@@ -1,42 +1,301 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+.content {
+  position: fixed;
+  top: 100px;
+  left: 0;
+  display: flex;
+  flex-direction: row;
+  width: 100vw;
+  height: calc(100vh - 100px);
+  background-color: #EBE3CC;
+  padding: 10px;
+}
+
+.sideBar {
+  width: 14vw;
+  display: flex;
+  flex-direction: column;
+}
+
+.mainView {
+  width: 90vw;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100vw;
+  background-color: #173363;
+  height: 100px;
+  padding-left: 10px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.headerContent {
+    flex: 1;
+}
+
+.logoUcu {
+  height: 70px;
+  width: auto;
+  margin-right: 20px;
+}
+
+h1 {
+  font-size: 18px;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  font-weight: normal;
+}
+
+h2 {
+  font-size: 16px;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  font-weight: normal;
+  color: #3A3A3A;
+  text-align: left;
+}
+
+h3 {
+  font-size: 14px;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  font-weight: normal;
+  color: #3A3A3A;
+  text-align: left;
+}
+
+
+.filters {
+  display: flex;
+  flex-direction: row;
+}
+
+.filter {
+  background-color: white;
+  color: grey;
+  border-radius: 20px;
+  margin: 5px;
+  padding-right: 10px;
+  padding-left: 10px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  
+}
+
+.btn {
+  padding: 8px;
+  width: 80%;
+  height: 20px;
+  background-color: #173363;
+  color: whitesmoke;
+  margin: 2px;
   text-align: center;
+  justify-content: center;
+  border-radius: 15px;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.menu {
+  background-color: whitesmoke;
+  box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: 5px;
+  padding: 5px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.calendarInfo {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 95%;
+  padding: 10px;
 }
 
-.card {
-  padding: 2em;
+.calendarInfo > div {
+  flex: 0 0 auto;
 }
 
-.read-the-docs {
-  color: #888;
+.calendarInfo > p {
+  flex: 1;
+  text-align: right;
+  margin: 0;
+  color: #3A3A3A;
+  font-size: 10px;
+  padding-left: 60px;
+}
+
+.calendar {
+  display: flex;
+  flex-direction: column;
+  width: 98%;
+  height: 100%;
+  border-collapse: collapse;
+  background-color: #F5F5F5;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  font-weight: normal;
+  color: #3A3A3A;
+}
+
+.calendarHeader {
+  display: grid;
+  grid-template-columns: 60px repeat(6, 1fr);
+  border-bottom: 0px;
+  background-color: #EBE3CC;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+
+}
+
+.timeColumnHeader {
+  padding: 10px;
+  text-align: center;
+  border-right: 0px;
+  font-size: 10px;
+
+
+}
+
+.dayHeader {
+  padding: 10px;
+  text-align: center;
+  border-right: 0px;
+  font-size: 10px;
+}
+
+.dayHeader:last-child {
+  border-right: none;
+}
+
+.calendarGrid {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.timeRow {
+  display: grid;
+  grid-template-columns: 60px repeat(6, 1fr);
+  min-height: 50px;
+}
+
+.timeRow.periodEnd {
+  border-bottom: 2px solid #EBE3CC;
+}
+
+.timeCell {
+  padding: 10px;
+  text-align: center;
+  border-right: 2px solid #EBE3CC;
+  font-size: 10px;
+  background-color: #FFF9E9;
+  font-weight: 500;
+}
+
+.gridCell {
+  border-right: 2px solid #EBE3CC;
+  background-color: #FFF9E9;
+}
+
+.gridCell:last-child {
+  border-right: none;
+}
+
+.menu h3 {
+  text-align: center;
+  margin: 10px 0 0 0;
+  font-size: 14px;
+  color: #3A3A3A;
+}
+
+.filterCheckboxList {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px;
+}
+
+.checkboxItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: nowrap;
+}
+
+.checkboxItem input[type="checkbox"] {
+  width: 12px;
+  height: 12px;
+  min-width: 12px;
+  min-height: 12px;
+  cursor: pointer;
+  accent-color: #5DBE64;
+  flex-shrink: 0;
+}
+
+.checkboxItem label {
+  cursor: pointer;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  font-size: 10px;
+  color: #3A3A3A;
+  user-select: none;
+  margin: 0;
+  flex: 1;
+}
+
+
+.alertsList {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.alert {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 8px;
+  align-items: flex-start;
+}
+
+.alert-error {
+  background-color: whitesmoke;
+}
+
+.alert-warning {
+  background-color: whitesmoke;
+}
+
+.alertIcon {
+  font-size: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+.alertMessage {
+  margin: 0;
+  font-size: 10px;
+  color: #333333;
+  flex: 1;
 }
