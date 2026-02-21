@@ -35,10 +35,19 @@ function App() {
   const [selectedCareer, setSelectedCareer] = React.useState(exampleCareers[0]);
   const [selectedPlan, setSelectedPlan] = React.useState(data.plans[0]);
 
-  // Estado visual del modal de grupo.
-  const [isCreateGroupOpen, setIsCreateGroupOpen] = React.useState(false);
+  // Estado visual del modal de lista de grupos.
+  const [isGroupsListOpen, setIsGroupsListOpen] = React.useState(false);
 
-  // Estado de error del modal de grupo.
+  // Estado visual del modal de gestión de grupos por asignatura.
+  const [isSubjectGroupsModalOpen, setIsSubjectGroupsModalOpen] = React.useState(false);
+
+  // Asignatura seleccionada para gestionar grupos.
+  const [selectedSubject, setSelectedSubject] = React.useState(null);
+
+  // Estado visual del modal de crear nuevo grupo.
+  const [isCreateNewGroupOpen, setIsCreateNewGroupOpen] = React.useState(false);
+
+  // Estado de error del modal de crear grupo.
   const [modalError, setModalError] = React.useState("");
 
   // Estado del formulario del modal.
@@ -81,8 +90,38 @@ function App() {
   // Lista plana de alertas de calendarios visibles.
   const visibleAlerts = visibleCalendars.flatMap((calendar) => calendar.alerts);
 
-  // Abre modal y limpia formulario.
-  function openCreateGroupModal() {
+  // Abre el modal para ver lista de grupos.
+  function openGroupsListModal() {
+    setIsGroupsListOpen(true);
+  }
+
+  // Cierra el modal de lista de grupos.
+  function closeGroupsListModal() {
+    setIsGroupsListOpen(false);
+  }
+
+  // Abre el modal de gestión de grupos por asignatura.
+  function openSubjectGroupsModal(subjectName) {
+    setSelectedSubject(subjectName);
+    setIsSubjectGroupsModalOpen(true);
+    setIsGroupsListOpen(false);
+  }
+
+  // Cierra el modal de gestión de grupos por asignatura.
+  function closeSubjectGroupsModal() {
+    setIsSubjectGroupsModalOpen(false);
+    setSelectedSubject(null);
+  }
+
+  // Vuelve a la lista de grupos desde gestión de una asignatura.
+  function backToGroupsList() {
+    setIsSubjectGroupsModalOpen(false);
+    setSelectedSubject(null);
+    setIsGroupsListOpen(true);
+  }
+
+  // Abre el modal para crear un nuevo grupo.
+  function openCreateNewGroupModal() {
     setGroupForm({
       subject: "",
       day: DAYS[0],
@@ -91,13 +130,19 @@ function App() {
       toTime: formatHour(START_HOUR + 2)
     });
     setModalError("");
-    setIsCreateGroupOpen(true);
+    setIsCreateNewGroupOpen(true);
   }
 
-  // Cierra modal y limpia error.
-  function closeCreateGroupModal() {
+  // Cierra el modal de crear nuevo grupo.
+  function closeCreateNewGroupModal() {
     setModalError("");
-    setIsCreateGroupOpen(false);
+    setIsCreateNewGroupOpen(false);
+  }
+
+  // Abre el modal de crear nuevo grupo desde la lista de grupos.
+  function handleAddNewSubjectFromList() {
+    closeGroupsListModal();
+    openCreateNewGroupModal();
   }
 
   // Abre modal para crear carrera.
@@ -225,34 +270,33 @@ function App() {
       })
     }));
 
-    closeCreateGroupModal();
+    closeCreateNewGroupModal();
+    openGroupsListModal();
   }
 
   return (
     <>
-      <HeaderBar />
+      <HeaderBar
+        careers={careers}
+        plans={data.plans}
+        selectedCareer={selectedCareer}
+        selectedPlan={selectedPlan}
+        onCareerChange={setSelectedCareer}
+        onPlanChange={setSelectedPlan}
+        onOpenCreateCareer={openCreateCareerModal}
+        onOpenCreateGroup={openGroupsListModal}
+      />
 
       <main className="page">
-        <Toolbar
-          careers={careers}
-          plans={data.plans}
-          selectedCareer={selectedCareer}
-          selectedPlan={selectedPlan}
-          onCareerChange={setSelectedCareer}
-          onPlanChange={setSelectedPlan}
-          onOpenCreateCareer={openCreateCareerModal}
-          onOpenCreateGroup={openCreateGroupModal}
-        />
-
         <section className="layout">
           <Sidebar
             calendars={data.calendars}
             onToggleCalendarVisible={toggleCalendarVisible}
-            onOpenCreateGroup={openCreateGroupModal}
+            onOpenCreateGroup={openGroupsListModal}
+            alerts={visibleAlerts}
           />
 
           <section className="main-column">
-            <AlertsPanel alerts={visibleAlerts} />
 
             <div className="schedules-root">
               {visibleCalendars.length === 0 && (
@@ -280,14 +324,31 @@ function App() {
         </section>
       </main>
 
-      <CreateGroupModal
-        isOpen={isCreateGroupOpen}
+      <GroupsModal
+        isOpen={isGroupsListOpen}
+        calendars={visibleCalendars}
+        onClose={closeGroupsListModal}
+        onAddNewSubject={handleAddNewSubjectFromList}
+        onSelectSubject={openSubjectGroupsModal}
+      />
+
+      <SubjectGroupsModal
+        isOpen={isSubjectGroupsModalOpen}
+        subject={selectedSubject}
+        careers={careers}
+        days={DAYS}
+        onBack={backToGroupsList}
+        onClose={closeSubjectGroupsModal}
+      />
+
+      <CreateNewGroupModal
+        isOpen={isCreateNewGroupOpen}
         form={groupForm}
         years={["1", "2", "3"]}
         days={DAYS}
         hourOptionsFrom={hourOptionsFrom}
         hourOptionsTo={hourOptionsTo}
-        onClose={closeCreateGroupModal}
+        onClose={closeCreateNewGroupModal}
         onChange={updateGroupForm}
         onSubmit={confirmCreateGroup}
         errorMessage={modalError}

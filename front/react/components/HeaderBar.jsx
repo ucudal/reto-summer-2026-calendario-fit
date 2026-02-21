@@ -2,14 +2,49 @@
   Componente: HeaderBar
   Que hace:
   - Muestra la franja azul superior con titulo y marca.
-  - No tiene logica compleja ni estado.
+  - Muestra select de carrera y plan.
+  - Muestra botones de acciones superiores.
+  - Dispara "onOpenCreateGroup" cuando se presiona CREAR GRUPO.
+  - Dispara "onOpenCreateCareer" cuando se presiona CREAR CARRERA.
 */
 
-function HeaderBar() {
+function HeaderBar(props) {
+  const {
+    careers = [],
+    plans = [],
+    selectedCareer = "",
+    selectedPlan = "",
+    onCareerChange = () => {},
+    onPlanChange = () => {},
+    onOpenCreateCareer = () => {},
+    onOpenCreateGroup = () => {}
+  } = props;
+
   return (
     <header className="app-header">
-      <div className="header-title">Sistema de gestion de calendarios academicos</div>
-      <div className="header-brand">UCU</div>
+      <div className="header-top">
+        <div className="header-title">Sistema de gestion de calendarios academicos</div>
+        <img src="./react/assets/Logo-Universidad-Catolica.svg" alt="Logo Universidad Catolica del Uruguay" className="header-logo" />
+      </div>
+
+      <div className="header-controls">
+        <select className="header-select" value={selectedCareer} onChange={(event) => onCareerChange(event.target.value)}>
+          {careers.map((career) => (
+            <option key={career} value={career}>{career}</option>
+          ))}
+        </select>
+
+        <select className="header-select" value={selectedPlan} onChange={(event) => onPlanChange(event.target.value)}>
+          {plans.map((plan) => (
+            <option key={plan} value={plan}>{plan}</option>
+          ))}
+        </select>
+
+        <button className="header-btn" type="button">Crear nuevo semestre +</button>
+        <button className="header-btn hidden-btn" type="button" onClick={onOpenCreateCareer}>CREAR CARRERA</button>
+        <button className="header-btn hidden-btn" type="button" onClick={onOpenCreateGroup}>CREAR GRUPO</button>
+        <button className="header-btn hidden-btn" type="button">EXPORTAR</button>
+      </div>
     </header>
   );
 }

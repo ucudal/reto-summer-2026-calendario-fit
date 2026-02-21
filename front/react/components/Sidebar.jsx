@@ -7,15 +7,15 @@
 */
 
 function Sidebar(props) {
-  const { calendars, onToggleCalendarVisible, onOpenCreateGroup } = props;
+  const { calendars, onToggleCalendarVisible, onOpenCreateGroup, alerts = [] } = props;
 
   return (
     <aside className="sidebar">
       <div className="card side-card">
-        <h2 className="side-title">Acciones rapidas</h2>
-        <button className="action-btn action-btn-main" type="button">CREAR ASIGNATURA</button>
-        <button className="action-btn" type="button">CREAR DOCENTE</button>
-        <button className="action-btn" type="button" onClick={onOpenCreateGroup}>CREAR GRUPO</button>
+        <button className="action-btn" type="button">ASIGNATURAS</button>
+        <button className="action-btn" type="button">CARRERAS</button>
+        <button className="action-btn" type="button">DOCENTES</button>
+        <button className="action-btn" type="button" onClick={onOpenCreateGroup}>GRUPOS</button>
       </div>
 
       <div className="card side-card">
@@ -35,8 +35,27 @@ function Sidebar(props) {
         </div>
       </div>
 
-      <button className="export-btn" type="button">EXPORTAR PDF</button>
-      <button className="export-btn" type="button">EXPORTAR EXCEL (PARA USO INTERNO)</button>
+      <div className="card side-card alerts-side">
+        <h2 className="side-title">Alertas activas</h2>
+        <div className="alerts-scroll">
+          {alerts.length === 0 && (
+            <div className="no-alerts">No hay alertas para los calendarios seleccionados.</div>
+          )}
+
+          <ul className="alerts-list">
+            {alerts.map((message, index) => (
+              <li key={`${message}-${index}`} className="alert-item">
+                <span className="alert-icon">❗</span>
+                <div className="alert-text">{message}</div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <button className="export-btn" type="button">IMPORTAR DATOS</button>
+      <button className="export-btn" type="button">EXPORTAR CALENDARIO EXCEL</button>
+      <button className="export-btn" type="button">EXPORTAR EXCEL PARA USO INTERNO</button>
     </aside>
   );
 }
