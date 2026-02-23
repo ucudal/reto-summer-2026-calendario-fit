@@ -21,6 +21,7 @@ function App() {
   } = window.AppData;
   const createCareerModalFns = window.CreateCareerModalFunctions;
   const createGroupModalFns = window.CreateGroupModalFunctions;
+  const createTeacherModalFns = window.CreateTeacherModalFunctions;
   const groupsModalFns = window.GroupsModalFunctions;
   const subjectGroupsModalFns = window.SubjectGroupsModalFunctions;
   const createNewGroupModalFns = window.CreateNewGroupModalFunctions;
@@ -74,6 +75,19 @@ function App() {
   // Formulario del modal de carrera.
   const [careerForm, setCareerForm] = React.useState({
     nombre: ""
+  });
+
+  // Estado visual del modal de docente.
+  const [isCreateTeacherOpen, setIsCreateTeacherOpen] = React.useState(false);
+
+  // Estado de error del modal de docente.
+  const [teacherModalError, setTeacherModalError] = React.useState("");
+
+  // Formulario del modal de docente.
+  const [teacherForm, setTeacherForm] = React.useState({
+    nombre: "",
+    apellido: "",
+    correo: ""
   });
 
   // Horas posibles para "desde".
@@ -163,6 +177,33 @@ function App() {
     });
   }
 
+  // Abre modal para crear docente.
+  function openCreateTeacherModal() {
+    setTeacherForm({ nombre: "", apellido: "", correo: "" });
+    setTeacherModalError("");
+    setIsCreateTeacherOpen(true);
+  }
+
+  // Cierra modal de docente.
+  function closeCreateTeacherModal() {
+    setTeacherModalError("");
+    setIsCreateTeacherOpen(false);
+  }
+
+  // Actualiza campo del modal de docente.
+  function updateTeacherForm(field, value) {
+    setTeacherForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  // Confirma creacion de docente (llama IPC a backend y guarda en BD).
+  async function confirmCreateTeacher() {
+    await createTeacherModalFns.confirmCreateTeacher({
+      teacherForm,
+      setTeacherModalError,
+      closeCreateTeacherModal
+    });
+  }
+
   // Cambia visibilidad de calendario por id.
   function toggleCalendarVisible(calendarId, checked) {
     setData((prev) => ({
@@ -233,6 +274,7 @@ function App() {
             calendars={data.calendars}
             onToggleCalendarVisible={toggleCalendarVisible}
             onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
+            onOpenCreateTeacher={openCreateTeacherModal}
             alerts={visibleAlerts}
           />
 
@@ -302,6 +344,15 @@ function App() {
         onClose={closeCreateCareerModal}
         onChange={updateCareerForm}
         onSubmit={confirmCreateCareer}
+      />
+
+      <CreateTeacherModal
+        isOpen={isCreateTeacherOpen}
+        form={teacherForm}
+        errorMessage={teacherModalError}
+        onClose={closeCreateTeacherModal}
+        onChange={updateTeacherForm}
+        onSubmit={confirmCreateTeacher}
       />
     </>
   );

@@ -739,6 +739,21 @@ body {
   font-size: 16px;
 }
 
+/* Estilos del modal azul para crear docentes */
+.create-teacher-modal .group-form {
+  gap: 12px;
+}
+
+.create-teacher-modal .form-label {
+  color: #ffffff;
+}
+
+.create-teacher-modal .form-input {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: #ffffff;
+  color: #25343a;
+}
+
 /* Estilos para SubjectGroupsModal */
 
 .groups-list-modal .modal-back-btn {
@@ -1134,4 +1149,3 @@ body {
   border-radius: 12px;
   border: 1px dashed #e0dcd4;
 }
-
