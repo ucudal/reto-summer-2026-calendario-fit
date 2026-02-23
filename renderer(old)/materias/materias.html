@@ -6,46 +6,62 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
+
   <header class="topbar">
     <h1>CalendarioFIT - Materias</h1>
 
     <div class="filters">
       <button id="addMateriaBtn">Agregar materia</button>
-      <button id="btn-atras">Atras</button>
+      <button id="btn-atras">Atrás</button>
     </div>
   </header>
 
-  <!-- Sección de Materias -->
+  <!-- ============================= -->
+  <!-- LISTADO -->
+  <!-- ============================= -->
   <section class="materias-section">
     <h2>Materias</h2>
     <div id="materiasContainer" class="materias-list"></div>
   </section>
 
 
-  <!-- Modal Alta de materia -->
+  <!-- ============================= -->
+  <!-- MODAL ALTA / EDICIÓN -->
+  <!-- ============================= -->
   <div id="modalMateriaBackdrop" class="backdrop hidden">
     <div class="modal">
-      <h2>Nueva materia</h2>
+      <h2 id="modalTitle">Nueva materia</h2>
 
       <form id="materiaForm">
-        <label>Nombre*:
+
+        <!-- hidden para editar -->
+        <input type="hidden" id="materiaIdInput" />
+
+        <label>
+          Nombre*:
           <input id="materiaNameInput" type="text" required />
         </label>
-        
-        <label>Tipo:
-          <input id="materiaTipoInput" type="text" required></input>
+
+        <label>
+          Tipo*:
+          <input id="materiaTipoInput" type="text" required />
         </label>
-        <label>Creditos:
-          <input id="materiaCreditosInput" type="number" required></input>
+
+        <label>
+          Créditos*:
+          <input id="materiaCreditosInput" type="number" min="1" required />
         </label>
-        <label>Tiene Contrasemestre:
-          <input id="materiaTCInput" type="number" required></input>
+
+        <label class="checkbox-label">
+          <input id="materiaTCInput" type="checkbox" />
+          Tiene contrasemestre
         </label>
-        
+
         <div class="actions">
           <button type="button" id="cancelMateriaBtn">Cancelar</button>
-          <button type="submit">Guardar</button>
+          <button type="submit" id="saveMateriaBtn">Guardar</button>
         </div>
+
       </form>
     </div>
   </div>
