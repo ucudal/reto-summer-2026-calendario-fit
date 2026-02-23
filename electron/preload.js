@@ -31,6 +31,18 @@ contextBridge.exposeInMainWorld("api", {
     eliminar: (id) => ipcRenderer.invoke("carreras:eliminar", id),
     obtener: (id) => ipcRenderer.invoke("carreras:obtener", id),
     listar: () => ipcRenderer.invoke("carreras:listar")
+  },
+
+  // Expose de ABM Grupos
+  grupos: {
+    crear: (data) => ipcRenderer.invoke("grupos:crear", data),
+    actualizar: (data) => ipcRenderer.invoke("grupos:actualizar", data),
+    eliminar: (id) => ipcRenderer.invoke("grupos:eliminar", id),
+    obtener: (id) => ipcRenderer.invoke("grupos:obtener", id),
+    listar: () => ipcRenderer.invoke("grupos:listar"),
+    asignarProfesor: (data) => ipcRenderer.invoke("grupos:asignarProfesor", data),
+    agregarHorarios: (idGrupo, horarios) => ipcRenderer.invoke("grupos:agregarHorarios", { idGrupo, horarios }),
+    agregarRequerimientos: (idGrupo, requerimientos) => ipcRenderer.invoke("grupos:agregarRequerimientos", { idGrupo, requerimientos })
   }
   
 });
