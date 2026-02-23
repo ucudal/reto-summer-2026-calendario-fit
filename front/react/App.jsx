@@ -124,7 +124,9 @@ function App() {
   const subjectGroupsModalHandlers = subjectGroupsModalFns.createSubjectGroupsModalHandlers({
     setIsGroupsListOpen,
     setIsSubjectGroupsModalOpen,
-    setSelectedSubject
+    setSelectedSubject,
+    setData,
+    addGroupToCalendar
   });
 
   const groupsModalHandlers = groupsModalFns.createGroupsModalHandlers({
@@ -265,8 +267,8 @@ function App() {
       <GroupsModal
         isOpen={isGroupsListOpen}
         calendars={visibleCalendars}
+        subjectsList={undefined}
         onClose={groupsModalHandlers.closeGroupsListModal}
-        onAddNewSubject={groupsModalHandlers.handleAddNewSubjectFromList}
         onSelectSubject={groupsModalHandlers.openSubjectGroupsModal}
       />
 
@@ -277,6 +279,7 @@ function App() {
         days={DAYS}
         onBack={subjectGroupsModalHandlers.backToGroupsList}
         onClose={subjectGroupsModalHandlers.closeSubjectGroupsModal}
+        onSaveGroups={subjectGroupsModalHandlers.saveGroupsToCalendar}
       />
 
       <CreateNewGroupModal
