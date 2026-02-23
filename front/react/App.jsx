@@ -118,6 +118,21 @@ function App() {
     setCareerForm((prev) => ({ ...prev, [field]: value }));
   }
 
+  async function handleExportExcel() {
+    try {
+      const result = await window.exportSchedulesToExcel(data);
+
+      if (result?.success) {
+        await window.api.mensajes.mostrar("Excel exportado correctamente.", "info");
+      } else {
+        await window.api.mensajes.mostrar("Exportación cancelada.", "warning");
+      }
+    } catch (error) {
+      console.error("Error exportando Excel:", error);
+      await window.api.mensajes.mostrar(error.message || "Error al exportar Excel.", "error");
+    }
+  }
+
   // Crea carrera solo en frontend (sin backend).
   function confirmCreateCareer() {
     const nombre = String(careerForm.nombre || "").trim();
@@ -249,6 +264,7 @@ function App() {
             calendars={data.calendars}
             onToggleCalendarVisible={toggleCalendarVisible}
             onOpenCreateGroup={openCreateGroupModal}
+            onExportExcel={handleExportExcel}
           />
 
           <section className="main-column">

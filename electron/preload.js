@@ -31,6 +31,11 @@ contextBridge.exposeInMainWorld("api", {
     eliminar: (id) => ipcRenderer.invoke("carreras:eliminar", id),
     obtener: (id) => ipcRenderer.invoke("carreras:obtener", id),
     listar: () => ipcRenderer.invoke("carreras:listar")
+  },
+
+  // Expose Excel Service
+  excel: {
+    guardarArchivo: (buffer) =>
+        ipcRenderer.invoke("excel:guardarArchivo", buffer)
   }
-  
 });
