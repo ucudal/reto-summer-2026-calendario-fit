@@ -39,7 +39,10 @@ contextBridge.exposeInMainWorld("api", {
     actualizar: (data) => ipcRenderer.invoke("grupos:actualizar", data),
     eliminar: (id) => ipcRenderer.invoke("grupos:eliminar", id),
     obtener: (id) => ipcRenderer.invoke("grupos:obtener", id),
-    listar: () => ipcRenderer.invoke("grupos:listar")
+    listar: () => ipcRenderer.invoke("grupos:listar"),
+    asignarProfesor: (data) => ipcRenderer.invoke("grupos:asignarProfesor", data),
+    agregarHorarios: (idGrupo, horarios) => ipcRenderer.invoke("grupos:agregarHorarios", { idGrupo, horarios }),
+    agregarRequerimientos: (idGrupo, requerimientos) => ipcRenderer.invoke("grupos:agregarRequerimientos", { idGrupo, requerimientos })
   }
   
 });

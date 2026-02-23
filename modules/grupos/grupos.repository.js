@@ -49,3 +49,32 @@ export function listarGrupos() {
   .orderBy(asc(grupos.codigo))
   .all();
 };
+
+export function asignarProfesor(data) {
+  return db.insert(profesorGrupo).values({
+    idProfesor: data.idProfesor,
+    idGrupo: data.idGrupo,
+    carga: data.carga,
+    confirmado: 1,
+    esPrincipal: data.esPrincipal
+  }).run();
+};
+
+export function insertarHorarios(idGrupo, horarios) {
+  return horarios.map(h =>
+    db.insert(horario).values({
+      idGrupo,
+      dia: h.dia,
+      modulo: h.modulo
+    }).run()
+  );
+};
+
+export function insertarRequerimientos(idMateria, requerimientos) {
+  return requerimientos.map(r =>
+    db.insert(materiaReqSalon).values({
+      idMateria,
+      idReqSalon: r
+    }).run()
+  );
+};

@@ -3,7 +3,10 @@ import {
     eliminarGrupo,
     obtenerGrupoPorId,
     modificarGrupo,
-    listarGrupos
+    listarGrupos,
+    asignarProfesor,
+    insertarHorarios,
+    insertarRequerimientos
 } from './grupos.repository.js';
 
 export function altaGrupo(data) {
@@ -69,6 +72,56 @@ export async function listarGruposService() {
   return await listarGrupos();
 };
 
+export async function asignarProfesorGrupo(data) {
+
+  if (!data.idGrupo || !data.idProfesor) {
+    throw new Error("Grupo y profesor requeridos");
+  }
+
+  return await asignarProfesor({
+    idProfesor: data.idProfesor,
+    idGrupo: data.idGrupo,
+    carga: data.carga || 10,
+    esPrincipal: data.esPrincipal ?? 1
+  });
+}
+
+export async function agregarHorarioGrupo(idGrupo, horarios) {
+
+  if (!idGrupo) {
+    throw new Error("ID de grupo requerido");
+  }
+
+  if (!Array.isArray(horarios) || horarios.length === 0) {
+    throw new Error("Debe enviar horarios");
+  }
+
+  for (const h of horarios) {
+
+    if (!DIAS_VALIDOS.includes(h.dia.toLowerCase())) {
+      throw new Error(`Día inválido: ${h.dia}`);
+    }
+
+    if (!MODULOS_VALIDOS[h.modulo]) {
+      throw new Error(`Módulo inválido: ${h.modulo}`);
+    }
+  }
+
+  return await insertarHorarios(idGrupo, horarios);
+}
+
+export async function agregarRequerimientosGrupo(idGrupo, requerimientos) {
+
+  if (!idGrupo) {
+    throw new Error("ID de grupo requerido");
+  }
+
+  if (!Array.isArray(requerimientos) || requerimientos.length === 0) {
+    throw new Error("Debe enviar requerimientos");
+  }
+
+  return await insertarRequerimientos(idGrupo, requerimientos);
+}
 
 function validarGrupo(data) {
   if (!data) {
