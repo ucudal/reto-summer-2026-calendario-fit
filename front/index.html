@@ -1,46 +1,97 @@
 <!doctype html>
 <html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CalendarioFIT</title>
-  <link rel="stylesheet" href="./style.css" />
-</head>
-<body>
-  <!--
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CalendarioFIT</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <!--
     Este div es el contenedor principal de React.
     React va a "dibujar" toda la app adentro de este nodo.
   -->
-  <div id="root"></div>
+    <div id="root"></div>
 
-  <!-- React (libreria principal) -->
-  <script src="../node_modules/react/umd/react.development.js"></script>
+    <!-- React (libreria principal) -->
+    <script src="../node_modules/react/umd/react.development.js"></script>
 
-  <!-- ReactDOM (conecta React con el DOM real) -->
-  <script src="../node_modules/react-dom/umd/react-dom.development.js"></script>
+    <!-- ReactDOM (conecta React con el DOM real) -->
+    <script src="../node_modules/react-dom/umd/react-dom.development.js"></script>
 
-  <!-- Babel Standalone (permite usar JSX sin build tool) -->
-  <script src="../node_modules/@babel/standalone/babel.min.js"></script>
+    <!-- Babel Standalone (permite usar JSX sin build tool) -->
+    <script src="../node_modules/@babel/standalone/babel.min.js"></script>
 
-  <!-- Datos y utilidades globales de la app -->
-  <script type="text/babel" data-presets="env,react" src="./react/data.js"></script>
+    <!-- Datos y utilidades globales de la app -->
+    <script
+      type="text/babel"
+      data-presets="env,react"
+      src="./react/data.js"
+    ></script>
 
-  <!-- Componentes de UI -->
-  <script type="text/babel" data-presets="env,react" src="./react/components/HeaderBar.jsx"></script>
-  <script type="text/babel" data-presets="env,react" src="./react/components/Sidebar.jsx"></script>
-  <script type="text/babel" data-presets="env,react" src="./react/components/AlertsPanel.jsx"></script>
-  <script type="text/babel" data-presets="env,react" src="./react/components/ScheduleGrid.jsx"></script>
+    <!-- Componentes de UI -->
+    <script
+      type="text/babel"
+      data-presets="env,react"
+      src="./react/components/HeaderBar.jsx"
+    ></script>
+    <script
+      type="text/babel"
+      data-presets="env,react"
+      src="./react/components/Sidebar.jsx"
+    ></script>
+    <script
+      type="text/babel"
+      data-presets="env,react"
+      src="./react/components/AlertsPanel.jsx"
+    ></script>
+    <script
+      type="text/babel"
+      data-presets="env,react"
+      src="./react/components/ScheduleGrid.jsx"
+    ></script>
 
-  <!-- Modales -->
-  <script type="text/babel" data-presets="env,react" src="./react/modals/GroupsModal.jsx"></script>
-  <script type="text/babel" data-presets="env,react" src="./react/modals/SubjectGroupsModal.jsx"></script>
-  <script type="text/babel" data-presets="env,react" src="./react/modals/CreateNewGroupModal.jsx"></script>
-  <script type="text/babel" data-presets="env,react" src="./react/modals/CreateCareerModal.jsx"></script>
+    <!-- Modales -->
+    <script
+      type="text/babel"
+      data-presets="env,react"
+      src="./react/modals/GroupsModal.jsx"
+    ></script>
+    <script
+      type="text/babel"
+      data-presets="env,react"
+      src="./react/modals/SubjectGroupsModal.jsx"
+    ></script>
+    <script
+      type="text/babel"
+      data-presets="env,react"
+      src="./react/modals/CreateNewGroupModal.jsx"
+    ></script>
+    <script
+      type="text/babel"
+      data-presets="env,react"
+      src="./react/modals/CreateCareerModal.jsx"
+    ></script>
 
-  <!-- App principal -->
-  <script type="text/babel" data-presets="env,react" src="./react/App.jsx"></script>
+    <!-- Lógica de alertas -->
+    <script
+      type="text/babel"
+      data-presets="env,react"
+      src="./react/components/alerts.js"
+    ></script>
 
-  <!-- Punto de arranque: monta React en #root -->
-  <script type="text/babel" data-presets="env,react" src="./react/main.jsx"></script>
-</body>
+    <!-- App principal -->
+    <script
+      type="text/babel"
+      data-presets="env,react"
+      src="./react/App.jsx"
+    ></script>
+
+    <!-- Punto de arranque: monta React en #root -->
+    <script
+      type="text/babel"
+      data-presets="env,react"
+      src="./react/main.jsx"
+    ></script>
+  </body>
 </html>

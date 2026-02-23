@@ -88,8 +88,7 @@ function App() {
   const visibleCalendars = data.calendars.filter((calendar) => calendar.visible);
 
   // Lista plana de alertas de calendarios visibles.
-  const visibleAlerts = visibleCalendars.flatMap((calendar) => calendar.alerts);
-
+  const visibleAlerts = window.calculateAlerts(visibleCalendars);
   // Abre el modal para ver lista de grupos.
   function openGroupsListModal() {
     setIsGroupsListOpen(true);
@@ -309,6 +308,7 @@ function App() {
                 <ScheduleGrid
                   key={calendar.id}
                   calendar={calendar}
+                  alerts={visibleAlerts}
                   days={DAYS}
                   startHour={START_HOUR}
                   endHour={END_HOUR}

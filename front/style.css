@@ -1090,3 +1090,32 @@ body {
   border: 1px dashed #e0dcd4;
 }
 
+.event-alert-icons {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  gap: 2px;
+  font-size: 12px;
+}
+
+/* Íconos en el sidebar */
+.alert-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.alert-item--schedule_conflict {
+  background-color: #fff5f5;
+  border-left: 3px solid #e53e3e;
+}
+
+.alert-item--unconfirmed_teacher {
+  background-color: #ebf8ff;
+  border-left: 3px solid #3182ce;
+}

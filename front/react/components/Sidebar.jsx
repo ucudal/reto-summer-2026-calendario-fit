@@ -43,10 +43,12 @@ function Sidebar(props) {
           )}
 
           <ul className="alerts-list">
-            {alerts.map((message, index) => (
-              <li key={`${message}-${index}`} className="alert-item">
-                <span className="alert-icon">❗</span>
-                <div className="alert-text">{message}</div>
+            {alerts.map((alert, index) => (
+              <li key={index} className={`alert-item alert-item--${alert.type}`}>
+                <span className="alert-icon">
+                  {alert.type === "schedule_conflict" ? "⚠️" : "👤"}
+                </span>
+                <div className="alert-text">{alert.message}</div>
               </li>
             ))}
           </ul>
