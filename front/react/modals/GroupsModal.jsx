@@ -6,10 +6,29 @@
   - Permite agregar grupos de nuevas asignaturas.
 */
 
+function fetchMockSubjects() {
+  const mockSubjects = [
+    "Matematica Basica",
+    "Algebra",
+    "Programacion I",
+    "Programacion II",
+    "Arquitectura de Computadoras",
+    "Base de Datos",
+    "Sistemas Operativos",
+    "Fisica I"
+  ];
+
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(mockSubjects), 450);
+  });
+}
+
 function GroupsModal(props) {
   const {
     isOpen,
     calendars,
+    subjectsList,
+    selectedCareer,
     onClose,
     onAddNewSubject,
     onSelectSubject
@@ -17,14 +36,44 @@ function GroupsModal(props) {
 
   // Estado del buscador
   const [searchTerm, setSearchTerm] = React.useState("");
+  const [mockSubjects, setMockSubjects] = React.useState([]);
+  const [isLoadingSubjects, setIsLoadingSubjects] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const hasRealSubjects = Array.isArray(subjectsList) && subjectsList.length > 0;
+    if (hasRealSubjects) {
+      setMockSubjects([]);
+      setIsLoadingSubjects(false);
+      return;
+    }
+
+    let isMounted = true;
+    setIsLoadingSubjects(true);
+
+    fetchMockSubjects()
+      .then((subjectsFromMockBackend) => {
+        if (!isMounted) return;
+        setMockSubjects(subjectsFromMockBackend);
+      })
+      .finally(() => {
+        if (!isMounted) return;
+        setIsLoadingSubjects(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, subjectsList]);
 
   // Si no esta abierto, no renderiza nada.
   if (!isOpen) return null;
 
   // Extrae todas las asignaturas únicas con conteo de grupos
   function getSubjectsWithGroupCount() {
+    // Mapear asignaturas a grupos existentes
     const subjectMap = new Map();
-    
     calendars.forEach((calendar) => {
       calendar.classes.forEach((classItem) => {
         const title = classItem.title;
@@ -34,18 +83,21 @@ function GroupsModal(props) {
         subjectMap.get(title).push(classItem);
       });
     });
-    
-    // Convierte a array, ordena alfabéticamente y filtra por búsqueda
-    return Array.from(subjectMap.entries())
-      .map(([name, classes]) => ({
-        name,
-        groupCount: classes.length,
-        groups: classes
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .filter((subject) => 
-        subject.name.toLowerCase().startsWith(searchTerm.toLowerCase())
-      );
+
+    // Usar subjectsList para mostrar todas, protegiendo null/undefined
+    const hasRealSubjects = Array.isArray(subjectsList) && subjectsList.length > 0;
+    const safeSubjects = hasRealSubjects ? subjectsList : mockSubjects;
+    return safeSubjects
+      .map((name) => {
+        const groups = subjectMap.get(name) || [];
+        return {
+          name,
+          groupCount: groups.length,
+          groups
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }))
+      .filter((subject) => subject.name.toLowerCase().startsWith(searchTerm.toLowerCase()));
   }
 
   const subjects = getSubjectsWithGroupCount();
@@ -77,7 +129,9 @@ function GroupsModal(props) {
         </div>
 
         <div className="subjects-list">
-          {subjects.length === 0 ? (
+          {isLoadingSubjects ? (
+            <p className="no-subjects-message">Cargando asignaturas...</p>
+          ) : subjects.length === 0 ? (
             <p className="no-subjects-message">
               {calendars.length === 0 
                 ? "No hay calendarios disponibles" 
