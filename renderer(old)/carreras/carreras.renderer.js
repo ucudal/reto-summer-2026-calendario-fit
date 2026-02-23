@@ -49,7 +49,7 @@ async function guardarCarrera(event) {
   }
 
   if (!data.nombre) {
-    alert("El nombre es obligatorio");
+    await window.api.mensajes.mostrar("El nombre es obligatorio");
     return;
   }
 
@@ -70,7 +70,7 @@ async function guardarCarrera(event) {
     await listarCarreras();
   } catch (error) {
     console.error("Error al guardar carrera:", error);
-    alert(error.message);
+    await window.api.mensajes.mostrar(error.message);
   }
 }
 
@@ -82,7 +82,7 @@ tablaCarreras.addEventListener("click", async (e) => {
   const id = idAttr ? Number(idAttr) : null;
 
   if (btn.classList.contains("btn-eliminar")) {
-    const confirmar = confirm("¿Seguro que querés eliminar esta carrera?");
+    const confirmar = await window.api.mensajes.confirmar("¿Seguro que querés eliminar esta carrera?");
     if (!confirmar) return;
 
     try {
@@ -95,7 +95,7 @@ tablaCarreras.addEventListener("click", async (e) => {
       await listarCarreras();
     } catch (error) {
       console.error("Error al eliminar carrera:", error);
-      alert(error.message || error);
+      await window.api.mensajes.mostrar(error.message || error);
     }
 
     return;
@@ -114,7 +114,7 @@ tablaCarreras.addEventListener("click", async (e) => {
       inputNombre.focus();
     } catch (error) {
       console.error("Error al obtener carrera:", error);
-      alert(error.message || error);
+      await window.api.mensajes.mostrar(error.message || error);
     }
   }
 });
