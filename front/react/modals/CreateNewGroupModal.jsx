@@ -1,12 +1,12 @@
 /*
-  Componente: CreateGroupModal
+  Componente: CreateNewGroupModal
   Que hace:
-  - Muestra modal para crear un grupo.
+  - Muestra modal para crear un nuevo grupo.
   - Todos los campos se controlan desde App (props).
   - No guarda datos directamente, solo llama callbacks.
 */
 
-function CreateGroupModal(props) {
+function CreateNewGroupModal(props) {
   const {
     isOpen,
     form,
@@ -159,4 +159,4 @@ function CreateGroupModal(props) {
   );
 }
 
-window.CreateGroupModal = CreateGroupModal;
+window.CreateNewGroupModal = CreateNewGroupModal;

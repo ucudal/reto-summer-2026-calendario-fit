@@ -21,6 +21,10 @@ function App() {
   } = window.AppData;
   const createCareerModalFns = window.CreateCareerModalFunctions;
   const createGroupModalFns = window.CreateGroupModalFunctions;
+  const createTeacherModalFns = window.CreateTeacherModalFunctions;
+  const groupsModalFns = window.GroupsModalFunctions;
+  const subjectGroupsModalFns = window.SubjectGroupsModalFunctions;
+  const createNewGroupModalFns = window.CreateNewGroupModalFunctions;
 
   // Estado raiz con datos del proyecto.
   const [data, setData] = React.useState(cloneInitialData());
@@ -36,21 +40,30 @@ function App() {
   const [selectedCareer, setSelectedCareer] = React.useState(exampleCareers[0]);
   const [selectedPlan, setSelectedPlan] = React.useState(data.plans[0]);
 
-  // Estado visual del modal de grupo.
-  const [isCreateGroupOpen, setIsCreateGroupOpen] = React.useState(false);
+  // Estado visual del modal de lista de grupos.
+  const [isGroupsListOpen, setIsGroupsListOpen] = React.useState(false);
 
-  // Estado de error del modal de grupo.
+  // Estado visual del modal de gestión de grupos por asignatura.
+  const [isSubjectGroupsModalOpen, setIsSubjectGroupsModalOpen] = React.useState(false);
+
+  // Asignatura seleccionada para gestionar grupos.
+  const [selectedSubject, setSelectedSubject] = React.useState(null);
+
+  // Estado visual del modal de crear nuevo grupo.
+  const [isCreateNewGroupOpen, setIsCreateNewGroupOpen] = React.useState(false);
+
+  // Estado de error del modal de crear grupo.
   const [modalError, setModalError] = React.useState("");
 
   // Estado del formulario del modal.
   const [groupForm, setGroupForm] = React.useState({
-    subject: "",
-    days: [DAYS[0]],
-    year: "1",
-    fromTime: TIME_BLOCKS[0].start,
-    toTime: TIME_BLOCKS[0].end,
-    careers: [selectedCareer],
-    plans: (plansByCareer[selectedCareer] || [selectedPlan]).slice(0, 1)
+    ...createNewGroupModalFns.createInitialGroupForm({
+      DAYS,
+      TIME_BLOCKS,
+      selectedCareer,
+      selectedPlan,
+      plansByCareer
+    })
   });
 
   // Estado visual del modal de carrera.
@@ -62,6 +75,19 @@ function App() {
   // Formulario del modal de carrera.
   const [careerForm, setCareerForm] = React.useState({
     nombre: ""
+  });
+
+  // Estado visual del modal de docente.
+  const [isCreateTeacherOpen, setIsCreateTeacherOpen] = React.useState(false);
+
+  // Estado de error del modal de docente.
+  const [teacherModalError, setTeacherModalError] = React.useState("");
+
+  // Formulario del modal de docente.
+  const [teacherForm, setTeacherForm] = React.useState({
+    nombre: "",
+    apellido: "",
+    correo: ""
   });
 
   // Horas posibles para "desde".
@@ -87,26 +113,39 @@ function App() {
     return [...new Set(merged)];
   }, [groupForm.careers, plansByCareer]);
 
-  // Abre modal y limpia formulario.
-  function openCreateGroupModal() {
-    setGroupForm({
-      subject: "",
-      days: [DAYS[0]],
-      year: "1",
-      fromTime: TIME_BLOCKS[0].start,
-      toTime: TIME_BLOCKS[0].end,
-      careers: [selectedCareer],
-      plans: (plansByCareer[selectedCareer] || [selectedPlan]).slice(0, 1)
-    });
-    setModalError("");
-    setIsCreateGroupOpen(true);
-  }
+  const createNewGroupHandlers = createNewGroupModalFns.createNewGroupModalHandlers({
+    DAYS,
+    TIME_BLOCKS,
+    selectedCareer,
+    selectedPlan,
+    plansByCareer,
+    setGroupForm,
+    setModalError,
+    setIsCreateNewGroupOpen,
+    createGroupModalFns,
+    groupForm,
+    data,
+    availablePlansForGroup,
+    hourOptionsFrom,
+    hourOptionsTo,
+    timeToMinutes,
+    yearLabel,
+    findCalendarForYear,
+    addGroupToCalendar,
+    setData
+  });
 
-  // Cierra modal y limpia error.
-  function closeCreateGroupModal() {
-    setModalError("");
-    setIsCreateGroupOpen(false);
-  }
+  const subjectGroupsModalHandlers = subjectGroupsModalFns.createSubjectGroupsModalHandlers({
+    setIsGroupsListOpen,
+    setIsSubjectGroupsModalOpen,
+    setSelectedSubject
+  });
+
+  const groupsModalHandlers = groupsModalFns.createGroupsModalHandlers({
+    setIsGroupsListOpen,
+    openSubjectGroupsModal: subjectGroupsModalHandlers.openSubjectGroupsModal,
+    openCreateNewGroupModal: createNewGroupHandlers.openCreateNewGroupModal
+  });
 
   // Abre modal para crear carrera.
   function openCreateCareerModal() {
@@ -138,28 +177,30 @@ function App() {
     });
   }
 
-  // Actualiza 1 campo del formulario del modal.
-  function updateGroupForm(field, value) {
-    setGroupForm((prev) => ({ ...prev, [field]: value }));
+  // Abre modal para crear docente.
+  function openCreateTeacherModal() {
+    setTeacherForm({ nombre: "", apellido: "", correo: "" });
+    setTeacherModalError("");
+    setIsCreateTeacherOpen(true);
   }
 
-  // Agrega o quita 1 item de una lista de seleccion multiple del formulario.
-  function toggleGroupFormList(field, value, checked) {
-    setGroupForm((prev) => {
-      const current = Array.isArray(prev[field]) ? prev[field] : [];
-      const next = checked
-        ? [...new Set([...current, value])]
-        : current.filter((item) => item !== value);
+  // Cierra modal de docente.
+  function closeCreateTeacherModal() {
+    setTeacherModalError("");
+    setIsCreateTeacherOpen(false);
+  }
 
-      // Si cambiaron carreras, tambien hay que recalcular planes validos.
-      if (field === "careers") {
-        const validPlans = [...new Set(next.flatMap((career) => plansByCareer[career] || []))];
-        const filteredPlans = (prev.plans || []).filter((plan) => validPlans.includes(plan));
-        const plansToKeep = filteredPlans.length > 0 ? filteredPlans : validPlans.slice(0, 1);
-        return { ...prev, careers: next, plans: plansToKeep };
-      }
+  // Actualiza campo del modal de docente.
+  function updateTeacherForm(field, value) {
+    setTeacherForm((prev) => ({ ...prev, [field]: value }));
+  }
 
-      return { ...prev, [field]: next };
+  // Confirma creacion de docente (llama IPC a backend y guarda en BD).
+  async function confirmCreateTeacher() {
+    await createTeacherModalFns.confirmCreateTeacher({
+      teacherForm,
+      setTeacherModalError,
+      closeCreateTeacherModal
     });
   }
 
@@ -214,49 +255,30 @@ function App() {
     };
   }
 
-  // Confirma creacion del grupo en memoria.
-  function confirmCreateGroup() {
-    createGroupModalFns.confirmCreateGroup({
-      groupForm,
-      data,
-      availablePlansForGroup,
-      hourOptionsFrom,
-      hourOptionsTo,
-      timeToMinutes,
-      setModalError,
-      yearLabel,
-      findCalendarForYear,
-      addGroupToCalendar,
-      setData,
-      closeCreateGroupModal
-    });
-  }
-
   return (
     <>
-      <HeaderBar />
+      <HeaderBar
+        careers={careers}
+        plans={data.plans}
+        selectedCareer={selectedCareer}
+        selectedPlan={selectedPlan}
+        onCareerChange={setSelectedCareer}
+        onPlanChange={setSelectedPlan}
+        onOpenCreateCareer={openCreateCareerModal}
+        onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
+      />
 
       <main className="page">
-        <Toolbar
-          careers={careers}
-          plans={data.plans}
-          selectedCareer={selectedCareer}
-          selectedPlan={selectedPlan}
-          onCareerChange={setSelectedCareer}
-          onPlanChange={setSelectedPlan}
-          onOpenCreateCareer={openCreateCareerModal}
-          onOpenCreateGroup={openCreateGroupModal}
-        />
-
         <section className="layout">
           <Sidebar
             calendars={data.calendars}
             onToggleCalendarVisible={toggleCalendarVisible}
-            onOpenCreateGroup={openCreateGroupModal}
+            onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
+            onOpenCreateTeacher={openCreateTeacherModal}
+            alerts={visibleAlerts}
           />
 
           <section className="main-column">
-            <AlertsPanel alerts={visibleAlerts} />
 
             <div className="schedules-root">
               {visibleCalendars.length === 0 && (
@@ -282,8 +304,25 @@ function App() {
         </section>
       </main>
 
-      <CreateGroupModal
-        isOpen={isCreateGroupOpen}
+      <GroupsModal
+        isOpen={isGroupsListOpen}
+        calendars={visibleCalendars}
+        onClose={groupsModalHandlers.closeGroupsListModal}
+        onAddNewSubject={groupsModalHandlers.handleAddNewSubjectFromList}
+        onSelectSubject={groupsModalHandlers.openSubjectGroupsModal}
+      />
+
+      <SubjectGroupsModal
+        isOpen={isSubjectGroupsModalOpen}
+        subject={selectedSubject}
+        careers={careers}
+        days={DAYS}
+        onBack={subjectGroupsModalHandlers.backToGroupsList}
+        onClose={subjectGroupsModalHandlers.closeSubjectGroupsModal}
+      />
+
+      <CreateNewGroupModal
+        isOpen={isCreateNewGroupOpen}
         form={groupForm}
         years={["1", "2", "3"]}
         days={DAYS}
@@ -291,10 +330,10 @@ function App() {
         hourOptionsTo={hourOptionsTo}
         careerOptions={careers}
         planOptions={availablePlansForGroup}
-        onClose={closeCreateGroupModal}
-        onChange={updateGroupForm}
-        onToggleList={toggleGroupFormList}
-        onSubmit={confirmCreateGroup}
+        onClose={createNewGroupHandlers.closeCreateNewGroupModal}
+        onChange={createNewGroupHandlers.updateGroupForm}
+        onToggleList={createNewGroupHandlers.toggleGroupFormList}
+        onSubmit={createNewGroupHandlers.confirmCreateGroup}
         errorMessage={modalError}
       />
 
@@ -305,6 +344,15 @@ function App() {
         onClose={closeCreateCareerModal}
         onChange={updateCareerForm}
         onSubmit={confirmCreateCareer}
+      />
+
+      <CreateTeacherModal
+        isOpen={isCreateTeacherOpen}
+        form={teacherForm}
+        errorMessage={teacherModalError}
+        onClose={closeCreateTeacherModal}
+        onChange={updateTeacherForm}
+        onSubmit={confirmCreateTeacher}
       />
     </>
   );
