@@ -206,7 +206,7 @@ function SubjectGroupsModal(props) {
 
         {/* Sección para agregar nuevo horario */}
         <div className="subject-schedule-form">
-          <div className="form-new-group-header">+ Nuevo grupo</div>
+          <div className="form-new-group-header">+ Nuevo horario</div>
 
           <div className="form-section">
             <div className="days-selector">
@@ -294,7 +294,7 @@ function SubjectGroupsModal(props) {
                   {schedule.groups.length === 0 ? (
                     <button
                       type="button"
-                      className="add-first-group-btn"
+                      className="modules-dropdown-btn"
                       onClick={() => addGroupToSchedule(schedule.id)}
                     >
                       + Crear primer grupo
@@ -306,7 +306,7 @@ function SubjectGroupsModal(props) {
                           <span className="group-name">{group.name}</span>
                           
                           <select
-                            className="group-select group-teacher-select"
+                            className="modules-dropdown-btn group-teacher-select"
                             value={group.teacher}
                             onChange={(e) =>
                               updateGroup(
@@ -323,7 +323,7 @@ function SubjectGroupsModal(props) {
                           </select>
 
                           <select
-                            className="group-select group-careers-select"
+                            className="modules-dropdown-btn group-careers-select"
                             value={group.assignedCareers.length === careers.length ? "all" : ""}
                             onChange={(e) => {
                               if (e.target.value === "all") {
@@ -366,7 +366,7 @@ function SubjectGroupsModal(props) {
 
                       <button
                         type="button"
-                        className="add-another-group-btn"
+                        className="modules-dropdown-btn"
                         onClick={() => addGroupToSchedule(schedule.id)}
                       >
                         + Nuevo grupo
@@ -380,12 +380,12 @@ function SubjectGroupsModal(props) {
 
                 {/* Sección de días y módulos */}
                 <div className="schedule-footer">
-                  <div className="schedule-card-days-row">
+                  <div className="days-selector">
                     {days.map((day) => (
                       <button
                         key={day}
                         type="button"
-                        className={`schedule-day-chip ${
+                        className={`day-btn ${
                           schedule.days.includes(day) ? "active" : ""
                         }`}
                         onClick={() => {
@@ -400,9 +400,9 @@ function SubjectGroupsModal(props) {
                     ))}
                   </div>
 
-                  <div className="schedule-modules-footer">
+                  <div className="selected-modules-display">
                     <select
-                      className="modules-select"
+                      className="modules-dropdown-btn"
                       value=""
                       onChange={(e) => {
                         const moduleId = parseInt(e.target.value);
@@ -422,12 +422,12 @@ function SubjectGroupsModal(props) {
                       ))}
                     </select>
 
-                    <div className="selected-modules-inline">
+                    <div className="selected-modules-display">
                       {schedule.modules.map((module) => (
                         <button
                           key={module.id}
                           type="button"
-                          className="module-chip"
+                          className="selected-module-chip"
                           onClick={() => {
                             const newIds = schedule.modules
                               .filter((m) => m.id !== module.id)
