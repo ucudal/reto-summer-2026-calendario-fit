@@ -111,10 +111,43 @@ function App() {
     setIsCreateNewGroupOpen(true);
   }
 
+  // Alias para mantener nombres consistentes en callbacks.
+  function openCreateNewGroupModal() {
+    openCreateGroupModal();
+  }
+
   // Cierra el modal de crear nuevo grupo.
   function closeCreateNewGroupModal() {
     setModalError("");
     setIsCreateNewGroupOpen(false);
+  }
+
+  // Abre/cierra listado de asignaturas con grupos.
+  function openGroupsListModal() {
+    setIsGroupsListOpen(true);
+  }
+
+  function closeGroupsListModal() {
+    setIsGroupsListOpen(false);
+  }
+
+  // Abre modal de grupos de una asignatura especifica.
+  function openSubjectGroupsModal(subjectName) {
+    setSelectedSubject(subjectName);
+    setIsSubjectGroupsModalOpen(true);
+    setIsGroupsListOpen(false);
+  }
+
+  // Cierra modal de grupos por asignatura.
+  function closeSubjectGroupsModal() {
+    setIsSubjectGroupsModalOpen(false);
+    setSelectedSubject(null);
+  }
+
+  // Vuelve de detalle de asignatura al listado general.
+  function backToGroupsList() {
+    closeSubjectGroupsModal();
+    openGroupsListModal();
   }
 
   // Abre el modal de crear nuevo grupo desde la lista de grupos.
@@ -229,8 +262,6 @@ function App() {
     };
   }
 
-    closeCreateNewGroupModal();
-    openGroupsListModal();
   // Confirma creacion del grupo en memoria.
   function confirmCreateGroup() {
     createGroupModalFns.confirmCreateGroup({
@@ -245,7 +276,7 @@ function App() {
       findCalendarForYear,
       addGroupToCalendar,
       setData,
-      closeCreateGroupModal
+      closeCreateGroupModal: closeCreateNewGroupModal
     });
   }
 
@@ -323,7 +354,7 @@ function App() {
         hourOptionsTo={hourOptionsTo}
         careerOptions={careers}
         planOptions={availablePlansForGroup}
-        onClose={closeCreateGroupModal}
+        onClose={closeCreateNewGroupModal}
         onChange={updateGroupForm}
         onToggleList={toggleGroupFormList}
         onSubmit={confirmCreateGroup}
