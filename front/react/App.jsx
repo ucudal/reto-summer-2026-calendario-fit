@@ -9,21 +9,22 @@
 function App() {
   const {
     DAYS,
-    START_HOUR,
-    END_HOUR,
+    TIME_BLOCKS,
     ROW_HEIGHT,
     HEADER_HEIGHT,
     TIME_COL_WIDTH,
     COLOR_BY_TYPE,
     cloneInitialData,
     timeToMinutes,
-    formatHour,
     yearFromCalendarName,
     yearLabel
   } = window.AppData;
+  const createCareerModalFns = window.CreateCareerModalFunctions;
+  const createGroupModalFns = window.CreateGroupModalFunctions;
 
   // Estado raiz con datos del proyecto.
   const [data, setData] = React.useState(cloneInitialData());
+  const plansByCareer = data.careerPlans || {};
 
   // Carreras de ejemplo actuales (fallback si DB no tiene datos).
   const exampleCareers = data.careers;
@@ -53,10 +54,12 @@ function App() {
   // Estado del formulario del modal.
   const [groupForm, setGroupForm] = React.useState({
     subject: "",
-    day: DAYS[0],
+    days: [DAYS[0]],
     year: "1",
-    fromTime: formatHour(START_HOUR),
-    toTime: formatHour(START_HOUR + 2)
+    fromTime: TIME_BLOCKS[0].start,
+    toTime: TIME_BLOCKS[0].end,
+    careers: [selectedCareer],
+    plans: (plansByCareer[selectedCareer] || [selectedPlan]).slice(0, 1)
   });
 
   // Estado visual del modal de carrera.
@@ -72,70 +75,79 @@ function App() {
 
   // Horas posibles para "desde".
   const hourOptionsFrom = React.useMemo(() => {
-    const list = [];
-    for (let hour = START_HOUR; hour < END_HOUR; hour += 1) list.push(formatHour(hour));
-    return list;
-  }, [START_HOUR, END_HOUR, formatHour]);
+    return TIME_BLOCKS.map((block) => block.start);
+  }, [TIME_BLOCKS]);
 
   // Horas posibles para "hasta".
   const hourOptionsTo = React.useMemo(() => {
-    const list = [];
-    for (let hour = START_HOUR + 1; hour <= END_HOUR; hour += 1) list.push(formatHour(hour));
-    return list;
-  }, [START_HOUR, END_HOUR, formatHour]);
+    return TIME_BLOCKS.map((block) => block.end);
+  }, [TIME_BLOCKS]);
 
   // Calendarios visibles para pintar y alertar.
   const visibleCalendars = data.calendars.filter((calendar) => calendar.visible);
 
   // Lista plana de alertas de calendarios visibles.
-  const visibleAlerts = window.calculateAlerts(visibleCalendars);
-  // Abre el modal para ver lista de grupos.
-  function openGroupsListModal() {
-    setIsGroupsListOpen(true);
-  }
+  const visibleAlerts = visibleCalendars.flatMap((calendar) => calendar.alerts);
 
-  // Cierra el modal de lista de grupos.
-  function closeGroupsListModal() {
-    setIsGroupsListOpen(false);
-  }
+  // Devuelve los planes habilitados para las carreras elegidas en el modal.
+  const availablePlansForGroup = React.useMemo(() => {
+    const selectedCareers = groupForm.careers || [];
+    const merged = selectedCareers.flatMap((career) => plansByCareer[career] || []);
+    return [...new Set(merged)];
+  }, [groupForm.careers, plansByCareer]);
 
-  // Abre el modal de gestión de grupos por asignatura.
-  function openSubjectGroupsModal(subjectName) {
-    setSelectedSubject(subjectName);
-    setIsSubjectGroupsModalOpen(true);
-    setIsGroupsListOpen(false);
-  }
-
-  // Cierra el modal de gestión de grupos por asignatura.
-  function closeSubjectGroupsModal() {
-    setIsSubjectGroupsModalOpen(false);
-    setSelectedSubject(null);
-  }
-
-  // Vuelve a la lista de grupos desde gestión de una asignatura.
-  function backToGroupsList() {
-    setIsSubjectGroupsModalOpen(false);
-    setSelectedSubject(null);
-    setIsGroupsListOpen(true);
-  }
-
-  // Abre el modal para crear un nuevo grupo.
-  function openCreateNewGroupModal() {
+  // Abre modal y limpia formulario.
+  function openCreateGroupModal() {
     setGroupForm({
       subject: "",
-      day: DAYS[0],
+      days: [DAYS[0]],
       year: "1",
-      fromTime: formatHour(START_HOUR),
-      toTime: formatHour(START_HOUR + 2)
+      fromTime: TIME_BLOCKS[0].start,
+      toTime: TIME_BLOCKS[0].end,
+      careers: [selectedCareer],
+      plans: (plansByCareer[selectedCareer] || [selectedPlan]).slice(0, 1)
     });
     setModalError("");
     setIsCreateNewGroupOpen(true);
+  }
+
+  // Alias para mantener nombres consistentes en callbacks.
+  function openCreateNewGroupModal() {
+    openCreateGroupModal();
   }
 
   // Cierra el modal de crear nuevo grupo.
   function closeCreateNewGroupModal() {
     setModalError("");
     setIsCreateNewGroupOpen(false);
+  }
+
+  // Abre/cierra listado de asignaturas con grupos.
+  function openGroupsListModal() {
+    setIsGroupsListOpen(true);
+  }
+
+  function closeGroupsListModal() {
+    setIsGroupsListOpen(false);
+  }
+
+  // Abre modal de grupos de una asignatura especifica.
+  function openSubjectGroupsModal(subjectName) {
+    setSelectedSubject(subjectName);
+    setIsSubjectGroupsModalOpen(true);
+    setIsGroupsListOpen(false);
+  }
+
+  // Cierra modal de grupos por asignatura.
+  function closeSubjectGroupsModal() {
+    setIsSubjectGroupsModalOpen(false);
+    setSelectedSubject(null);
+  }
+
+  // Vuelve de detalle de asignatura al listado general.
+  function backToGroupsList() {
+    closeSubjectGroupsModal();
+    openGroupsListModal();
   }
 
   // Abre el modal de crear nuevo grupo desde la lista de grupos.
@@ -164,27 +176,39 @@ function App() {
 
   // Crea carrera solo en frontend (sin backend).
   function confirmCreateCareer() {
-    const nombre = String(careerForm.nombre || "").trim();
-
-    if (!nombre) {
-      setCareerModalError("El nombre de la carrera es obligatorio.");
-      return;
-    }
-
-    if (careers.includes(nombre)) {
-      setCareerModalError("Esa carrera ya existe.");
-      return;
-    }
-
-    const merged = [...new Set([...careers, nombre])];
-    setCareers(merged);
-    setSelectedCareer(nombre);
-    closeCreateCareerModal();
+    createCareerModalFns.confirmCreateCareer({
+      careerForm,
+      careers,
+      setCareerModalError,
+      setCareers,
+      setSelectedCareer,
+      closeCreateCareerModal
+    });
   }
 
   // Actualiza 1 campo del formulario del modal.
   function updateGroupForm(field, value) {
     setGroupForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  // Agrega o quita 1 item de una lista de seleccion multiple del formulario.
+  function toggleGroupFormList(field, value, checked) {
+    setGroupForm((prev) => {
+      const current = Array.isArray(prev[field]) ? prev[field] : [];
+      const next = checked
+        ? [...new Set([...current, value])]
+        : current.filter((item) => item !== value);
+
+      // Si cambiaron carreras, tambien hay que recalcular planes validos.
+      if (field === "careers") {
+        const validPlans = [...new Set(next.flatMap((career) => plansByCareer[career] || []))];
+        const filteredPlans = (prev.plans || []).filter((plan) => validPlans.includes(plan));
+        const plansToKeep = filteredPlans.length > 0 ? filteredPlans : validPlans.slice(0, 1);
+        return { ...prev, careers: next, plans: plansToKeep };
+      }
+
+      return { ...prev, [field]: next };
+    });
   }
 
   // Cambia visibilidad de calendario por id.
@@ -209,68 +233,51 @@ function App() {
     return calendarsOfYear.find((calendar) => calendar.visible) || calendarsOfYear[0];
   }
 
-  // Validaciones simples de horario.
-  function validateTimes(fromTime, toTime) {
-    const fromMinutes = timeToMinutes(fromTime);
-    const toMinutes = timeToMinutes(toTime);
-    const minMinutes = START_HOUR * 60;
-    const maxMinutes = END_HOUR * 60;
+  /*
+    Funcion simple para principiantes:
+    - Recibe el estado actual (prevData)
+    - Busca el calendario del anio elegido
+    - Agrega el nuevo grupo al array "classes" de ese calendario
+    - Devuelve el nuevo estado
+  */
+  function addGroupToCalendar(prevData, selectedYear, newGroups) {
+    const targetCalendar = findCalendarForYear(selectedYear, prevData.calendars);
 
-    if (fromMinutes >= toMinutes) return "El horario 'desde' debe ser menor que 'hasta'.";
-    if (fromMinutes < minMinutes || toMinutes > maxMinutes) {
-      return `El horario debe estar entre ${START_HOUR}:00 y ${END_HOUR}:00.`;
-    }
-    return "";
+    // Si no existe calendario para ese anio, no cambia nada.
+    if (!targetCalendar) return prevData;
+
+    return {
+      ...prevData,
+      calendars: prevData.calendars.map((calendar) => {
+        if (calendar.id !== targetCalendar.id) return calendar;
+
+        // Importante: NO reemplaza grupos existentes.
+        // Siempre agrega al final, asi pueden coexistir varios
+        // en el mismo dia y horario.
+        return {
+          ...calendar,
+          classes: [...calendar.classes, ...newGroups]
+        };
+      })
+    };
   }
 
   // Confirma creacion del grupo en memoria.
   function confirmCreateGroup() {
-    const subject = groupForm.subject.trim();
-    const day = groupForm.day;
-    const year = groupForm.year;
-    const fromTime = groupForm.fromTime;
-    const toTime = groupForm.toTime;
-
-    if (!subject) {
-      setModalError("La materia es obligatoria.");
-      return;
-    }
-
-    const timeError = validateTimes(fromTime, toTime);
-    if (timeError) {
-      setModalError(timeError);
-      return;
-    }
-
-    const target = findCalendarForYear(year, data.calendars);
-    if (!target) {
-      setModalError(`No existe un calendario para ${yearLabel(year)} anio.`);
-      return;
-    }
-
-    const newClass = {
-      title: subject,
-      group: "Grupo creado manualmente",
-      detail: "Sin aula asignada",
-      day,
-      start: fromTime,
-      end: toTime,
-      type: "practice"
-    };
-
-    setData((prev) => ({
-      ...prev,
-      calendars: prev.calendars.map((calendar) => {
-        if (calendar.id !== target.id) return calendar;
-        return {
-          ...calendar,
-          classes: [...calendar.classes, newClass]
-        };
-      })
-    }));
-
-    closeCreateNewGroupModal();
-    openGroupsListModal();
+    createGroupModalFns.confirmCreateGroup({
+      groupForm,
+      data,
+      availablePlansForGroup,
+      hourOptionsFrom,
+      hourOptionsTo,
+      timeToMinutes,
+      setModalError,
+      yearLabel,
+      findCalendarForYear,
+      addGroupToCalendar,
+      setData,
+      closeCreateGroupModal: closeCreateNewGroupModal
+    });
   }
 
   return (
@@ -310,13 +317,11 @@ function App() {
                   calendar={calendar}
                   alerts={visibleAlerts}
                   days={DAYS}
-                  startHour={START_HOUR}
-                  endHour={END_HOUR}
+                  timeBlocks={TIME_BLOCKS}
                   rowHeight={ROW_HEIGHT}
                   headerHeight={HEADER_HEIGHT}
                   timeColWidth={TIME_COL_WIDTH}
                   colorByType={COLOR_BY_TYPE}
-                  timeToMinutes={timeToMinutes}
                 />
               ))}
             </div>
@@ -348,8 +353,11 @@ function App() {
         days={DAYS}
         hourOptionsFrom={hourOptionsFrom}
         hourOptionsTo={hourOptionsTo}
+        careerOptions={careers}
+        planOptions={availablePlansForGroup}
         onClose={closeCreateNewGroupModal}
         onChange={updateGroupForm}
+        onToggleList={toggleGroupFormList}
         onSubmit={confirmCreateGroup}
         errorMessage={modalError}
       />
