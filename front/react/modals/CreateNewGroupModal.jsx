@@ -14,8 +14,11 @@ function CreateNewGroupModal(props) {
     days,
     hourOptionsFrom,
     hourOptionsTo,
+    careerOptions,
+    planOptions,
     onClose,
     onChange,
+    onToggleList,
     onSubmit,
     errorMessage
   } = props;
@@ -48,18 +51,24 @@ function CreateNewGroupModal(props) {
             />
           </label>
 
-          <label className="form-label">
-            Dia
-            <select
-              className="form-input"
-              value={form.day}
-              onChange={(event) => onChange("day", event.target.value)}
-            >
-              {days.map((day) => (
-                <option key={day} value={day}>{day}</option>
-              ))}
-            </select>
-          </label>
+          <fieldset className="form-label form-fieldset">
+            <legend className="form-legend">Dias (puedes elegir varios)</legend>
+            <div className="checkbox-list">
+              {days.map((day) => {
+                const checked = (form.days || []).includes(day);
+                return (
+                  <label key={day} className="checkbox-row">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(event) => onToggleList("days", day, event.target.checked)}
+                    />
+                    <span>{day}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
 
           <label className="form-label">
             Anio
@@ -99,6 +108,47 @@ function CreateNewGroupModal(props) {
               ))}
             </select>
           </label>
+
+          <fieldset className="form-label form-fieldset">
+            <legend className="form-legend">Carreras (puedes elegir varias)</legend>
+            <div className="checkbox-list">
+              {careerOptions.map((career) => {
+                const checked = (form.careers || []).includes(career);
+                return (
+                  <label key={career} className="checkbox-row">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(event) => onToggleList("careers", career, event.target.checked)}
+                    />
+                    <span>{career}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          <fieldset className="form-label form-fieldset">
+            <legend className="form-legend">Planes (segun carreras elegidas)</legend>
+            <div className="checkbox-list">
+              {planOptions.length === 0 && (
+                <div className="checkbox-empty">Primero selecciona una carrera con planes.</div>
+              )}
+              {planOptions.map((plan) => {
+                const checked = (form.plans || []).includes(plan);
+                return (
+                  <label key={plan} className="checkbox-row">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(event) => onToggleList("plans", plan, event.target.checked)}
+                    />
+                    <span>{plan}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
 
           {errorMessage && <div className="modal-error">{errorMessage}</div>}
 

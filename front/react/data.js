@@ -1,6 +1,6 @@
 /*
   Este archivo guarda:
-  1) Constantes de calendario (dias, hora inicio, hora fin)
+  1) Constantes de calendario (dias y bloques horarios)
   2) Colores para los bloques
   3) Datos iniciales de la app
   4) Funciones utilitarias simples
@@ -9,14 +9,24 @@
 // Dias visibles en la grilla semanal.
 const DAYS = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB"];
 
-// Hora minima visible en calendario.
-const START_HOUR = 8;
+// Bloques fijos de horario para todos los dias.
+const TIME_BLOCKS = [
+  { start: "08:00", end: "09:20", label: "08:00 - 09:20" },
+  { start: "09:30", end: "10:50", label: "09:30 - 10:50" },
+  { start: "11:00", end: "12:20", label: "11:00 - 12:20" },
+  { start: "12:25", end: "13:45", label: "12:25 - 13:45" },
+  { start: "16:50", end: "18:10", label: "16:50 - 18:10" },
+  { start: "18:15", end: "19:35", label: "18:15 - 19:35" },
+  { start: "19:45", end: "21:05", label: "19:45 - 21:05" },
+  { start: "21:15", end: "22:35", label: "21:15 - 22:35" }
+];
 
-// Hora maxima visible en calendario.
-const END_HOUR = 20;
+// Para dibujar la grilla "como antes", usamos rango horario continuo.
+const START_HOUR = 8;
+const END_HOUR = 23;
 
 // Alto de cada fila de hora (en pixeles).
-const ROW_HEIGHT = 44;
+const ROW_HEIGHT = 88;
 
 // Alto de la fila de encabezado de dias (en pixeles).
 const HEADER_HEIGHT = 28;
@@ -35,6 +45,11 @@ const COLOR_BY_TYPE = {
 const INITIAL_DATA = {
   careers: ["Ingenieria en Sistemas", "Ingenieria Industrial"],
   plans: ["Plan 2021", "Plan 2024"],
+  // Relacion simple carrera -> planes habilitados.
+  careerPlans: {
+    "Ingenieria en Sistemas": ["Plan 2021", "Plan 2024"],
+    "Ingenieria Industrial": ["Plan 2021"]
+  },
   calendars: [
     {
       id: "s1y1",
@@ -48,7 +63,7 @@ const INITIAL_DATA = {
           detail: "Sistemas/Industrial | Aula 200",
           day: "MIE",
           start: "08:00",
-          end: "10:00",
+          end: "09:20",
           type: "theory"
         },
         {
@@ -56,8 +71,8 @@ const INITIAL_DATA = {
           group: "G1 - Alicia Mora",
           detail: "Aula 330",
           day: "VIE",
-          start: "09:00",
-          end: "11:00",
+          start: "18:15",
+          end: "19:35",
           type: "practice"
         },
         {
@@ -65,8 +80,8 @@ const INITIAL_DATA = {
           group: "G1 - Sin confirmar",
           detail: "Lab 3",
           day: "MAR",
-          start: "12:00",
-          end: "14:00",
+          start: "11:00",
+          end: "12:20",
           type: "lab"
         }
       ],
@@ -86,8 +101,8 @@ const INITIAL_DATA = {
           group: "G1 - Compartida",
           detail: "Aula 206",
           day: "LUN",
-          start: "10:00",
-          end: "12:00",
+          start: "09:30",
+          end: "10:50",
           type: "theory"
         },
         {
@@ -95,8 +110,8 @@ const INITIAL_DATA = {
           group: "G1 - Docente a confirmar",
           detail: "Lab 1",
           day: "JUE",
-          start: "14:00",
-          end: "16:00",
+          start: "12:25",
+          end: "13:45",
           type: "lab"
         }
       ],
@@ -166,6 +181,7 @@ function yearLabel(year) {
 // Se expone todo en un solo objeto global para mantenerlo simple.
 window.AppData = {
   DAYS,
+  TIME_BLOCKS,
   START_HOUR,
   END_HOUR,
   ROW_HEIGHT,
