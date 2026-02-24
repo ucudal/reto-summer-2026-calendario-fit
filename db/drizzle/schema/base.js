@@ -121,7 +121,7 @@ export const grupos = sqliteTable(
     "grupos",
     {
         id: integer("id").primaryKey({autoIncrement: true}),
-        codigo: text("codigo").notNull(),
+        codigo: text("codigo"),
         idMateria: integer("id_materia").notNull().references(() => materias.id, {
             onDelete: "restrict", //@todo restrict esta bien?
             onUpdate: "cascade"

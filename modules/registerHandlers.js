@@ -4,6 +4,7 @@ import { registrarMensajesHandlers } from "./mensajes/mensajes.handlers.js";
 import { registerProfesorGrupoHandlers } from "./profesorGrupo/profesorGrupo.handlers.js";
 import { registerCarrerasHandlers } from "./carreras/carreras.handlers.js";
 import {registerExcelHandlers} from "./excel/excel.handler.js";
+import { registerGruposHandlers } from "./grupos/grupos.handlers.js";
 // más adelante:
 // import { registerAlumnosHandlers } from "./alumnos/alumnos.handlers.js";
 
@@ -13,6 +14,7 @@ export function registerAllHandlers() {
   registrarMensajesHandlers();
   registerProfesorGrupoHandlers();
   registerCarrerasHandlers();
+  registerGruposHandlers();
   registerExcelHandlers();
   // registerAlumnosHandlers();
 }
