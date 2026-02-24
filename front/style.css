@@ -739,6 +739,21 @@ body {
   font-size: 16px;
 }
 
+/* Estilos del modal azul para crear docentes */
+.create-teacher-modal .group-form {
+  gap: 12px;
+}
+
+.create-teacher-modal .form-label {
+  color: #ffffff;
+}
+
+.create-teacher-modal .form-input {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: #ffffff;
+  color: #25343a;
+}
+
 /* Estilos para SubjectGroupsModal */
 
 .groups-list-modal .modal-back-btn {
@@ -775,7 +790,7 @@ body {
 
 .form-section {
   display: grid;
-  gap: 8px;
+  gap: 20px;
 }
 
 .days-selector {
@@ -825,6 +840,9 @@ body {
   transition: all 0.2s;
   width: fit-content;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  margin-top: 10px;
+  margin-left: 10px;
+  margin-right: 10px;
 }
 
 .modules-dropdown-btn:hover {
@@ -1030,6 +1048,13 @@ body {
   font-size: 13px;
 }
 
+.group-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 8px;
+}
+
 .group-delete-btn {
   background: transparent;
   border: none;
@@ -1127,6 +1152,195 @@ body {
   border: 1px dashed #e0dcd4;
 }
 
+/* SubjectGroupsModal specific styles */
+
+.subject-groups-modal-container {
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+.subject-groups-modal-scroll {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.schedule-groups-section {
+  padding: 16px;
+}
+
+.group-card-wrapper {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.group-card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.group-card-title {
+  margin: 0;
+  font-size: 1.1em;
+  font-weight: 600;
+}
+
+.group-delete-btn-inline {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.3em;
+  padding: 4px;
+}
+
+.group-delete-btn-inline:hover {
+  color: #e74c3c;
+  transform: scale(1.1);
+}
+
+.group-grid-3col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.teacher-search-container {
+  position: relative;
+}
+
+.teacher-search-input {
+  width: 100%;
+  padding: 8px 12px;
+}
+
+.teacher-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-height: 40px;
+}
+
+.teacher-empty-message {
+  color: #999;
+  font-size: 0.9em;
+}
+
+.teacher-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  background: #A69E87;
+  border-radius: 16px;
+  font-size: 0.85em;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+
+}
+
+.teacher-chip-remove-btn {
+  margin-left: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+.teacher-chip-remove-btn:hover {
+  color: #e74c3c;
+}
+
+.career-dropdown-container {
+  position: relative;
+}
+
+.career-dropdown-btn-full {
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.dropdown-menu-absolute {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-top: 4px;
+  min-width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.dropdown-item-block {
+  display: block;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.dropdown-item-block:hover {
+  background: #f5f5f5;
+}
+
+.dropdown-item-block input[type="checkbox"] {
+  margin-right: 8px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.dropdown-item-bold {
+  font-weight: bold;
+  border-bottom: 1px solid #eee;
+}
+
+.dropdown-empty-message {
+  padding: 8px 12px;
+  color: #999;
+}
+
+.new-group-btn-spaced {
+  margin-bottom: 16px;
+}
+
+.schedule-divider {
+  height: 1px;
+  background: #e0dcd4;
+  margin: 16px 0;
+}
+
+.schedule-footer {
+  padding: 16px;
+  display: grid;
+  gap: 16px;
+}
+
+.time-select-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.subject-groups-modal-footer {
+  padding: 16px;
+  background: #ffffff;
+  border-radius: 0 0 16px 16px;
+  text-align: center;
+  border-top: 1px solid #e0dcd4;
+}
 .event-alert-icons {
   position: absolute;
   top: 4px;
