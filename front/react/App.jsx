@@ -90,6 +90,18 @@ function App() {
     correo: ""
   });
 
+  // Estado visual del modal de semestre.
+  const [isCreateSemesterOpen, setIsCreateSemesterOpen] = React.useState(false);
+
+  // Estado de error del modal de semestre.
+  const [semesterModalError, setSemesterModalError] = React.useState("");
+
+  // Formulario del modal de semestre.
+  const [semesterForm, setSemesterForm] = React.useState({
+    sourceLectiveTerm: "",
+    newLectiveName: ""
+  });
+
   // Horas posibles para "desde".
   const hourOptionsFrom = React.useMemo(() => {
     return TIME_BLOCKS.map((block) => block.start);
@@ -116,6 +128,11 @@ function App() {
 
   // Lista plana de alertas de calendarios visibles.
   const visibleAlerts = visibleCalendars.flatMap((calendar) => calendar.alerts);
+
+  // Semestres disponibles para copiar (todas las carreras/planes).
+  const availableSemesters = React.useMemo(() => {
+    return data.calendars;
+  }, [data.calendars]);
 
   // Devuelve los planes habilitados para las carreras elegidas en el modal.
   const availablePlansForGroup = React.useMemo(() => {
@@ -217,6 +234,88 @@ function App() {
     });
   }
 
+  // Abre modal para crear semestre.
+  function openCreateSemesterModal() {
+    setSemesterForm({
+      sourceLectiveTerm: "",
+      newLectiveName: ""
+    });
+    setSemesterModalError("");
+    setIsCreateSemesterOpen(true);
+  }
+
+  // Cierra modal de semestre.
+  function closeCreateSemesterModal() {
+    setSemesterModalError("");
+    setIsCreateSemesterOpen(false);
+  }
+
+  // Actualiza campo del modal de semestre.
+  function updateSemesterForm(field, value) {
+    setSemesterForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  // Crea copias de todos los calendarios de un semestre lectivo con nuevo nombre.
+  function confirmCreateSemester() {
+    const { sourceLectiveTerm, newLectiveName } = semesterForm;
+
+    const sourceTerm = String(sourceLectiveTerm || "").trim();
+    const newName = String(newLectiveName || "").trim();
+
+    if (!sourceTerm) {
+      setSemesterModalError("Debe seleccionar el semestre lectivo a copiar.");
+      return;
+    }
+
+    if (!newName) {
+      setSemesterModalError("Debe ingresar el nombre del nuevo semestre lectivo.");
+      return;
+    }
+
+    // Buscar todos los calendarios que pertenecen al semestre lectivo origen
+    const calendarsToCopy = data.calendars.filter(
+      (calendar) => calendar.lectiveTerm === sourceTerm
+    );
+
+    if (calendarsToCopy.length === 0) {
+      setSemesterModalError("No hay calendarios para ese semestre lectivo.");
+      return;
+    }
+
+    const timestamp = Date.now();
+
+    // Crear copias con el nuevo nombre de semestre lectivo
+    const newCalendars = calendarsToCopy.map((sourceCalendar, index) => ({
+      id: `${sourceCalendar.id}-copy-${timestamp}-${index}`,
+      name: sourceCalendar.name,
+      subtitle: sourceCalendar.subtitle,
+      plan: sourceCalendar.plan,
+      year: sourceCalendar.year,
+      period: sourceCalendar.period,
+      lectiveTerm: newName,
+      createdAt: timestamp,
+      visible: true,
+      classes: sourceCalendar.classes.map((clase) => ({ ...clase })),
+      alerts: []
+    }));
+
+    // Ocultar calendarios del semestre origen y mostrar solo los nuevos
+    setData((prev) => ({
+      ...prev,
+      calendars: prev.calendars
+        .map((calendar) => {
+          // Si pertenece al semestre origen, ocultarlo
+          if (calendar.lectiveTerm === sourceTerm) {
+            return { ...calendar, visible: false };
+          }
+          return calendar;
+        })
+        .concat(newCalendars)
+    }));
+
+    closeCreateSemesterModal();
+  }
+
   // Cambia visibilidad de calendario por id.
   function toggleCalendarVisible(calendarId, checked) {
     setData((prev) => ({
@@ -227,29 +326,43 @@ function App() {
     }));
   }
 
-  // Devuelve calendario destino segun anio elegido.
+  // Devuelve calendario destino segun año elegido.
   function findCalendarForYear(selectedYear, calendars) {
-    const calendarsOfYear = calendars.filter(
-      (calendar) => yearFromCalendarName(calendar.name) === selectedYear
-    );
+    const calendarsInContext = calendars.filter((calendar) => {
+      if (calendar.subtitle !== selectedCareer) return false;
+      if (calendar.plan && calendar.plan !== selectedPlan) return false;
+      return true;
+    });
+
+    const calendarsOfYear = calendarsInContext.filter((calendar) => {
+      const resolvedYear = calendar.year || yearFromCalendarName(calendar.name);
+      return resolvedYear === selectedYear;
+    });
 
     if (calendarsOfYear.length === 0) return null;
 
-    // Prioriza uno visible del anio; si no, toma el primero del anio.
+    const calendarsWithExplicitYear = calendarsOfYear.filter((calendar) => calendar.year === selectedYear);
+    if (calendarsWithExplicitYear.length > 0) {
+      return calendarsWithExplicitYear
+        .slice()
+        .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
+    }
+
+    // Prioriza uno visible del año; si no, toma el primero del año.
     return calendarsOfYear.find((calendar) => calendar.visible) || calendarsOfYear[0];
   }
 
   /*
     Funcion simple para principiantes:
     - Recibe el estado actual (prevData)
-    - Busca el calendario del anio elegido
+    - Busca el calendario del año elegido
     - Agrega el nuevo grupo al array "classes" de ese calendario
     - Devuelve el nuevo estado
   */
   function addGroupToCalendar(prevData, selectedYear, newGroups) {
     const targetCalendar = findCalendarForYear(selectedYear, prevData.calendars);
 
-    // Si no existe calendario para ese anio, no cambia nada.
+    // Si no existe calendario para ese año, no cambia nada.
     if (!targetCalendar) return prevData;
 
     return {
@@ -290,6 +403,17 @@ function App() {
     };
   }
 
+  // Detectar semestre lectivo actual (del primero visible o del primero en general)
+  const currentLectiveTerm = React.useMemo(() => {
+    if (visibleCalendars.length > 0) {
+      return visibleCalendars[0].lectiveTerm || "";
+    }
+    if (data.calendars.length > 0) {
+      return data.calendars[0].lectiveTerm || "";
+    }
+    return "";
+  }, [visibleCalendars, data.calendars]);
+
   return (
     <>
       <HeaderBar
@@ -297,8 +421,10 @@ function App() {
         plans={data.plans}
         selectedCareer={selectedCareer}
         selectedPlan={selectedPlan}
+        currentLectiveTerm={currentLectiveTerm}
         onCareerChange={setSelectedCareer}
         onPlanChange={setSelectedPlan}
+        onOpenCreateSemester={openCreateSemesterModal}
         onOpenCreateCareer={openCreateCareerModal}
         onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
       />
@@ -390,6 +516,16 @@ function App() {
         onClose={closeCreateTeacherModal}
         onChange={updateTeacherForm}
         onSubmit={confirmCreateTeacher}
+      />
+
+      <CreateSemesterModal
+        isOpen={isCreateSemesterOpen}
+        form={semesterForm}
+        availableSemesters={availableSemesters}
+        errorMessage={semesterModalError}
+        onClose={closeCreateSemesterModal}
+        onChange={updateSemesterForm}
+        onSubmit={confirmCreateSemester}
       />
     </>
   );
