@@ -15,6 +15,13 @@
       "when": 1771505437596,
       "tag": "0001_left_fixer",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1771941678637,
+      "tag": "0002_abandoned_havok",
+      "breakpoints": true
     }
   ]
 }
