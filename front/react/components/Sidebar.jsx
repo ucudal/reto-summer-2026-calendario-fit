@@ -7,7 +7,13 @@
 */
 
 function Sidebar(props) {
-  const { calendars, onToggleCalendarVisible, onOpenCreateGroup } = props;
+  const {
+    calendars,
+    onToggleCalendarVisible,
+    onOpenCreateGroup,
+    onExportExcel,
+    onImportExcel
+  } = props;
 
   return (
     <aside className="sidebar">
@@ -35,8 +41,8 @@ function Sidebar(props) {
         </div>
       </div>
 
-      <button className="export-btn" type="button">EXPORTAR PDF</button>
-      <button className="export-btn" type="button">EXPORTAR EXCEL (PARA USO INTERNO)</button>
+      <button className="export-btn" type="button" onClick={onExportExcel}>EXPORTAR EXCEL (PARA USO INTERNO)</button>
+      <button className="export-btn" type="button" onClick={onImportExcel}>IMPORTAR EXCEL (MODULOS)</button>
     </aside>
   );
 }
