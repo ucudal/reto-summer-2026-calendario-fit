@@ -7,50 +7,58 @@
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-  <!--
-    Este div es el contenedor principal de React.
-    React va a "dibujar" toda la app adentro de este nodo.
-  -->
-  <div id="root"></div>
 
-  <!-- React (libreria principal) -->
-  <script src="../node_modules/react/umd/react.development.js"></script>
+<!-- React mounts here -->
+<div id="root"></div>
 
-  <!-- ReactDOM (conecta React con el DOM real) -->
-  <script src="../node_modules/react-dom/umd/react-dom.development.js"></script>
+<!-- React Core -->
+<script src="../node_modules/react/umd/react.development.js"></script>
+<script src="../node_modules/react-dom/umd/react-dom.development.js"></script>
 
-  <!-- Babel Standalone (permite usar JSX sin build tool) -->
-  <script src="../node_modules/@babel/standalone/babel.min.js"></script>
+<!-- Babel Standalone (JSX runtime compilation) -->
+<script src="../node_modules/@babel/standalone/babel.min.js"></script>
 
-  <!-- Datos y utilidades globales de la app -->
-  <script type="text/babel" data-presets="env,react" src="./react/data.js"></script>
+<!-- ========================= -->
+<!-- Global App Data / Utils   -->
+<!-- ========================= -->
+<script type="text/babel" data-presets="env,react" src="./react/data.js"></script>
 
-  <!-- Componentes de UI -->
-  <script type="text/babel" data-presets="env,react" src="./react/components/HeaderBar.jsx"></script>
-  <script type="text/babel" data-presets="env,react" src="./react/components/Sidebar.jsx"></script>
-  <script type="text/babel" data-presets="env,react" src="./react/components/AlertsPanel.jsx"></script>
-  <script type="text/babel" data-presets="env,react" src="./react/components/ScheduleGrid.jsx"></script>
+<!-- ========================= -->
+<!-- UI Components             -->
+<!-- ========================= -->
+<script type="text/babel" data-presets="env,react" src="./react/components/HeaderBar.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="./react/components/Toolbar.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="./react/components/Sidebar.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="./react/components/AlertsPanel.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="./react/components/ScheduleGrid.jsx"></script>
 
-  <!-- Modales -->
-  <script type="text/babel" data-presets="env,react" src="./react/modals/GroupsModal.jsx"></script>
-  <script type="text/babel" data-presets="env,react" src="./react/modals/SubjectGroupsModal.jsx"></script>
-  <script type="text/babel" data-presets="env,react" src="./react/modals/CreateNewGroupModal.jsx"></script>
-  <script type="text/babel" data-presets="env,react" src="./react/modals/CreateCareerModal.jsx"></script>
-  <script type="text/babel" data-presets="env,react" src="./react/modals/CreateTeacherModal.jsx"></script>
-  <script type="text/babel" data-presets="env,react" src="./react/modals/createGroupModalFunctions.js"></script>
-  <script type="text/babel" data-presets="env,react" src="./react/modals/createCareerModalFunctions.js"></script>
-  <script type="text/babel" data-presets="env,react" src="./react/modals/createTeacherModalFunctions.js"></script>
-  <script type="text/babel" data-presets="env,react" src="./react/modals/groupsModalFunctions.js"></script>
-  <script type="text/babel" data-presets="env,react" src="./react/modals/subjectGroupsModalFunctions.js"></script>
-  <script type="text/babel" data-presets="env,react" src="./react/modals/createNewGroupModalFunctions.js"></script>
+<!-- ========================= -->
+<!-- Modals                    -->
+<!-- ========================= -->
+<script type="text/babel" data-presets="env,react" src="./react/modals/GroupsModal.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="./react/modals/SubjectGroupsModal.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="./react/modals/CreateNewGroupModal.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="./react/modals/CreateCareerModal.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="./react/modals/CreateTeacherModal.jsx"></script>
 
-  <!-- App principal -->
-  <script type="text/babel" data-presets="env,react" src="./react/App.jsx"></script>
+<!-- Modal Logic Files -->
+<script type="text/babel" data-presets="env,react" src="./react/modals/createGroupModalFunctions.js"></script>
+<script type="text/babel" data-presets="env,react" src="./react/modals/createCareerModalFunctions.js"></script>
+<script type="text/babel" data-presets="env,react" src="./react/modals/createTeacherModalFunctions.js"></script>
+<script type="text/babel" data-presets="env,react" src="./react/modals/groupsModalFunctions.js"></script>
+<script type="text/babel" data-presets="env,react" src="./react/modals/subjectGroupsModalFunctions.js"></script>
+<script type="text/babel" data-presets="env,react" src="./react/modals/createNewGroupModalFunctions.js"></script>
 
-  <!-- Excel Service (GLOBAL) -->
-  <script type="text/babel" data-presets="env,react" src="react/services/excelService.js"></script>
+<!-- ========================= -->
+<!-- Main App Component        -->
+<!-- ========================= -->
+<script type="text/babel" data-presets="env,react" src="./react/App.jsx"></script>
 
-  <!-- Punto de arranque: monta React en #root -->
-  <script type="text/babel" data-presets="env,react" src="./react/main.jsx"></script>
+<!-- Excel Service -->
+<script type="text/babel" data-presets="env,react" src="./react/services/excelService.js"></script>
+
+<!-- React Entry Point -->
+<script type="text/babel" data-presets="env,react" src="./react/main.jsx"></script>
+
 </body>
 </html>

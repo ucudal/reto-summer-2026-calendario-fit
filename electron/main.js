@@ -23,6 +23,8 @@ function createWindow() {
     }
   });
 
+  win.webContents.openDevTools(); // 👈 ADD THIS
+
   const filePath = path.join(__dirname, "..", "front", "index.html");
 
   win.loadFile(filePath).catch((error) => {

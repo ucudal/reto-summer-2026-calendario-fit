@@ -9,21 +9,26 @@
 function App() {
   const {
     DAYS,
-    START_HOUR,
-    END_HOUR,
+    TIME_BLOCKS,
     ROW_HEIGHT,
     HEADER_HEIGHT,
     TIME_COL_WIDTH,
     COLOR_BY_TYPE,
     cloneInitialData,
     timeToMinutes,
-    formatHour,
     yearFromCalendarName,
     yearLabel
   } = window.AppData;
+  const createCareerModalFns = window.CreateCareerModalFunctions;
+  const createGroupModalFns = window.CreateGroupModalFunctions;
+  const createTeacherModalFns = window.CreateTeacherModalFunctions;
+  const groupsModalFns = window.GroupsModalFunctions;
+  const subjectGroupsModalFns = window.SubjectGroupsModalFunctions;
+  const createNewGroupModalFns = window.CreateNewGroupModalFunctions;
 
   // Estado raiz con datos del proyecto.
   const [data, setData] = React.useState(cloneInitialData());
+  const plansByCareer = data.careerPlans || {};
 
   // Carreras de ejemplo actuales (fallback si DB no tiene datos).
   const exampleCareers = data.careers;
@@ -35,19 +40,30 @@ function App() {
   const [selectedCareer, setSelectedCareer] = React.useState(exampleCareers[0]);
   const [selectedPlan, setSelectedPlan] = React.useState(data.plans[0]);
 
-  // Estado visual del modal de grupo.
-  const [isCreateGroupOpen, setIsCreateGroupOpen] = React.useState(false);
+  // Estado visual del modal de lista de grupos.
+  const [isGroupsListOpen, setIsGroupsListOpen] = React.useState(false);
 
-  // Estado de error del modal de grupo.
+  // Estado visual del modal de gestión de grupos por asignatura.
+  const [isSubjectGroupsModalOpen, setIsSubjectGroupsModalOpen] = React.useState(false);
+
+  // Asignatura seleccionada para gestionar grupos.
+  const [selectedSubject, setSelectedSubject] = React.useState(null);
+
+  // Estado visual del modal de crear nuevo grupo.
+  const [isCreateNewGroupOpen, setIsCreateNewGroupOpen] = React.useState(false);
+
+  // Estado de error del modal de crear grupo.
   const [modalError, setModalError] = React.useState("");
 
   // Estado del formulario del modal.
   const [groupForm, setGroupForm] = React.useState({
-    subject: "",
-    day: DAYS[0],
-    year: "1",
-    fromTime: formatHour(START_HOUR),
-    toTime: formatHour(START_HOUR + 2)
+    ...createNewGroupModalFns.createInitialGroupForm({
+      DAYS,
+      TIME_BLOCKS,
+      selectedCareer,
+      selectedPlan,
+      plansByCareer
+    })
   });
 
   // Estado visual del modal de carrera.
@@ -61,19 +77,28 @@ function App() {
     nombre: ""
   });
 
+  // Estado visual del modal de docente.
+  const [isCreateTeacherOpen, setIsCreateTeacherOpen] = React.useState(false);
+
+  // Estado de error del modal de docente.
+  const [teacherModalError, setTeacherModalError] = React.useState("");
+
+  // Formulario del modal de docente.
+  const [teacherForm, setTeacherForm] = React.useState({
+    nombre: "",
+    apellido: "",
+    correo: ""
+  });
+
   // Horas posibles para "desde".
   const hourOptionsFrom = React.useMemo(() => {
-    const list = [];
-    for (let hour = START_HOUR; hour < END_HOUR; hour += 1) list.push(formatHour(hour));
-    return list;
-  }, [START_HOUR, END_HOUR, formatHour]);
+    return TIME_BLOCKS.map((block) => block.start);
+  }, [TIME_BLOCKS]);
 
   // Horas posibles para "hasta".
   const hourOptionsTo = React.useMemo(() => {
-    const list = [];
-    for (let hour = START_HOUR + 1; hour <= END_HOUR; hour += 1) list.push(formatHour(hour));
-    return list;
-  }, [START_HOUR, END_HOUR, formatHour]);
+    return TIME_BLOCKS.map((block) => block.end);
+  }, [TIME_BLOCKS]);
 
   // Calendarios visibles para pintar y alertar.
   const visibleCalendars = data.calendars.filter((calendar) => calendar.visible);
@@ -81,24 +106,46 @@ function App() {
   // Lista plana de alertas de calendarios visibles.
   const visibleAlerts = visibleCalendars.flatMap((calendar) => calendar.alerts);
 
-  // Abre modal y limpia formulario.
-  function openCreateGroupModal() {
-    setGroupForm({
-      subject: "",
-      day: DAYS[0],
-      year: "1",
-      fromTime: formatHour(START_HOUR),
-      toTime: formatHour(START_HOUR + 2)
-    });
-    setModalError("");
-    setIsCreateGroupOpen(true);
-  }
+  // Devuelve los planes habilitados para las carreras elegidas en el modal.
+  const availablePlansForGroup = React.useMemo(() => {
+    const selectedCareers = groupForm.careers || [];
+    const merged = selectedCareers.flatMap((career) => plansByCareer[career] || []);
+    return [...new Set(merged)];
+  }, [groupForm.careers, plansByCareer]);
 
-  // Cierra modal y limpia error.
-  function closeCreateGroupModal() {
-    setModalError("");
-    setIsCreateGroupOpen(false);
-  }
+  const createNewGroupHandlers = createNewGroupModalFns.createNewGroupModalHandlers({
+    DAYS,
+    TIME_BLOCKS,
+    selectedCareer,
+    selectedPlan,
+    plansByCareer,
+    setGroupForm,
+    setModalError,
+    setIsCreateNewGroupOpen,
+    createGroupModalFns,
+    groupForm,
+    data,
+    availablePlansForGroup,
+    hourOptionsFrom,
+    hourOptionsTo,
+    timeToMinutes,
+    yearLabel,
+    findCalendarForYear,
+    addGroupToCalendar,
+    setData
+  });
+
+  const subjectGroupsModalHandlers = subjectGroupsModalFns.createSubjectGroupsModalHandlers({
+    setIsGroupsListOpen,
+    setIsSubjectGroupsModalOpen,
+    setSelectedSubject
+  });
+
+  const groupsModalHandlers = groupsModalFns.createGroupsModalHandlers({
+    setIsGroupsListOpen,
+    openSubjectGroupsModal: subjectGroupsModalHandlers.openSubjectGroupsModal,
+    openCreateNewGroupModal: createNewGroupHandlers.openCreateNewGroupModal
+  });
 
   // Abre modal para crear carrera.
   function openCreateCareerModal() {
@@ -118,6 +165,45 @@ function App() {
     setCareerForm((prev) => ({ ...prev, [field]: value }));
   }
 
+  // Crea carrera solo en frontend (sin backend).
+  function confirmCreateCareer() {
+    createCareerModalFns.confirmCreateCareer({
+      careerForm,
+      careers,
+      setCareerModalError,
+      setCareers,
+      setSelectedCareer,
+      closeCreateCareerModal
+    });
+  }
+
+  // Abre modal para crear docente.
+  function openCreateTeacherModal() {
+    setTeacherForm({ nombre: "", apellido: "", correo: "" });
+    setTeacherModalError("");
+    setIsCreateTeacherOpen(true);
+  }
+
+  // Cierra modal de docente.
+  function closeCreateTeacherModal() {
+    setTeacherModalError("");
+    setIsCreateTeacherOpen(false);
+  }
+
+  // Actualiza campo del modal de docente.
+  function updateTeacherForm(field, value) {
+    setTeacherForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  // Confirma creacion de docente (llama IPC a backend y guarda en BD).
+  async function confirmCreateTeacher() {
+    await createTeacherModalFns.confirmCreateTeacher({
+      teacherForm,
+      setTeacherModalError,
+      closeCreateTeacherModal
+    });
+  }
+
   async function handleExportExcel() {
     try {
       const result = await window.exportSchedulesToExcel(data);
@@ -133,37 +219,12 @@ function App() {
     }
   }
 
-  // Crea carrera solo en frontend (sin backend).
-  function confirmCreateCareer() {
-    const nombre = String(careerForm.nombre || "").trim();
-
-    if (!nombre) {
-      setCareerModalError("El nombre de la carrera es obligatorio.");
-      return;
-    }
-
-    if (careers.includes(nombre)) {
-      setCareerModalError("Esa carrera ya existe.");
-      return;
-    }
-
-    const merged = [...new Set([...careers, nombre])];
-    setCareers(merged);
-    setSelectedCareer(nombre);
-    closeCreateCareerModal();
-  }
-
-  // Actualiza 1 campo del formulario del modal.
-  function updateGroupForm(field, value) {
-    setGroupForm((prev) => ({ ...prev, [field]: value }));
-  }
-
   // Cambia visibilidad de calendario por id.
   function toggleCalendarVisible(calendarId, checked) {
     setData((prev) => ({
       ...prev,
       calendars: prev.calendars.map((calendar) =>
-        calendar.id === calendarId ? { ...calendar, visible: checked } : calendar
+          calendar.id === calendarId ? { ...calendar, visible: checked } : calendar
       )
     }));
   }
@@ -171,7 +232,7 @@ function App() {
   // Devuelve calendario destino segun anio elegido.
   function findCalendarForYear(selectedYear, calendars) {
     const calendarsOfYear = calendars.filter(
-      (calendar) => yearFromCalendarName(calendar.name) === selectedYear
+        (calendar) => yearFromCalendarName(calendar.name) === selectedYear
     );
 
     if (calendarsOfYear.length === 0) return null;
@@ -180,144 +241,136 @@ function App() {
     return calendarsOfYear.find((calendar) => calendar.visible) || calendarsOfYear[0];
   }
 
-  // Validaciones simples de horario.
-  function validateTimes(fromTime, toTime) {
-    const fromMinutes = timeToMinutes(fromTime);
-    const toMinutes = timeToMinutes(toTime);
-    const minMinutes = START_HOUR * 60;
-    const maxMinutes = END_HOUR * 60;
+  /*
+    Funcion simple para principiantes:
+    - Recibe el estado actual (prevData)
+    - Busca el calendario del anio elegido
+    - Agrega el nuevo grupo al array "classes" de ese calendario
+    - Devuelve el nuevo estado
+  */
+  function addGroupToCalendar(prevData, selectedYear, newGroups) {
+    const targetCalendar = findCalendarForYear(selectedYear, prevData.calendars);
 
-    if (fromMinutes >= toMinutes) return "El horario 'desde' debe ser menor que 'hasta'.";
-    if (fromMinutes < minMinutes || toMinutes > maxMinutes) {
-      return `El horario debe estar entre ${START_HOUR}:00 y ${END_HOUR}:00.`;
-    }
-    return "";
-  }
+    // Si no existe calendario para ese anio, no cambia nada.
+    if (!targetCalendar) return prevData;
 
-  // Confirma creacion del grupo en memoria.
-  function confirmCreateGroup() {
-    const subject = groupForm.subject.trim();
-    const day = groupForm.day;
-    const year = groupForm.year;
-    const fromTime = groupForm.fromTime;
-    const toTime = groupForm.toTime;
+    return {
+      ...prevData,
+      calendars: prevData.calendars.map((calendar) => {
+        if (calendar.id !== targetCalendar.id) return calendar;
 
-    if (!subject) {
-      setModalError("La materia es obligatoria.");
-      return;
-    }
-
-    const timeError = validateTimes(fromTime, toTime);
-    if (timeError) {
-      setModalError(timeError);
-      return;
-    }
-
-    const target = findCalendarForYear(year, data.calendars);
-    if (!target) {
-      setModalError(`No existe un calendario para ${yearLabel(year)} anio.`);
-      return;
-    }
-
-    const newClass = {
-      title: subject,
-      group: "Grupo creado manualmente",
-      detail: "Sin aula asignada",
-      day,
-      start: fromTime,
-      end: toTime,
-      type: "practice"
-    };
-
-    setData((prev) => ({
-      ...prev,
-      calendars: prev.calendars.map((calendar) => {
-        if (calendar.id !== target.id) return calendar;
+        // Importante: NO reemplaza grupos existentes.
+        // Siempre agrega al final, asi pueden coexistir varios
+        // en el mismo dia y horario.
         return {
           ...calendar,
-          classes: [...calendar.classes, newClass]
+          classes: [...calendar.classes, ...newGroups]
         };
       })
-    }));
-
-    closeCreateGroupModal();
+    };
   }
 
   return (
-    <>
-      <HeaderBar />
-
-      <main className="page">
-        <Toolbar
-          careers={careers}
-          plans={data.plans}
-          selectedCareer={selectedCareer}
-          selectedPlan={selectedPlan}
-          onCareerChange={setSelectedCareer}
-          onPlanChange={setSelectedPlan}
-          onOpenCreateCareer={openCreateCareerModal}
-          onOpenCreateGroup={openCreateGroupModal}
+      <>
+        <HeaderBar
+            careers={careers}
+            plans={data.plans}
+            selectedCareer={selectedCareer}
+            selectedPlan={selectedPlan}
+            onCareerChange={setSelectedCareer}
+            onPlanChange={setSelectedPlan}
+            onOpenCreateCareer={openCreateCareerModal}
+            onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
         />
 
-        <section className="layout">
-          <Sidebar
-            calendars={data.calendars}
-            onToggleCalendarVisible={toggleCalendarVisible}
-            onOpenCreateGroup={openCreateGroupModal}
-            onExportExcel={handleExportExcel}
-          />
+        <main className="page">
+          <section className="layout">
+            <Sidebar
+                calendars={data.calendars}
+                onToggleCalendarVisible={toggleCalendarVisible}
+                onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
+                onOpenCreateTeacher={openCreateTeacherModal}
+                onExportExcel={handleExportExcel}
+                alerts={visibleAlerts}
+            />
 
-          <section className="main-column">
-            <AlertsPanel alerts={visibleAlerts} />
+            <section className="main-column">
 
-            <div className="schedules-root">
-              {visibleCalendars.length === 0 && (
-                <section className="card schedule-card">
-                  No hay calendarios visibles. Marca al menos uno en la izquierda.
-                </section>
-              )}
+              <div className="schedules-root">
+                {visibleCalendars.length === 0 && (
+                    <section className="card schedule-card">
+                      No hay calendarios visibles. Marca al menos uno en la izquierda.
+                    </section>
+                )}
 
-              {visibleCalendars.map((calendar) => (
-                <ScheduleGrid
-                  key={calendar.id}
-                  calendar={calendar}
-                  days={DAYS}
-                  startHour={START_HOUR}
-                  endHour={END_HOUR}
-                  rowHeight={ROW_HEIGHT}
-                  headerHeight={HEADER_HEIGHT}
-                  timeColWidth={TIME_COL_WIDTH}
-                  colorByType={COLOR_BY_TYPE}
-                  timeToMinutes={timeToMinutes}
-                />
-              ))}
-            </div>
+                {visibleCalendars.map((calendar) => (
+                    <ScheduleGrid
+                        key={calendar.id}
+                        calendar={calendar}
+                        days={DAYS}
+                        timeBlocks={TIME_BLOCKS}
+                        rowHeight={ROW_HEIGHT}
+                        headerHeight={HEADER_HEIGHT}
+                        timeColWidth={TIME_COL_WIDTH}
+                        colorByType={COLOR_BY_TYPE}
+                    />
+                ))}
+              </div>
+            </section>
           </section>
-        </section>
-      </main>
+        </main>
 
-      <CreateGroupModal
-        isOpen={isCreateGroupOpen}
-        form={groupForm}
-        years={["1", "2", "3"]}
-        days={DAYS}
-        hourOptionsFrom={hourOptionsFrom}
-        hourOptionsTo={hourOptionsTo}
-        onClose={closeCreateGroupModal}
-        onChange={updateGroupForm}
-        onSubmit={confirmCreateGroup}
-        errorMessage={modalError}
-      />
+        <GroupsModal
+            isOpen={isGroupsListOpen}
+            calendars={visibleCalendars}
+            onClose={groupsModalHandlers.closeGroupsListModal}
+            onAddNewSubject={groupsModalHandlers.handleAddNewSubjectFromList}
+            onSelectSubject={groupsModalHandlers.openSubjectGroupsModal}
+        />
 
-      <CreateCareerModal
-        isOpen={isCreateCareerOpen}
-        form={careerForm}
-        errorMessage={careerModalError}
-        onClose={closeCreateCareerModal}
-        onChange={updateCareerForm}
-        onSubmit={confirmCreateCareer}
-      />
-    </>
+        <SubjectGroupsModal
+            isOpen={isSubjectGroupsModalOpen}
+            subject={selectedSubject}
+            careers={careers}
+            days={DAYS}
+            onBack={subjectGroupsModalHandlers.backToGroupsList}
+            onClose={subjectGroupsModalHandlers.closeSubjectGroupsModal}
+        />
+
+        <CreateNewGroupModal
+            isOpen={isCreateNewGroupOpen}
+            form={groupForm}
+            years={["1", "2", "3"]}
+            days={DAYS}
+            hourOptionsFrom={hourOptionsFrom}
+            hourOptionsTo={hourOptionsTo}
+            careerOptions={careers}
+            planOptions={availablePlansForGroup}
+            onClose={createNewGroupHandlers.closeCreateNewGroupModal}
+            onChange={createNewGroupHandlers.updateGroupForm}
+            onToggleList={createNewGroupHandlers.toggleGroupFormList}
+            onSubmit={createNewGroupHandlers.confirmCreateGroup}
+            errorMessage={modalError}
+        />
+
+        <CreateCareerModal
+            isOpen={isCreateCareerOpen}
+            form={careerForm}
+            errorMessage={careerModalError}
+            onClose={closeCreateCareerModal}
+            onChange={updateCareerForm}
+            onSubmit={confirmCreateCareer}
+        />
+
+        <CreateTeacherModal
+            isOpen={isCreateTeacherOpen}
+            form={teacherForm}
+            errorMessage={teacherModalError}
+            onClose={closeCreateTeacherModal}
+            onChange={updateTeacherForm}
+            onSubmit={confirmCreateTeacher}
+        />
+      </>
   );
 }
 

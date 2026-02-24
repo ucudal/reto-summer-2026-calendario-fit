@@ -7,7 +7,7 @@
 */
 
 function Sidebar(props) {
-  const { calendars, onToggleCalendarVisible, onOpenCreateGroup, onOpenCreateTeacher, alerts = [] } = props;
+  const { onExportExcel, calendars, onToggleCalendarVisible, onOpenCreateGroup, onOpenCreateTeacher, alerts = [] } = props;
 
   return (
     <aside className="sidebar">
