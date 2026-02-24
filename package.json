@@ -7,9 +7,7 @@
     "start": "electron .",
     "postinstall": "electron-rebuild -f -w better-sqlite3",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "dev:electron": "electron electron/main.js",
-    "dev": "concurrently \"npm run dev:react\" \"npm run dev:electron\""
+    "db:migrate": "drizzle-kit migrate"
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.3",
