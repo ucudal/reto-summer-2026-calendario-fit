@@ -23,26 +23,13 @@ function createWindow() {
     }
   });
 
-  const fallbackFile = path.join(__dirname, "..", "front", "index.html");
-  const devUrl = process.env.ELECTRON_RENDERER_URL || "http://localhost:5173";
-  let triedFallback = false;
+  win.webContents.openDevTools(); // 👈 ADD THIS
 
-  // Si falla el URL (por ejemplo Vite apagado), carga front/index.html.
-  win.webContents.on("did-fail-load", () => {
-    if (triedFallback) return;
-    triedFallback = true;
-    win.loadFile(fallbackFile).catch((error) => {
-      console.error("No se pudo cargar el fallback front/index.html:", error);
-    });
+  const filePath = path.join(__dirname, "..", "front", "index.html");
+
+  win.loadFile(filePath).catch((error) => {
+    console.error("Error cargando front/index.html:", error);
   });
-
-  win
-    .loadURL(devUrl)
-    .catch(() => {
-      if (triedFallback) return;
-      triedFallback = true;
-      return win.loadFile(fallbackFile);
-    });
 }
 
 app.whenReady().then(async () => {
