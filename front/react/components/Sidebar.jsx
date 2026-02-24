@@ -7,13 +7,20 @@
 */
 
 function Sidebar(props) {
-  const { calendars, onToggleCalendarVisible, onOpenCreateGroup, onOpenCreateTeacher, alerts = [] } = props;
+  const {
+    calendars,
+    onToggleCalendarVisible,
+    onOpenCreateGroup,
+    onOpenCreateCareer,
+    onOpenCreateTeacher,
+    alerts = []
+  } = props;
 
   return (
     <aside className="sidebar">
       <div className="card side-card">
         <button className="action-btn" type="button">ASIGNATURAS</button>
-        <button className="action-btn" type="button">CARRERAS</button>
+        <button className="action-btn" type="button" onClick={onOpenCreateCareer}>CARRERAS</button>
         <button className="action-btn" type="button" onClick={onOpenCreateTeacher}>DOCENTES</button>
         <button className="action-btn" type="button" onClick={onOpenCreateGroup}>GRUPOS</button>
       </div>
