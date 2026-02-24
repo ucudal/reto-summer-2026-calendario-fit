@@ -11,7 +11,7 @@ function createSubjectGroupsModalHandlers(params) {
     setIsSubjectGroupsModalOpen,
     setSelectedSubject,
     setData,
-    addGroupToCalendar
+    replaceSubjectGroupsInCalendar
   } = params;
 
   function openSubjectGroupsModal(subjectName) {
@@ -55,10 +55,11 @@ function createSubjectGroupsModalHandlers(params) {
       });
     });
 
-    // Agrega todas las clases al calendario del año seleccionado
-    if (allClasses.length > 0) {
-      setData((prev) => addGroupToCalendar(prev, selectedYear, allClasses));
-    }
+    // Sincroniza clases de la asignatura en el calendario del año seleccionado
+    // (reemplaza grupos previos de práctica de la misma asignatura).
+    setData((prev) =>
+      replaceSubjectGroupsInCalendar(prev, selectedYear, subject, allClasses)
+    );
   }
 
   return {

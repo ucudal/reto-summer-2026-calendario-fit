@@ -103,6 +103,17 @@ function App() {
   // Calendarios visibles para pintar y alertar.
   const visibleCalendars = data.calendars.filter((calendar) => calendar.visible);
 
+  const existingSubjectClasses = React.useMemo(() => {
+    if (!selectedSubject) return [];
+
+    const targetCalendar = findCalendarForYear("1", data.calendars);
+    if (!targetCalendar) return [];
+
+    return targetCalendar.classes.filter(
+      (classItem) => classItem.title === selectedSubject && classItem.type === "practice"
+    );
+  }, [data.calendars, selectedSubject]);
+
   // Lista plana de alertas de calendarios visibles.
   const visibleAlerts = visibleCalendars.flatMap((calendar) => calendar.alerts);
 
@@ -140,7 +151,7 @@ function App() {
     setIsSubjectGroupsModalOpen,
     setSelectedSubject,
     setData,
-    addGroupToCalendar
+    replaceSubjectGroupsInCalendar
   });
 
   const groupsModalHandlers = groupsModalFns.createGroupsModalHandlers({
@@ -257,6 +268,28 @@ function App() {
     };
   }
 
+  function replaceSubjectGroupsInCalendar(prevData, selectedYear, subject, newGroups) {
+    const targetCalendar = findCalendarForYear(selectedYear, prevData.calendars);
+
+    if (!targetCalendar) return prevData;
+
+    return {
+      ...prevData,
+      calendars: prevData.calendars.map((calendar) => {
+        if (calendar.id !== targetCalendar.id) return calendar;
+
+        const classesWithoutSubjectPractice = calendar.classes.filter(
+          (classItem) => !(classItem.title === subject && classItem.type === "practice")
+        );
+
+        return {
+          ...calendar,
+          classes: [...classesWithoutSubjectPractice, ...newGroups]
+        };
+      })
+    };
+  }
+
   return (
     <>
       <HeaderBar
@@ -319,6 +352,7 @@ function App() {
         subject={selectedSubject}
         careers={careers}
         days={DAYS}
+        existingClasses={existingSubjectClasses}
         onBack={subjectGroupsModalHandlers.backToGroupsList}
         onClose={subjectGroupsModalHandlers.closeSubjectGroupsModal}
         onSaveGroups={subjectGroupsModalHandlers.saveGroupsToCalendar}

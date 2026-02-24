@@ -13,6 +13,7 @@ function SubjectGroupsModal(props) {
     subject,
     careers,
     days,
+    existingClasses,
     onClose,
     onBack,
     onSaveGroups
@@ -54,6 +55,57 @@ function SubjectGroupsModal(props) {
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [openCareerDropdown, openTeacherSearch]);
+
+  // Hidrata horarios desde clases ya guardadas para poder editar sin duplicar.
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    if (!existingClasses || existingClasses.length === 0) {
+      setSchedules([]);
+      return;
+    }
+
+    const scheduleMap = new Map();
+
+    existingClasses.forEach((classItem) => {
+      const scheduleKey = `${classItem.start}-${classItem.end}`;
+
+      if (!scheduleMap.has(scheduleKey)) {
+        scheduleMap.set(scheduleKey, {
+          id: Date.now() + scheduleMap.size,
+          days: [],
+          fromTime: classItem.start,
+          toTime: classItem.end,
+          groups: []
+        });
+      }
+
+      const schedule = scheduleMap.get(scheduleKey);
+
+      if (classItem.day && !schedule.days.includes(classItem.day)) {
+        schedule.days.push(classItem.day);
+      }
+
+      const existingGroup = schedule.groups.find((group) => group.name === classItem.group);
+      const classTeachers = Array.isArray(classItem.teachers) ? classItem.teachers : [];
+      const classCareers = Array.isArray(classItem.careers) ? classItem.careers : [...careers];
+
+      if (!existingGroup) {
+        schedule.groups.push({
+          id: Date.now() + schedule.groups.length + scheduleMap.size,
+          name: classItem.group || `Grupo ${String.fromCharCode(65 + schedule.groups.length)}`,
+          teachers: [...classTeachers],
+          assignedCareers: [...classCareers]
+        });
+        return;
+      }
+
+      existingGroup.teachers = [...new Set([...existingGroup.teachers, ...classTeachers])];
+      existingGroup.assignedCareers = [...new Set([...existingGroup.assignedCareers, ...classCareers])];
+    });
+
+    setSchedules(Array.from(scheduleMap.values()));
+  }, [isOpen, existingClasses, careers]);
 
   // Si no está abierto, no renderiza nada
   if (!isOpen || !subject) return null;
