@@ -12,6 +12,7 @@ function Sidebar(props) {
     onToggleCalendarVisible,
     onOpenCreateGroup,
     onExportExcel,
+    onExportExcelDatos,
     onOpenCreateTeacher,
     alerts,
     onImportExcel
@@ -61,7 +62,8 @@ function Sidebar(props) {
         </div>
       </div>
 
-      <button className="export-btn" type="button" onClick={onExportExcel}>EXPORTAR EXCEL (PARA USO INTERNO)</button>
+      <button className="export-btn" type="button" onClick={onExportExcel}>EXPORTAR CALENDARIO EXCEL</button>
+      <button className="export-btn" type="button" onClick={onExportExcelDatos}>EXPORTAR EXCEL (PARA USO INTERNO)</button>
       <button className="export-btn" type="button" onClick={onImportExcel}>IMPORTAR EXCEL (MODULOS)</button>
     </aside>
   );

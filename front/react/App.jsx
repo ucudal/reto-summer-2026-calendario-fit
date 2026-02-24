@@ -299,24 +299,6 @@ function App() {
   }
 
 
-  // Confirma creacion del grupo en memoria.
-  function confirmCreateGroup() {
-    createGroupModalFns.confirmCreateGroup({
-      groupForm,
-      data,
-      availablePlansForGroup,
-      hourOptionsFrom,
-      hourOptionsTo,
-      timeToMinutes,
-      setModalError,
-      yearLabel,
-      findCalendarForYear,
-      addGroupToCalendar,
-      setData,
-      closeCreateGroupModal
-    });
-  }
-
   function toExportSafeName(value) {
     return String(value || "")
       .trim()
@@ -420,7 +402,8 @@ function App() {
             onOpenCreateGroup={openCreateGroupModal}
             onOpenCreateTeacher={openCreateTeacherModal}
             alerts={visibleAlerts}
-            onExportExcel={exportInternalExcel}
+            onExportExcel={handleExportExcel}
+            onExportExcelDatos={exportInternalExcel}
             onImportExcel={importModulosExcel}
           />
 
