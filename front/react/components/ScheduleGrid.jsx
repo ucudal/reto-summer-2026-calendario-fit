@@ -155,9 +155,8 @@ function ScheduleGrid(props) {
     const columnWidthExpr = `((${dayPercent}% - ${perColumnGap}px) / ${columns})`;
 
     return {
-      left: `calc(${dayStartPercent}% + 4px + ${safeSlotIndex} * (${columnWidthExpr} + ${
-        columns > 1 ? innerGap : 0
-      }px))`,
+      left: `calc(${dayStartPercent}% + 4px + ${safeSlotIndex} * (${columnWidthExpr} + ${columns > 1 ? innerGap : 0
+        }px))`,
       width: `calc(${columnWidthExpr} - 8px)`,
       top: `${top}px`,
       height: `${height}px`,
@@ -209,13 +208,26 @@ function ScheduleGrid(props) {
               width: `calc(100% - ${timeColWidth}px)`
             }}
           >
-            {calendar.classes.map((classItem, index) => (
-              <article key={`${calendar.id}-${index}`} className="event-card" style={getEventStyle(classItem, index)}>
-                <div className="event-title">{classItem.title}</div>
-                <div className="event-meta">{classItem.group}</div>
-                <div className="event-meta">{classItem.detail}</div>
-              </article>
-            ))}
+            {calendar.classes.map((classItem, index) => {
+              const classAlerts = getAlertsForClass(classItem);
+              return (
+                <article key={`${calendar.id}-${index}`} className="event-card" style={getEventStyle(classItem, index)}>
+                  {classAlerts.length > 0 && (
+                    <div className="event-alert-icons">
+                      {classAlerts.some(a => a.type === "schedule_conflict") && (
+                        <span title={classAlerts.find(a => a.type === "schedule_conflict").message}>⚠️</span>
+                      )}
+                      {classAlerts.some(a => a.type === "unconfirmed_teacher") && (
+                        <span title={classAlerts.find(a => a.type === "unconfirmed_teacher").message}>👤</span>
+                      )}
+                    </div>
+                  )}
+                  <div className="event-title">{classItem.title}</div>
+                  <div className="event-meta">{classItem.group}</div>
+                  <div className="event-meta">{classItem.detail}</div>
+                </article>
+              );
+            })}
           </div>
         </div>
       </div>

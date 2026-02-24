@@ -6,15 +6,18 @@
 */
 
 function validateTimes(params) {
-  const { fromTime, toTime, hourOptionsFrom, hourOptionsTo, timeToMinutes } = params;
+  const { fromTime, toTime, hourOptionsFrom, hourOptionsTo, timeToMinutes } =
+    params;
 
   const fromMinutes = timeToMinutes(fromTime);
   const toMinutes = timeToMinutes(toTime);
   const validFrom = hourOptionsFrom.includes(fromTime);
   const validTo = hourOptionsTo.includes(toTime);
 
-  if (fromMinutes >= toMinutes) return "El horario 'desde' debe ser menor que 'hasta'.";
-  if (!validFrom || !validTo) return "Elegi horarios validos de los bloques disponibles.";
+  if (fromMinutes >= toMinutes)
+    return "El horario 'desde' debe ser menor que 'hasta'.";
+  if (!validFrom || !validTo)
+    return "Elegi horarios validos de los bloques disponibles.";
   return "";
 }
 
@@ -31,7 +34,7 @@ function confirmCreateGroup(params) {
     findCalendarForYear,
     addGroupToCalendar,
     setData,
-    closeCreateGroupModal
+    closeCreateGroupModal,
   } = params;
 
   const subject = String(groupForm.subject || "").trim();
@@ -40,7 +43,9 @@ function confirmCreateGroup(params) {
   const fromTime = groupForm.fromTime;
   const toTime = groupForm.toTime;
   const selectedCareers = groupForm.careers || [];
-  const selectedPlans = (groupForm.plans || []).filter((plan) => availablePlansForGroup.includes(plan));
+  const selectedPlans = (groupForm.plans || []).filter((plan) =>
+    availablePlansForGroup.includes(plan),
+  );
 
   if (!subject) {
     setModalError("La materia es obligatoria.");
@@ -64,7 +69,7 @@ function confirmCreateGroup(params) {
     toTime,
     hourOptionsFrom,
     hourOptionsTo,
-    timeToMinutes
+    timeToMinutes,
   });
   if (timeError) {
     setModalError(timeError);
@@ -86,7 +91,8 @@ function confirmCreateGroup(params) {
     end: toTime,
     type: "practice",
     careers: selectedCareers,
-    plans: selectedPlans
+    plans: selectedPlans,
+    teacher: "",
   }));
 
   // @todo falta todo lo base, ACA BD NO OLVIDAR BD
@@ -99,5 +105,5 @@ function confirmCreateGroup(params) {
 
 window.CreateGroupModalFunctions = {
   confirmCreateGroup,
-  validateTimes
+  validateTimes,
 };

@@ -87,8 +87,7 @@ function App() {
   const visibleCalendars = data.calendars.filter((calendar) => calendar.visible);
 
   // Lista plana de alertas de calendarios visibles.
-  const visibleAlerts = visibleCalendars.flatMap((calendar) => calendar.alerts);
-
+  const visibleAlerts = window.calculateAlerts(visibleCalendars);
   // Devuelve los planes habilitados para las carreras elegidas en el modal.
   const availablePlansForGroup = React.useMemo(() => {
     const selectedCareers = groupForm.careers || [];
