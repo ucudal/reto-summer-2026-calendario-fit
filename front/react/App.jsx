@@ -77,6 +77,12 @@ function App() {
     nombre: ""
   });
 
+  // Modo de edición de carrera (guarda el nombre original).
+  const [careerEditMode, setCareerEditMode] = React.useState(null);
+
+  // Indica si el modal de carrera fue abierto desde la lista.
+  const [careerOpenedFromList, setCareerOpenedFromList] = React.useState(false);
+
   // Estado visual del modal de docente.
   const [isCreateTeacherOpen, setIsCreateTeacherOpen] = React.useState(false);
 
@@ -89,6 +95,28 @@ function App() {
     apellido: "",
     correo: ""
   });
+
+  // Modo de edición de docente (guarda el ID del docente).
+  const [teacherEditMode, setTeacherEditMode] = React.useState(null);
+
+  // Indica si el modal de docente fue abierto desde la lista.
+  const [teacherOpenedFromList, setTeacherOpenedFromList] = React.useState(false);
+
+  // ===== GESTIÓN DE CARRERAS =====
+  // Estado visual del modal de lista de carreras.
+  const [isCareersListOpen, setIsCareersListOpen] = React.useState(false);
+
+  // ===== GESTIÓN DE DOCENTES =====
+  // Lista de docentes (mock data en memoria).
+  const [teachers, setTeachers] = React.useState([
+    { id: 1, nombre: "Javier", apellido: "Yannone", correo: "javier.yannone@ucu.edu.uy" },
+    { id: 2, nombre: "Angel", apellido: "Mamberto", correo: "angel.mamberto@ucu.edu.uy" },
+    { id: 3, nombre: "María", apellido: "González", correo: "maria.gonzalez@ucu.edu.uy" },
+    { id: 4, nombre: "Carlos", apellido: "Rodríguez", correo: "carlos.rodriguez@ucu.edu.uy" }
+  ]);
+
+  // Estado visual del modal de lista de docentes.
+  const [isTeachersListOpen, setIsTeachersListOpen] = React.useState(false);
 
   // Horas posibles para "desde".
   const hourOptionsFrom = React.useMemo(() => {
@@ -164,12 +192,16 @@ function App() {
   function openCreateCareerModal() {
     setCareerForm({ nombre: "" });
     setCareerModalError("");
+    setCareerEditMode(null);
+    setCareerOpenedFromList(false);
     setIsCreateCareerOpen(true);
   }
 
   // Cierra modal de carrera.
   function closeCreateCareerModal() {
     setCareerModalError("");
+    setCareerEditMode(null);
+    setCareerOpenedFromList(false);
     setIsCreateCareerOpen(false);
   }
 
@@ -178,28 +210,48 @@ function App() {
     setCareerForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  // Crea carrera solo en frontend (sin backend).
+  // Crea o edita carrera según el modo.
   function confirmCreateCareer() {
-    createCareerModalFns.confirmCreateCareer({
-      careerForm,
-      careers,
-      setCareerModalError,
-      setCareers,
-      setSelectedCareer,
-      closeCreateCareerModal
-    });
+    if (!careerForm.nombre.trim()) {
+      setCareerModalError("El nombre no puede estar vacío");
+      return;
+    }
+
+    if (careerEditMode) {
+      // Modo edición
+      setCareers((prev) => prev.map((c) => (c === careerEditMode ? careerForm.nombre : c)));
+      if (selectedCareer === careerEditMode) {
+        setSelectedCareer(careerForm.nombre);
+      }
+      closeCreateCareerModal();
+      setIsCareersListOpen(true);
+    } else {
+      // Modo creación
+      createCareerModalFns.confirmCreateCareer({
+        careerForm,
+        careers,
+        setCareerModalError,
+        setCareers,
+        setSelectedCareer,
+        closeCreateCareerModal
+      });
+    }
   }
 
   // Abre modal para crear docente.
   function openCreateTeacherModal() {
     setTeacherForm({ nombre: "", apellido: "", correo: "" });
     setTeacherModalError("");
+    setTeacherEditMode(null);
+    setTeacherOpenedFromList(false);
     setIsCreateTeacherOpen(true);
   }
 
   // Cierra modal de docente.
   function closeCreateTeacherModal() {
     setTeacherModalError("");
+    setTeacherEditMode(null);
+    setTeacherOpenedFromList(false);
     setIsCreateTeacherOpen(false);
   }
 
@@ -208,13 +260,147 @@ function App() {
     setTeacherForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  // Confirma creacion de docente (llama IPC a backend y guarda en BD).
+  // Crea o edita docente según el modo.
   async function confirmCreateTeacher() {
-    await createTeacherModalFns.confirmCreateTeacher({
-      teacherForm,
-      setTeacherModalError,
-      closeCreateTeacherModal
+    if (!teacherForm.nombre.trim() || !teacherForm.apellido.trim() || !teacherForm.correo.trim()) {
+      setTeacherModalError("Todos los campos son obligatorios");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(teacherForm.correo)) {
+      setTeacherModalError("Ingrese un correo válido");
+      return;
+    }
+
+    if (teacherEditMode) {
+      // Modo edición
+      setTeachers((prev) =>
+        prev.map((t) => (t.id === teacherEditMode ? { ...t, ...teacherForm } : t))
+      );
+      closeCreateTeacherModal();
+      setIsTeachersListOpen(true);
+    } else {
+      // Modo creación
+      const newTeacher = {
+        id: Date.now(),
+        ...teacherForm
+      };
+      setTeachers((prev) => [...prev, newTeacher]);
+      
+      // Intentar guardar en backend (opcional)
+      await createTeacherModalFns.confirmCreateTeacher({
+        teacherForm,
+        setTeacherModalError,
+        closeCreateTeacherModal: () => {}
+      });
+      
+      closeCreateTeacherModal();
+    }
+  }
+
+  // ===== FUNCIONES DE GESTIÓN DE CARRERAS =====
+  // Abre modal de lista de carreras.
+  function openCareersListModal() {
+    setIsCareersListOpen(true);
+  }
+
+  // Cierra modal de lista de carreras.
+  function closeCareersListModal() {
+    setIsCareersListOpen(false);
+  }
+
+  // Selecciona carrera para editar y abre modal en modo edición.
+  function selectCareerToManage(career) {
+    setCareerForm({ nombre: career });
+    setCareerEditMode(career);
+    setCareerModalError("");
+    setCareerOpenedFromList(true);
+    setIsCareersListOpen(false);
+    setIsCreateCareerOpen(true);
+  }
+
+  // Elimina una carrera.
+  function deleteCareer() {
+    if (!careerEditMode) return;
+    
+    if (confirm(`¿Estás seguro de eliminar la carrera "${careerEditMode}"?`)) {
+      setCareers((prev) => prev.filter((c) => c !== careerEditMode));
+      if (selectedCareer === careerEditMode && careers.length > 1) {
+        setSelectedCareer(careers.find((c) => c !== careerEditMode));
+      }
+      closeCreateCareerModal();
+      setIsCareersListOpen(true);
+    }
+  }
+
+  // Abre modal de crear carrera desde lista.
+  function openCreateCareerFromList() {
+    setCareerForm({ nombre: "" });
+    setCareerModalError("");
+    setCareerEditMode(null);
+    setCareerOpenedFromList(true);
+    setIsCareersListOpen(false);
+    setIsCreateCareerOpen(true);
+  }
+
+  // Vuelve de crear/editar carrera a la lista.
+  function backToCareersListFromModal() {
+    closeCreateCareerModal();
+    setIsCareersListOpen(true);
+  }
+
+  // ===== FUNCIONES DE GESTIÓN DE DOCENTES =====
+  // Abre modal de lista de docentes.
+  function openTeachersListModal() {
+    setIsTeachersListOpen(true);
+  }
+
+  // Cierra modal de lista de docentes.
+  function closeTeachersListModal() {
+    setIsTeachersListOpen(false);
+  }
+
+  // Selecciona docente para editar y abre modal en modo edición.
+  function selectTeacherToManage(teacher) {
+    setTeacherForm({
+      nombre: teacher.nombre,
+      apellido: teacher.apellido,
+      correo: teacher.correo
     });
+    setTeacherEditMode(teacher.id);
+    setTeacherModalError("");
+    setTeacherOpenedFromList(true);
+    setIsTeachersListOpen(false);
+    setIsCreateTeacherOpen(true);
+  }
+
+  // Elimina un docente.
+  function deleteTeacher() {
+    if (!teacherEditMode) return;
+    
+    const teacher = teachers.find((t) => t.id === teacherEditMode);
+    if (teacher && confirm(`¿Estás seguro de eliminar al docente "${teacher.apellido}, ${teacher.nombre}"?`)) {
+      setTeachers((prev) => prev.filter((t) => t.id !== teacherEditMode));
+      closeCreateTeacherModal();
+      setIsTeachersListOpen(true);
+    }
+  }
+
+  // Abre modal de crear docente desde lista.
+  function openCreateTeacherFromList() {
+    setTeacherForm({ nombre: "", apellido: "", correo: "" });
+    setTeacherModalError("");
+    setTeacherEditMode(null);
+    setTeacherOpenedFromList(true);
+    setIsTeachersListOpen(false);
+    setIsCreateTeacherOpen(true);
+  }
+
+  // Vuelve de crear/editar docente a la lista.
+  function backToTeachersListFromModal() {
+    closeCreateTeacherModal();
+    setIsTeachersListOpen(true);
   }
 
   // Cambia visibilidad de calendario por id.
@@ -309,7 +495,8 @@ function App() {
             calendars={data.calendars}
             onToggleCalendarVisible={toggleCalendarVisible}
             onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
-            onOpenCreateTeacher={openCreateTeacherModal}
+            onOpenCreateTeacher={openTeachersListModal}
+            onOpenCreateCareer={openCareersListModal}
             alerts={visibleAlerts}
           />
 
@@ -374,13 +561,32 @@ function App() {
         errorMessage={modalError}
       />
 
+      <CareersListModal
+        isOpen={isCareersListOpen}
+        careers={careers}
+        onClose={closeCareersListModal}
+        onSelectCareer={selectCareerToManage}
+        onCreateNew={openCreateCareerFromList}
+      />
+
       <CreateCareerModal
         isOpen={isCreateCareerOpen}
         form={careerForm}
         errorMessage={careerModalError}
         onClose={closeCreateCareerModal}
+        onBack={careerOpenedFromList ? backToCareersListFromModal : null}
         onChange={updateCareerForm}
         onSubmit={confirmCreateCareer}
+        onDelete={careerEditMode ? deleteCareer : null}
+        isEditMode={!!careerEditMode}
+      />
+
+      <TeachersListModal
+        isOpen={isTeachersListOpen}
+        teachers={teachers}
+        onClose={closeTeachersListModal}
+        onSelectTeacher={selectTeacherToManage}
+        onCreateNew={openCreateTeacherFromList}
       />
 
       <CreateTeacherModal
@@ -388,8 +594,11 @@ function App() {
         form={teacherForm}
         errorMessage={teacherModalError}
         onClose={closeCreateTeacherModal}
+        onBack={teacherOpenedFromList ? backToTeachersListFromModal : null}
         onChange={updateTeacherForm}
         onSubmit={confirmCreateTeacher}
+        onDelete={teacherEditMode ? deleteTeacher : null}
+        isEditMode={!!teacherEditMode}
       />
     </>
   );

@@ -512,7 +512,6 @@ body {
 }
 
 .modal-confirm-btn {
-  margin-top: 4px;
   height: 38px;
   border: none;
   border-radius: 10px;
@@ -744,14 +743,23 @@ body {
   gap: 12px;
 }
 
-.create-teacher-modal .form-label {
+.groups-list-modal .form-label {
   color: #ffffff;
 }
 
-.create-teacher-modal .form-input {
+.groups-list-modal .form-input {
   border: 1px solid rgba(255, 255, 255, 0.3);
   background: #ffffff;
   color: #25343a;
+}
+
+.groups-list-modal .modal-confirm-btn {
+  background: #1f6b6b;
+  border: none;
+}
+
+.groups-list-modal .modal-confirm-btn:hover {
+  background: #185555;
 }
 
 /* Estilos para SubjectGroupsModal */
@@ -1340,4 +1348,124 @@ body {
   border-radius: 0 0 16px 16px;
   text-align: center;
   border-top: 1px solid #e0dcd4;
+}
+
+/* Estilos para gestión de carreras y docentes */
+.modal-header-with-back {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-right: 36px;
+}
+
+/* Ajuste del botón cerrar cuando hay header-with-back */
+.group-modal:has(.modal-header-with-back) .modal-close-btn {
+  top: 18px;
+}
+
+.modal-back-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  font-family: 'Montserrat', sans-serif;
+  flex-shrink: 0;
+}
+
+.modal-back-btn:hover {
+  background: rgba(0, 97, 181, 0.1);
+}
+
+.modal-header-with-back .modal-title {
+  margin: 0;
+}
+
+.modal-header-btn {
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Montserrat', sans-serif;
+  white-space: nowrap;
+}
+
+.modal-header-btn:hover {
+  background: var(--brand);
+  transform: scale(1.05);
+}
+
+.career-management-content,
+.teacher-management-content {
+  padding: 0 8px;
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  align-items: stretch;
+}
+
+.modal-delete-btn {
+  padding: 0;
+  border: none;
+  background: #e74c3c;
+  color: #ffffff;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Montserrat', sans-serif;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+}
+
+.modal-delete-btn:hover {
+  background: #c0392b;
+  transform: scale(1.02);
+}
+
+.modal-confirm-btn {
+  flex: 1;
+  padding: 0;
+  border: none;
+  background: var(--accent);
+  color: #ffffff;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Montserrat', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+}
+
+.modal-confirm-btn:hover {
+  background: var(--brand);
+  transform: scale(1.02);
 }
