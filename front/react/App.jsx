@@ -106,6 +106,96 @@ function App() {
   // Lista plana de alertas de calendarios visibles.
   const visibleAlerts = visibleCalendars.flatMap((calendar) => calendar.alerts);
 
+  // Convierte textos de dia de DB a formato del calendario (LUN..SAB).
+  function normalizeDayToUi(dayText) {
+    const value = String(dayText || "").trim().toLowerCase();
+    if (value === "lunes" || value === "lun") return "LUN";
+    if (value === "martes" || value === "mar") return "MAR";
+    if (value === "miercoles" || value === "miércoles" || value === "mie") return "MIE";
+    if (value === "jueves" || value === "jue") return "JUE";
+    if (value === "viernes" || value === "vie") return "VIE";
+    if (value === "sabado" || value === "sábado" || value === "sab") return "SAB";
+    return "";
+  }
+
+  // Decide en que calendario visual cae un grupo de DB.
+  function getCalendarIdFromDbGroup(grupo) {
+    const semestre = Number(grupo.semestre || 1);
+    const rawAnio = Number(grupo.anio || 1);
+    const anio = rawAnio >= 1 && rawAnio <= 3 ? rawAnio : 1;
+
+    if (anio === 1 && semestre === 1) return "s1y1";
+    if (anio === 1 && semestre === 2) return "s2y1";
+    if (anio === 2 && semestre === 1) return "s1y2";
+    if (anio === 2 && semestre === 2) return "s2y2";
+    return "s3";
+  }
+
+  // Convierte un grupo de DB (con horarios) a bloques del calendario UI.
+  function mapDbGroupToClasses(grupo) {
+    const horarios = Array.isArray(grupo.horarios) ? grupo.horarios : [];
+    const title = grupo.nombreMateria || `Materia ${grupo.idMateria}`;
+
+    return horarios
+      .map((h) => {
+        const modulo = Number(h.modulo);
+        const block = TIME_BLOCKS[modulo - 1];
+        const day = normalizeDayToUi(h.dia);
+        if (!block || !day) return null;
+
+        return {
+          title,
+          group: grupo.codigo ? `Grupo ${grupo.codigo}` : "Grupo sin codigo",
+          detail: `Cupo: ${grupo.cupo ?? "-"} | HS: ${grupo.horasSemestrales ?? "-"}`,
+          day,
+          start: block.start,
+          end: block.end,
+          type: "practice"
+        };
+      })
+      .filter(Boolean);
+  }
+
+  // Carga grupos reales desde DB al iniciar y reemplaza hardcodeados.
+  React.useEffect(() => {
+    let isCancelled = false;
+
+    async function loadGroupsFromDb() {
+      try {
+        if (!window.api?.grupos?.listar) return;
+
+        const response = await window.api.grupos.listar();
+        if (!response?.success || !Array.isArray(response.data)) return;
+
+        const classesByCalendar = new Map();
+
+        for (const grupo of response.data) {
+          const calendarId = getCalendarIdFromDbGroup(grupo);
+          const blocks = mapDbGroupToClasses(grupo);
+          const prev = classesByCalendar.get(calendarId) || [];
+          classesByCalendar.set(calendarId, [...prev, ...blocks]);
+        }
+
+        if (isCancelled) return;
+
+        setData((prev) => ({
+          ...prev,
+          calendars: prev.calendars.map((calendar) => ({
+            ...calendar,
+            classes: classesByCalendar.get(calendar.id) || []
+          }))
+        }));
+      } catch (error) {
+        console.error("No se pudieron cargar grupos desde DB:", error);
+      }
+    }
+
+    loadGroupsFromDb();
+    return () => {
+      isCancelled = true;
+    };
+  }, [TIME_BLOCKS]);
+
   // Devuelve los planes habilitados para las carreras elegidas en el modal.
   const availablePlansForGroup = React.useMemo(() => {
     const selectedCareers = groupForm.careers || [];
@@ -165,9 +255,9 @@ function App() {
     setCareerForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  // Crea carrera solo en frontend (sin backend).
-  function confirmCreateCareer() {
-    createCareerModalFns.confirmCreateCareer({
+  // Crea carrera llamando IPC a backend y guarda en BD.
+  async function confirmCreateCareer() {
+    await createCareerModalFns.confirmCreateCareer({
       careerForm,
       careers,
       setCareerModalError,
@@ -274,6 +364,7 @@ function App() {
             calendars={data.calendars}
             onToggleCalendarVisible={toggleCalendarVisible}
             onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
+            onOpenCreateCareer={openCreateCareerModal}
             onOpenCreateTeacher={openCreateTeacherModal}
             alerts={visibleAlerts}
           />
