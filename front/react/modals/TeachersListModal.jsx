@@ -7,6 +7,9 @@
   - Permite crear nuevo docente.
 */
 
+// IMPORTANTE: Esta lista esta hardcodeada y no se conecta con el backend.
+// Solo es para mostrar la UI. El listado real se obtiene en App.jsx y se pasa por props desde ahí.
+// Pero funciona y apunta al mismo lugar que a la hora de buscar profesores al crear grupos.
 function TeachersListModal(props) {
   const {
     isOpen,

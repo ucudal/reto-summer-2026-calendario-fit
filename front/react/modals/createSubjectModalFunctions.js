@@ -19,6 +19,7 @@ function confirmCreateSubject(params) {
   const creditos = parseInt(subjectForm.creditos);
   const tieneContrasemestre = Boolean(subjectForm.tieneContrasemestre);
   const carreras = subjectForm.carreras || [];
+  const carrerasSemestre = subjectForm.carrerasSemestre || {};
 
   // Validaciones
   if (!nombre) {
@@ -41,6 +42,14 @@ function confirmCreateSubject(params) {
     return;
   }
 
+  // Validar que cada carrera tenga un semestre asignado
+  for (const carrera of carreras) {
+    if (!carrerasSemestre[carrera]) {
+      setSubjectModalError(`Debe seleccionar el semestre y año para la carrera "${carrera}".`);
+      return;
+    }
+  }
+
   // Verificar que no exista ya una materia con ese nombre
   const exists = subjects.some(s => s.nombre.toLowerCase() === nombre.toLowerCase());
   if (exists) {
@@ -55,7 +64,8 @@ function confirmCreateSubject(params) {
     tipo,
     creditos,
     tieneContrasemestre,
-    carreras: [...carreras]
+    carreras: [...carreras],
+    carrerasSemestre: { ...carrerasSemestre }
   };
 
   setSubjects([...subjects, newSubject]);
@@ -82,6 +92,7 @@ function confirmEditSubject(params) {
   const creditos = parseInt(subjectForm.creditos);
   const tieneContrasemestre = Boolean(subjectForm.tieneContrasemestre);
   const carreras = subjectForm.carreras || [];
+  const carrerasSemestre = subjectForm.carrerasSemestre || {};
 
   // Validaciones
   if (!nombre) {
@@ -104,6 +115,14 @@ function confirmEditSubject(params) {
     return;
   }
 
+  // Validar que cada carrera tenga un semestre asignado
+  for (const carrera of carreras) {
+    if (!carrerasSemestre[carrera]) {
+      setSubjectModalError(`Debe seleccionar el semestre y año para la carrera "${carrera}".`);
+      return;
+    }
+  }
+
   // Verificar que no exista otra materia con ese nombre (excepto la actual)
   const exists = subjects.some(s => 
     s.id !== originalSubject.id && 
@@ -117,7 +136,7 @@ function confirmEditSubject(params) {
   // Actualizar materia
   const updatedSubjects = subjects.map(s => 
     s.id === originalSubject.id 
-      ? { ...s, nombre, tipo, creditos, tieneContrasemestre, carreras: [...carreras] }
+      ? { ...s, nombre, tipo, creditos, tieneContrasemestre, carreras: [...carreras], carrerasSemestre: { ...carrerasSemestre } }
       : s
   );
 

@@ -127,7 +127,8 @@ function App() {
       tipo: "A", 
       creditos: 8, 
       tieneContrasemestre: false,
-      carreras: ["Ingeniería en Sistemas"]
+      carreras: ["Ingeniería en Sistemas"],
+      carrerasSemestre: { "Ingeniería en Sistemas": "1er s 1er año" }
     },
     { 
       id: 2, 
@@ -135,7 +136,11 @@ function App() {
       tipo: "B", 
       creditos: 6, 
       tieneContrasemestre: true,
-      carreras: ["Ingeniería en Sistemas", "Ingeniería en Electrónica"]
+      carreras: ["Ingeniería en Sistemas", "Ingeniería en Electrónica"],
+      carrerasSemestre: { 
+        "Ingeniería en Sistemas": "1er s 1er año",
+        "Ingeniería en Electrónica": "1er s 1er año"
+      }
     }
   ]);
 
@@ -155,7 +160,8 @@ function App() {
     tipo: "",
     creditos: "",
     tieneContrasemestre: false,
-    carreras: []
+    carreras: [],
+    carrerasSemestre: {}
   });
 
   // Modo de edición de asignatura (guarda el objeto completo).
@@ -225,7 +231,8 @@ function App() {
     setIsSubjectGroupsModalOpen,
     setSelectedSubject,
     setData,
-    replaceSubjectGroupsInCalendar
+    replaceSubjectGroupsInCalendar,
+    subjects
   });
 
   const groupsModalHandlers = groupsModalFns.createGroupsModalHandlers({
@@ -468,7 +475,8 @@ function App() {
       tipo: "",
       creditos: "",
       tieneContrasemestre: false,
-      carreras: []
+      carreras: [],
+      carrerasSemestre: {}
     });
     setSubjectModalError("");
     setSubjectEditMode(null);
@@ -493,12 +501,36 @@ function App() {
   function toggleSubjectCareer(career) {
     setSubjectForm((prev) => {
       const carreras = prev.carreras || [];
+      const carrerasSemestre = { ...prev.carrerasSemestre } || {};
+      
       if (carreras.includes(career)) {
-        return { ...prev, carreras: carreras.filter(c => c !== career) };
+        // Desmarca: remover carrera y su semestre
+        delete carrerasSemestre[career];
+        return { 
+          ...prev, 
+          carreras: carreras.filter(c => c !== career),
+          carrerasSemestre
+        };
       } else {
-        return { ...prev, carreras: [...carreras, career] };
+        // Marca: agregar carrera (el semestre se asigna después)
+        return { 
+          ...prev, 
+          carreras: [...carreras, career],
+          carrerasSemestre
+        };
       }
     });
+  }
+
+  // Cambia el semestre/año de una carrera.
+  function changeSubjectCareerSemester(career, semester) {
+    setSubjectForm((prev) => ({
+      ...prev,
+      carrerasSemestre: {
+        ...prev.carrerasSemestre,
+        [career]: semester
+      }
+    }));
   }
 
   // Crea o edita asignatura según el modo.
@@ -536,7 +568,8 @@ function App() {
       tipo: subject.tipo,
       creditos: subject.creditos,
       tieneContrasemestre: subject.tieneContrasemestre,
-      carreras: [...subject.carreras]
+      carreras: [...subject.carreras],
+      carrerasSemestre: { ...subject.carrerasSemestre }
     });
     setSubjectEditMode(subject);
     setSubjectModalError("");
@@ -567,7 +600,8 @@ function App() {
       tipo: "",
       creditos: "",
       tieneContrasemestre: false,
-      carreras: []
+      carreras: [],
+      carrerasSemestre: {}
     });
     setSubjectModalError("");
     setSubjectEditMode(null);
@@ -604,6 +638,18 @@ function App() {
     return calendarsOfYear.find((calendar) => calendar.visible) || calendarsOfYear[0];
   }
 
+  function findCalendarForSemesterAndYear(selectedSemester, selectedYear, calendars) {
+    // Normalizar semestre para matching ("1er" o "2do")
+    const normalizedSemester = selectedSemester.toLowerCase();
+    
+    return calendars.find(calendar => {
+      const name = calendar.name.toLowerCase();
+      const hasSemester = name.includes(`${normalizedSemester} semestre`);
+      const hasYear = yearFromCalendarName(name) === selectedYear;
+      return hasSemester && hasYear;
+    }) || null;
+  }
+
   /*
     Funcion simple para principiantes:
     - Recibe el estado actual (prevData)
@@ -633,10 +679,13 @@ function App() {
     };
   }
 
-  function replaceSubjectGroupsInCalendar(prevData, selectedYear, subject, newGroups) {
-    const targetCalendar = findCalendarForYear(selectedYear, prevData.calendars);
+  function replaceSubjectGroupsInCalendar(prevData, selectedSemester, selectedYear, subject, newGroups) {
+    const targetCalendar = findCalendarForSemesterAndYear(selectedSemester, selectedYear, prevData.calendars);
 
-    if (!targetCalendar) return prevData;
+    if (!targetCalendar) {
+      console.warn(`No se encontró calendario para ${selectedSemester} semestre ${selectedYear} año`);
+      return prevData;
+    }
 
     return {
       ...prevData,
@@ -717,6 +766,7 @@ function App() {
       <SubjectGroupsModal
         isOpen={isSubjectGroupsModalOpen}
         subject={selectedSubject}
+        subjects={subjects}
         careers={careers}
         days={DAYS}
         existingClasses={existingSubjectClasses}
@@ -797,6 +847,7 @@ function App() {
         onBack={subjectOpenedFromList ? backToSubjectsListFromModal : null}
         onChange={updateSubjectForm}
         onCareerToggle={toggleSubjectCareer}
+        onCareerSemesterChange={changeSubjectCareerSemester}
         onSubmit={confirmCreateSubject}
         onDelete={subjectEditMode ? deleteSubject : null}
         isEditMode={!!subjectEditMode}

@@ -486,10 +486,11 @@ body {
 }
 
 .form-legend {
-  padding: 0 4px;
+  padding: 0 8px;
   font-size: 12px;
   font-weight: 700;
   color: #4c5c60;
+  background: #fbfaf7;
 }
 
 .checkbox-list {
@@ -502,8 +503,12 @@ body {
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #3d4d52;
+  color: #6b7175;
   font-weight: 500;
+}
+
+.checkbox-main {
+  color: #ffffff;
 }
 
 .checkbox-empty {

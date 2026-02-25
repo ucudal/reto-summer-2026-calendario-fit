@@ -134,8 +134,48 @@ const INITIAL_DATA = {
       alerts: []
     },
     {
-      id: "s3",
-      name: "3er anio",
+      id: "s1y3",
+      name: "1er semestre 3er anio",
+      subtitle: "Ingenieria en Sistemas",
+      visible: false,
+      classes: [],
+      alerts: []
+    },
+    {
+      id: "s2y3",
+      name: "2do semestre 3er anio",
+      subtitle: "Ingenieria en Sistemas",
+      visible: false,
+      classes: [],
+      alerts: []
+    },
+    {
+      id: "s1y4",
+      name: "1er semestre 4to anio",
+      subtitle: "Ingenieria en Sistemas",
+      visible: false,
+      classes: [],
+      alerts: []
+    },
+    {
+      id: "s2y4",
+      name: "2do semestre 4to anio",
+      subtitle: "Ingenieria en Sistemas",
+      visible: false,
+      classes: [],
+      alerts: []
+    },
+    {
+      id: "s1y5",
+      name: "1er semestre 5to anio",
+      subtitle: "Ingenieria en Sistemas",
+      visible: false,
+      classes: [],
+      alerts: []
+    },
+    {
+      id: "s2y5",
+      name: "2do semestre 5to anio",
       subtitle: "Ingenieria en Sistemas",
       visible: false,
       classes: [],
@@ -164,18 +204,19 @@ function formatHour(hour) {
 function yearFromCalendarName(name) {
   const normalized = name.toLowerCase();
 
-  if (normalized.includes("1er anio")) return "1";
-  if (normalized.includes("2do anio")) return "2";
-  if (normalized.includes("3er anio")) return "3";
-
-  return "";
+  // Extrae el número del año directamente del texto (hasta 5to año)
+  const match = normalized.match(/(\d+)(?:er|do|to)?\s*(?:s)?\s*anio/);
+  return match ? match[1] : "";
 }
 
 // Etiqueta corta para mostrar anio en mensajes.
 function yearLabel(year) {
-  if (year === "1") return "1er";
-  if (year === "2") return "2do";
-  return "3er";
+  const yearNum = parseInt(year);
+  if (yearNum === 1) return "1er";
+  if (yearNum === 2) return "2do";
+  if (yearNum === 3) return "3er";
+  if (yearNum === 4 || yearNum === 5) return `${yearNum}to`;
+  return `${year}to`; // Fallback
 }
 
 // Se expone todo en un solo objeto global para mantenerlo simple.

@@ -14,11 +14,26 @@ function CreateSubjectModal(props) {
     onBack,
     onChange,
     onCareerToggle,
+    onCareerSemesterChange,
     onSubmit,
     onDelete,
     isEditMode = false,
     availableCareers = []
   } = props;
+
+  // Opciones de semestre y año
+  const semesterOptions = [
+    "1er s 1er año",
+    "2do s 1er año",
+    "1er s 2do año",
+    "2do s 2do año",
+    "1er s 3er año",
+    "2do s 3er año",
+    "1er s 4to año",
+    "2do s 4to año",
+    "1er s 5to año",
+    "2do s 5to año"
+  ];
 
   if (!isOpen) return null;
 
@@ -88,34 +103,54 @@ function CreateSubjectModal(props) {
             />
           </label>
 
-          <label className="checkbox-row" style={{ marginTop: '8px' }}>
+          <label className="checkbox-row checkbox-main" style={{ marginTop: '8px' }}>
             <input
               type="checkbox"
               checked={form.tieneContrasemestre}
               onChange={(event) => onChange("tieneContrasemestre", event.target.checked)}
             />
-            <span>Tiene correlativa</span>
+            <span>Es contrasemestre</span>
           </label>
 
-          <fieldset className="form-fieldset">
-            <legend className="form-legend">Carreras donde se dicta *</legend>
-            <div className="checkbox-list">
-              {availableCareers.length === 0 ? (
-                <p className="checkbox-empty">No hay carreras disponibles. Por favor, cree una carrera primero.</p>
-              ) : (
-                availableCareers.map((career) => (
-                  <label key={career} className="checkbox-row">
-                    <input
-                      type="checkbox"
-                      checked={form.carreras.includes(career)}
-                      onChange={() => onCareerToggle(career)}
-                    />
-                    <span>{career}</span>
-                  </label>
-                ))
-              )}
+          <div>
+            <label className="form-label">Carreras donde se dicta</label>
+            <div className="form-fieldset" style={{ marginTop: '8px' }}>
+              <div className="checkbox-list">
+                {availableCareers.length === 0 ? (
+                  <p className="checkbox-empty">No hay carreras disponibles. Por favor, cree una carrera primero.</p>
+                ) : (
+                  availableCareers.map((career) => (
+                    <div key={career} style={{ marginBottom: '12px' }}>
+                      <label className="checkbox-row" style={{ marginBottom: '4px' }}>
+                        <input
+                          type="checkbox"
+                          checked={form.carreras.includes(career)}
+                          onChange={() => onCareerToggle(career)}
+                        />
+                        <span>{career}</span>
+                      </label>
+                      {form.carreras.includes(career) && (
+                        <div style={{ marginLeft: '28px', marginTop: '6px' }}>
+                          <select
+                            className="form-input"
+                            style={{ fontSize: '12px', height: '32px' }}
+                            value={form.carrerasSemestre[career] || ""}
+                            onChange={(e) => onCareerSemesterChange(career, e.target.value)}
+                            required
+                          >
+                            <option value="">Seleccione semestre y año</option>
+                            {semesterOptions.map((option) => (
+                              <option key={option} value={option}>{option}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
-          </fieldset>
+          </div>
 
           {errorMessage && <div className="modal-error">{errorMessage}</div>}
 
