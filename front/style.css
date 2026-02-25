@@ -701,6 +701,12 @@ body {
   letter-spacing: 0.2px;
 }
 
+.groups-list-modal .subject-meta {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
 .groups-list-modal .subject-group-count {
   background: transparent;
   color: var(--muted);

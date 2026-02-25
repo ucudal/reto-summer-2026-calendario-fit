@@ -118,6 +118,52 @@ function App() {
   // Estado visual del modal de lista de docentes.
   const [isTeachersListOpen, setIsTeachersListOpen] = React.useState(false);
 
+  // ===== GESTIÓN DE ASIGNATURAS =====
+  // Lista de asignaturas (mock data en memoria).
+  const [subjects, setSubjects] = React.useState([
+    { 
+      id: 1, 
+      nombre: "Programación 1", 
+      tipo: "A", 
+      creditos: 8, 
+      tieneContrasemestre: false,
+      carreras: ["Ingeniería en Sistemas"]
+    },
+    { 
+      id: 2, 
+      nombre: "Matemática Discreta", 
+      tipo: "B", 
+      creditos: 6, 
+      tieneContrasemestre: true,
+      carreras: ["Ingeniería en Sistemas", "Ingeniería en Electrónica"]
+    }
+  ]);
+
+  // Estado visual del modal de lista de asignaturas.
+  const [isSubjectsListOpen, setIsSubjectsListOpen] = React.useState(false);
+
+  // Estado visual del modal de crear asignatura.
+  const [isCreateSubjectOpen, setIsCreateSubjectOpen] = React.useState(false);
+
+  // Estado de error del modal de asignatura.
+  const [subjectModalError, setSubjectModalError] = React.useState("");
+
+  // Formulario del modal de asignatura.
+  const [subjectForm, setSubjectForm] = React.useState({
+    id: null,
+    nombre: "",
+    tipo: "",
+    creditos: "",
+    tieneContrasemestre: false,
+    carreras: []
+  });
+
+  // Modo de edición de asignatura (guarda el objeto completo).
+  const [subjectEditMode, setSubjectEditMode] = React.useState(null);
+
+  // Indica si el modal de asignatura fue abierto desde la lista.
+  const [subjectOpenedFromList, setSubjectOpenedFromList] = React.useState(false);
+
   // Horas posibles para "desde".
   const hourOptionsFrom = React.useMemo(() => {
     return TIME_BLOCKS.map((block) => block.start);
@@ -403,6 +449,139 @@ function App() {
     setIsTeachersListOpen(true);
   }
 
+  // ===== FUNCIONES DE GESTIÓN DE ASIGNATURAS =====
+  // Abre modal de lista de asignaturas.
+  function openSubjectsListModal() {
+    setIsSubjectsListOpen(true);
+  }
+
+  // Cierra modal de lista de asignaturas.
+  function closeSubjectsListModal() {
+    setIsSubjectsListOpen(false);
+  }
+
+  // Abre modal para crear asignatura.
+  function openCreateSubjectModal() {
+    setSubjectForm({
+      id: null,
+      nombre: "",
+      tipo: "",
+      creditos: "",
+      tieneContrasemestre: false,
+      carreras: []
+    });
+    setSubjectModalError("");
+    setSubjectEditMode(null);
+    setSubjectOpenedFromList(false);
+    setIsCreateSubjectOpen(true);
+  }
+
+  // Cierra modal de asignatura.
+  function closeCreateSubjectModal() {
+    setSubjectModalError("");
+    setSubjectEditMode(null);
+    setSubjectOpenedFromList(false);
+    setIsCreateSubjectOpen(false);
+  }
+
+  // Actualiza campo del modal de asignatura.
+  function updateSubjectForm(field, value) {
+    setSubjectForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  // Toggle de carrera en el formulario de asignatura.
+  function toggleSubjectCareer(career) {
+    setSubjectForm((prev) => {
+      const carreras = prev.carreras || [];
+      if (carreras.includes(career)) {
+        return { ...prev, carreras: carreras.filter(c => c !== career) };
+      } else {
+        return { ...prev, carreras: [...carreras, career] };
+      }
+    });
+  }
+
+  // Crea o edita asignatura según el modo.
+  function confirmCreateSubject() {
+    const createSubjectModalFns = window.CreateSubjectModalFunctions;
+    
+    if (subjectEditMode) {
+      // Modo edición
+      createSubjectModalFns.confirmEditSubject({
+        subjectForm,
+        subjects,
+        originalSubject: subjectEditMode,
+        setSubjectModalError,
+        setSubjects,
+        closeCreateSubjectModal
+      });
+      setIsSubjectsListOpen(true);
+    } else {
+      // Modo creación
+      createSubjectModalFns.confirmCreateSubject({
+        subjectForm,
+        subjects,
+        setSubjectModalError,
+        setSubjects,
+        closeCreateSubjectModal
+      });
+    }
+  }
+
+  // Selecciona asignatura para editar y abre modal en modo edición.
+  function selectSubjectToManage(subject) {
+    setSubjectForm({
+      id: subject.id,
+      nombre: subject.nombre,
+      tipo: subject.tipo,
+      creditos: subject.creditos,
+      tieneContrasemestre: subject.tieneContrasemestre,
+      carreras: [...subject.carreras]
+    });
+    setSubjectEditMode(subject);
+    setSubjectModalError("");
+    setSubjectOpenedFromList(true);
+    setIsSubjectsListOpen(false);
+    setIsCreateSubjectOpen(true);
+  }
+
+  // Elimina una asignatura.
+  function deleteSubject() {
+    if (!subjectEditMode) return;
+    
+    const createSubjectModalFns = window.CreateSubjectModalFunctions;
+    createSubjectModalFns.confirmDeleteSubject({
+      subjectForm,
+      subjects,
+      setSubjects,
+      closeCreateSubjectModal
+    });
+    setIsSubjectsListOpen(true);
+  }
+
+  // Abre modal de crear asignatura desde lista.
+  function openCreateSubjectFromList() {
+    setSubjectForm({
+      id: null,
+      nombre: "",
+      tipo: "",
+      creditos: "",
+      tieneContrasemestre: false,
+      carreras: []
+    });
+    setSubjectModalError("");
+    setSubjectEditMode(null);
+    setSubjectOpenedFromList(true);
+    setIsSubjectsListOpen(false);
+    setIsCreateSubjectOpen(true);
+  }
+
+  // Vuelve de crear/editar asignatura a la lista.
+  function backToSubjectsListFromModal() {
+    closeCreateSubjectModal();
+    setIsSubjectsListOpen(true);
+  }
+
   // Cambia visibilidad de calendario por id.
   function toggleCalendarVisible(calendarId, checked) {
     setData((prev) => ({
@@ -497,6 +676,7 @@ function App() {
             onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
             onOpenCreateTeacher={openTeachersListModal}
             onOpenCreateCareer={openCareersListModal}
+            onOpenSubjects={openSubjectsListModal}
             alerts={visibleAlerts}
           />
 
@@ -599,6 +779,28 @@ function App() {
         onSubmit={confirmCreateTeacher}
         onDelete={teacherEditMode ? deleteTeacher : null}
         isEditMode={!!teacherEditMode}
+      />
+
+      <SubjectsListModal
+        isOpen={isSubjectsListOpen}
+        subjects={subjects}
+        onClose={closeSubjectsListModal}
+        onSelectSubject={selectSubjectToManage}
+        onCreateNew={openCreateSubjectFromList}
+      />
+
+      <CreateSubjectModal
+        isOpen={isCreateSubjectOpen}
+        form={subjectForm}
+        errorMessage={subjectModalError}
+        onClose={closeCreateSubjectModal}
+        onBack={subjectOpenedFromList ? backToSubjectsListFromModal : null}
+        onChange={updateSubjectForm}
+        onCareerToggle={toggleSubjectCareer}
+        onSubmit={confirmCreateSubject}
+        onDelete={subjectEditMode ? deleteSubject : null}
+        isEditMode={!!subjectEditMode}
+        availableCareers={careers}
       />
     </>
   );
