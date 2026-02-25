@@ -53,40 +53,72 @@ const INITIAL_DATA = {
   calendars: [
     {
       id: "s1y1",
-      name: "1er semestre 1er anio",
+      name: "1er semestre 1er año - Ingenieria en Sistemas",
       subtitle: "Ingenieria en Sistemas",
+      lectiveTerm: "Primer semestre 2025",
       visible: true,
       classes: [],
       alerts: []
     },
     {
       id: "s2y1",
-      name: "2do semestre 1er anio",
+      name: "2do semestre 1er año - Ingenieria en Sistemas",
       subtitle: "Ingenieria en Sistemas",
+      lectiveTerm: "Primer semestre 2025",
       visible: true,
       classes: [],
       alerts: []
     },
     {
+      id: "i-s1y1",
+      name: "1er semestre 1er año - Ingenieria Industrial",
+      lectiveTerm: "Primer semestre 2025",
+      subtitle: "Ingenieria Industrial",
+      visible: true,
+      classes: [
+        {
+          title: "Matematica Basica",
+          group: "G1 - Compartida",
+          detail: "Sistemas/Industrial | Aula 200",
+          day: "MIE",
+          start: "08:00",
+          end: "09:20",
+          type: "theory"
+        },
+        {
+          title: "Fisica 1",
+          group: "G1 - Juan Perez",
+          detail: "Industrial | Aula 210",
+          day: "LUN",
+          start: "11:00",
+          end: "12:20",
+          type: "theory"
+        },
+        {
+          title: "Economia 1",
+          group: "G1 - Pedro Mendez",
+          detail: "Industrial | Aula 104",
+          day: "JUE",
+          start: "18:15",
+          end: "19:35",
+          type: "practice"
+        }
+      ],
+      alerts: []
+    },
+    {
       id: "s1y2",
-      name: "1er semestre 2do anio",
-      subtitle: "Ingenieria en Sistemas",
+      name: "1er semestre 2do año - Ingenieria en Sistemas",
+      lectiveTerm: "Primer semestre 2025",
       visible: false,
       classes: [],
       alerts: []
     },
     {
       id: "s2y2",
-      name: "2do semestre 2do anio",
+      name: "2do semestre 2do año - Ingenieria en Sistemas",
       subtitle: "Ingenieria en Sistemas",
-      visible: false,
-      classes: [],
-      alerts: []
-    },
-    {
-      id: "s3",
-      name: "3er anio",
-      subtitle: "Ingenieria en Sistemas",
+      lectiveTerm: "Primer semestre 2025",
       visible: false,
       classes: [],
       alerts: []
@@ -110,18 +142,18 @@ function formatHour(hour) {
   return `${String(hour).padStart(2, "0")}:00`;
 }
 
-// Detecta anio segun el nombre del calendario.
+// Detecta año segun el nombre del calendario.
 function yearFromCalendarName(name) {
   const normalized = name.toLowerCase();
 
-  if (normalized.includes("1er anio")) return "1";
-  if (normalized.includes("2do anio")) return "2";
-  if (normalized.includes("3er anio")) return "3";
+  if (normalized.includes("1er año")) return "1";
+  if (normalized.includes("2do año")) return "2";
+  if (normalized.includes("3er año")) return "3";
 
   return "";
 }
 
-// Etiqueta corta para mostrar anio en mensajes.
+// Etiqueta corta para mostrar año en mensajes.
 function yearLabel(year) {
   if (year === "1") return "1er";
   if (year === "2") return "2do";

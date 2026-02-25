@@ -19,6 +19,7 @@ function App() {
     yearFromCalendarName,
     yearLabel
   } = window.AppData;
+
   const createCareerModalFns = window.CreateCareerModalFunctions;
   const createGroupModalFns = window.CreateGroupModalFunctions;
   const createTeacherModalFns = window.CreateTeacherModalFunctions;
@@ -26,101 +27,64 @@ function App() {
   const subjectGroupsModalFns = window.SubjectGroupsModalFunctions;
   const createNewGroupModalFns = window.CreateNewGroupModalFunctions;
 
-
   const [data, setData] = React.useState(cloneInitialData());
   const plansByCareer = data.careerPlans || {};
 
-
   const exampleCareers = data.careers;
-
-
   const [careers, setCareers] = React.useState(exampleCareers);
-
-
   const [selectedCareer, setSelectedCareer] = React.useState(exampleCareers[0]);
   const [selectedPlan, setSelectedPlan] = React.useState(data.plans[0]);
 
-  // Estado visual del modal de lista de grupos.
   const [isGroupsListOpen, setIsGroupsListOpen] = React.useState(false);
-  const loadCareersFromDb = React.useCallback(async () => {
-    try {
-      const response = await window.api?.carreras?.listar?.();
-      const rows = response?.success ? (response.data || []) : [];
-      const names = rows
-        .map((item) => item?.nombre)
-        .filter((name) => typeof name === "string" && name.trim() !== "");
-
-      if (names.length === 0) return;
-
-      setCareers(names);
-      setSelectedCareer((prev) => (names.includes(prev) ? prev : names[0]));
-    } catch (error) {
-      // Si falla la carga desde DB, se mantiene el fallback en memoria.
-    }
-  }, []);
-
-  React.useEffect(() => {
-    loadCareersFromDb().catch(() => {});
-  }, [loadCareersFromDb]);
-
-  // Estado visual del modal de grupo.
-  const [isCreateGroupOpen, setIsCreateGroupOpen] = React.useState(false);
-
-  // Estado visual del modal de gestión de grupos por asignatura.
   const [isSubjectGroupsModalOpen, setIsSubjectGroupsModalOpen] = React.useState(false);
-
-  // Asignatura seleccionada para gestionar grupos.
   const [selectedSubject, setSelectedSubject] = React.useState(null);
 
-
   const [isCreateNewGroupOpen, setIsCreateNewGroupOpen] = React.useState(false);
-
-
   const [modalError, setModalError] = React.useState("");
 
-
   const [groupForm, setGroupForm] = React.useState(
-    createNewGroupModalFns.createInitialGroupForm({
-      DAYS,
-      TIME_BLOCKS,
-      selectedCareer,
-      selectedPlan,
-      plansByCareer
-    })
+      createNewGroupModalFns.createInitialGroupForm({
+        DAYS,
+        TIME_BLOCKS,
+        selectedCareer,
+        selectedPlan,
+        plansByCareer
+      })
   );
 
-
   const [isCreateCareerOpen, setIsCreateCareerOpen] = React.useState(false);
-
-
-  const [careerModalError, setCareerModalError] = React.useState("");const [careerForm, setCareerForm] = React.useState({ nombre: "" });
-
+  const [careerModalError, setCareerModalError] = React.useState("");
+  const [careerForm, setCareerForm] = React.useState({ nombre: "" });
 
   const [isCreateTeacherOpen, setIsCreateTeacherOpen] = React.useState(false);
-
-
   const [teacherModalError, setTeacherModalError] = React.useState("");
-
-
   const [teacherForm, setTeacherForm] = React.useState({
     nombre: "",
     apellido: "",
     correo: ""
   });
 
+  // Estado visual del modal de semestre.
+  const [isCreateSemesterOpen, setIsCreateSemesterOpen] = React.useState(false);
+
+  // Estado de error del modal de semestre.
+  const [semesterModalError, setSemesterModalError] = React.useState("");
+
+  // Formulario del modal de semestre.
+  const [semesterForm, setSemesterForm] = React.useState({
+    sourceLectiveTerm: "",
+    newLectiveName: ""
+  });
 
   const hourOptionsFrom = React.useMemo(() => TIME_BLOCKS.map((block) => block.start), [TIME_BLOCKS]);
   const hourOptionsTo = React.useMemo(() => TIME_BLOCKS.map((block) => block.end), [TIME_BLOCKS]);
 
-
   const visibleCalendars = data.calendars.filter((calendar) => calendar.visible);
-
-
   const visibleAlerts = visibleCalendars.flatMap((calendar) => calendar.alerts);
 
   function findCalendarForYear(selectedYear, calendars) {
     const calendarsOfYear = calendars.filter(
-      (calendar) => yearFromCalendarName(calendar.name) === selectedYear
+        (calendar) => yearFromCalendarName(calendar.name) === selectedYear
     );
 
     if (calendarsOfYear.length === 0) return null;
@@ -153,7 +117,7 @@ function App() {
         if (calendar.id !== targetCalendar.id) return calendar;
 
         const classesWithoutSubjectPractice = calendar.classes.filter(
-          (classItem) => !(classItem.title === subject && classItem.type === "practice")
+            (classItem) => !(classItem.title === subject && classItem.type === "practice")
         );
 
         return {
@@ -171,7 +135,7 @@ function App() {
     if (!targetCalendar) return [];
 
     return targetCalendar.classes.filter(
-      (classItem) => classItem.title === selectedSubject && classItem.type === "practice"
+        (classItem) => classItem.title === selectedSubject && classItem.type === "practice"
     );
   }, [data.calendars, selectedSubject]);
 
@@ -203,23 +167,23 @@ function App() {
     const title = grupo.nombreMateria || `Materia ${grupo.idMateria}`;
 
     return horarios
-      .map((h) => {
-        const modulo = Number(h.modulo);
-        const block = TIME_BLOCKS[modulo - 1];
-        const day = normalizeDayToUi(h.dia);
-        if (!block || !day) return null;
+        .map((h) => {
+          const modulo = Number(h.modulo);
+          const block = TIME_BLOCKS[modulo - 1];
+          const day = normalizeDayToUi(h.dia);
+          if (!block || !day) return null;
 
-        return {
-          title,
-          group: grupo.codigo ? `Grupo ${grupo.codigo}` : "Grupo sin codigo",
-          detail: `Cupo: ${grupo.cupo ?? "-"} | HS: ${grupo.horasSemestrales ?? "-"}`,
-          day,
-          start: block.start,
-          end: block.end,
-          type: "practice"
-        };
-      })
-      .filter(Boolean);
+          return {
+            title,
+            group: grupo.codigo ? `Grupo ${grupo.codigo}` : "Grupo sin codigo",
+            detail: `Cupo: ${grupo.cupo ?? "-"} | HS: ${grupo.horasSemestrales ?? "-"}`,
+            day,
+            start: block.start,
+            end: block.end,
+            type: "practice"
+          };
+        })
+        .filter(Boolean);
   }
 
   React.useEffect(() => {
@@ -260,12 +224,18 @@ function App() {
     };
   }, [TIME_BLOCKS]);
 
+  // Semestres disponibles para copiar (todas las carreras/planes).
+  const availableSemesters = React.useMemo(() => {
+    return data.calendars;
+  }, [data.calendars]);
+
   // Devuelve los planes habilitados para las carreras elegidas en el modal.
   const availablePlansForGroup = React.useMemo(() => {
     const selectedCareers = groupForm.careers || [];
     const merged = selectedCareers.flatMap((career) => plansByCareer[career] || []);
     return [...new Set(merged)];
   }, [groupForm.careers, plansByCareer]);
+
 
   const createNewGroupHandlers = createNewGroupModalFns.createNewGroupModalHandlers({
     DAYS,
@@ -293,7 +263,7 @@ function App() {
     setIsGroupsListOpen,
     setIsSubjectGroupsModalOpen,
     setSelectedSubject,
-  setData,
+    setData,
     replaceSubjectGroupsInCalendar
   });
 
@@ -304,20 +274,18 @@ function App() {
   });
 
   function openCreateCareerModal() {
-    setCareerForm({ nombre: "" });
+    setCareerForm({nombre: ""});
     setCareerModalError("");
     setIsCreateCareerOpen(true);
   }
-
 
   function closeCreateCareerModal() {
     setCareerModalError("");
     setIsCreateCareerOpen(false);
   }
 
-
   function updateCareerForm(field, value) {
-    setCareerForm((prev) => ({ ...prev, [field]: value }));
+    setCareerForm((prev) => ({...prev, [field]: value}));
   }
 
   async function confirmCreateCareer() {
@@ -331,24 +299,20 @@ function App() {
     });
   }
 
-
   function openCreateTeacherModal() {
-    setTeacherForm({ nombre: "", apellido: "", correo: "" });
+    setTeacherForm({nombre: "", apellido: "", correo: ""});
     setTeacherModalError("");
     setIsCreateTeacherOpen(true);
   }
-
 
   function closeCreateTeacherModal() {
     setTeacherModalError("");
     setIsCreateTeacherOpen(false);
   }
 
-
   function updateTeacherForm(field, value) {
-    setTeacherForm((prev) => ({ ...prev, [field]: value }));
+    setTeacherForm((prev) => ({...prev, [field]: value}));
   }
-
 
   async function confirmCreateTeacher() {
     await createTeacherModalFns.confirmCreateTeacher({
@@ -374,15 +338,185 @@ function App() {
     }
   }
 
+  // Abre modal para crear semestre.
+  function openCreateSemesterModal() {
+    setSemesterForm({
+      sourceLectiveTerm: "",
+      newLectiveName: ""
+    });
+    setSemesterModalError("");
+    setIsCreateSemesterOpen(true);
+  }
 
+  // Cierra modal de semestre.
+  function closeCreateSemesterModal() {
+    setSemesterModalError("");
+    setIsCreateSemesterOpen(false);
+  }
+
+  // Actualiza campo del modal de semestre.
+  function updateSemesterForm(field, value) {
+    setSemesterForm((prev) => ({...prev, [field]: value}));
+  }
+
+  // Crea copias de todos los calendarios de un semestre lectivo con nuevo nombre.
+  function confirmCreateSemester() {
+    const {sourceLectiveTerm, newLectiveName} = semesterForm;
+
+    const sourceTerm = String(sourceLectiveTerm || "").trim();
+    const newName = String(newLectiveName || "").trim();
+
+    if (!sourceTerm) {
+      setSemesterModalError("Debe seleccionar el semestre lectivo a copiar.");
+      return;
+    }
+
+    if (!newName) {
+      setSemesterModalError("Debe ingresar el nombre del nuevo semestre lectivo.");
+      return;
+    }
+
+    // Buscar todos los calendarios que pertenecen al semestre lectivo origen
+    const calendarsToCopy = data.calendars.filter(
+        (calendar) => calendar.lectiveTerm === sourceTerm
+    );
+
+    if (calendarsToCopy.length === 0) {
+      setSemesterModalError("No hay calendarios para ese semestre lectivo.");
+      return;
+    }
+
+    const timestamp = Date.now();
+
+    // Crear copias con el nuevo nombre de semestre lectivo
+    const newCalendars = calendarsToCopy.map((sourceCalendar, index) => ({
+      id: `${sourceCalendar.id}-copy-${timestamp}-${index}`,
+      name: sourceCalendar.name,
+      subtitle: sourceCalendar.subtitle,
+      plan: sourceCalendar.plan,
+      year: sourceCalendar.year,
+      period: sourceCalendar.period,
+      lectiveTerm: newName,
+      createdAt: timestamp,
+      visible: true,
+      classes: sourceCalendar.classes.map((clase) => ({...clase})),
+      alerts: []
+    }));
+
+    // Ocultar calendarios del semestre origen y mostrar solo los nuevos
+    setData((prev) => ({
+      ...prev,
+      calendars: prev.calendars
+          .map((calendar) => {
+            // Si pertenece al semestre origen, ocultarlo
+            if (calendar.lectiveTerm === sourceTerm) {
+              return {...calendar, visible: false};
+            }
+            return calendar;
+          })
+          .concat(newCalendars)
+    }));
+
+    closeCreateSemesterModal();
+  }
+
+  // Cambia visibilidad de calendario por id.
   function toggleCalendarVisible(calendarId, checked) {
     setData((prev) => ({
       ...prev,
       calendars: prev.calendars.map((calendar) =>
-          calendar.id === calendarId ? { ...calendar, visible: checked } : calendar
+          calendar.id === calendarId ? {...calendar, visible: checked} : calendar
       )
     }));
   }
+
+  // Devuelve calendario destino segun año elegido.
+  function findCalendarForYear(selectedYear, calendars) {
+    const calendarsInContext = calendars.filter((calendar) => {
+      if (calendar.subtitle !== selectedCareer) return false;
+      if (calendar.plan && calendar.plan !== selectedPlan) return false;
+      return true;
+    });
+
+    const calendarsOfYear = calendarsInContext.filter((calendar) => {
+      const resolvedYear = calendar.year || yearFromCalendarName(calendar.name);
+      return resolvedYear === selectedYear;
+    });
+
+    if (calendarsOfYear.length === 0) return null;
+
+    const calendarsWithExplicitYear = calendarsOfYear.filter((calendar) => calendar.year === selectedYear);
+    if (calendarsWithExplicitYear.length > 0) {
+      return calendarsWithExplicitYear
+          .slice()
+          .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
+    }
+
+    // Prioriza uno visible del año; si no, toma el primero del año.
+    return calendarsOfYear.find((calendar) => calendar.visible) || calendarsOfYear[0];
+  }
+
+  /*
+    Funcion simple para principiantes:
+    - Recibe el estado actual (prevData)
+    - Busca el calendario del año elegido
+    - Agrega el nuevo grupo al array "classes" de ese calendario
+    - Devuelve el nuevo estado
+  */
+  function addGroupToCalendar(prevData, selectedYear, newGroups) {
+    const targetCalendar = findCalendarForYear(selectedYear, prevData.calendars);
+
+    // Si no existe calendario para ese año, no cambia nada.
+    if (!targetCalendar) return prevData;
+
+    return {
+      ...prevData,
+      calendars: prevData.calendars.map((calendar) => {
+        if (calendar.id !== targetCalendar.id) return calendar;
+
+        // Importante: NO reemplaza grupos existentes.
+        // Siempre agrega al final, asi pueden coexistir varios
+        // en el mismo dia y horario.
+        return {
+          ...calendar,
+          classes: [...calendar.classes, ...newGroups]
+        };
+      })
+    };
+  }
+
+  function replaceSubjectGroupsInCalendar(prevData, selectedYear, subject, newGroups) {
+    const targetCalendar = findCalendarForYear(selectedYear, prevData.calendars);
+
+    if (!targetCalendar) return prevData;
+
+    return {
+      ...prevData,
+      calendars: prevData.calendars.map((calendar) => {
+        if (calendar.id !== targetCalendar.id) return calendar;
+
+        const classesWithoutSubjectPractice = calendar.classes.filter(
+            (classItem) => !(classItem.title === subject && classItem.type === "practice")
+        );
+
+        return {
+          ...calendar,
+          classes: [...classesWithoutSubjectPractice, ...newGroups]
+        };
+      })
+    };
+  }
+
+  // Detectar semestre lectivo actual (del primero visible o del primero en general)
+  const currentLectiveTerm = React.useMemo(() => {
+    if (visibleCalendars.length > 0) {
+      return visibleCalendars[0].lectiveTerm || "";
+    }
+    if (data.calendars.length > 0) {
+      return data.calendars[0].lectiveTerm || "";
+    }
+    return "";
+  }, [visibleCalendars, data.calendars]);
 
   return (
       <>
@@ -503,5 +637,3 @@ function App() {
 }
 
 window.App = App;
-
-//unblock merge
