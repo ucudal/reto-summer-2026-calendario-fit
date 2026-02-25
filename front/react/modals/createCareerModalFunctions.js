@@ -5,7 +5,7 @@
   - No renderiza UI.
 */
 
-function confirmCreateCareer(params) {
+async function confirmCreateCareer(params) {
   const {
     careerForm,
     careers,
@@ -27,13 +27,39 @@ function confirmCreateCareer(params) {
     return;
   }
 
+  try {
+    if (!window.api?.carreras?.crear) {
+      setCareerModalError("No se encontro la API de carreras en preload.");
+      return;
+    }
+
+    const response = await window.api.carreras.crear({ nombre });
+
+    if (!response?.success) {
+      const backendError = String(response?.error || "");
+      if (backendError.toLowerCase().includes("unique") || backendError.toLowerCase().includes("existe")) {
+        setCareerModalError("Esa carrera ya existe.");
+        return;
+      }
+
+      setCareerModalError(backendError || "No se pudo crear la carrera.");
+      return;
+    }
+  } catch (error) {
+    const msg = String(error?.message || "");
+    if (msg.toLowerCase().includes("unique") || msg.toLowerCase().includes("existe")) {
+      setCareerModalError("Esa carrera ya existe.");
+      return;
+    }
+    setCareerModalError("No se pudo crear la carrera.");
+    return;
+  }
+
   const merged = [...new Set([...careers, nombre])];
   setCareers(merged);
   setSelectedCareer(nombre);
 
-  // @todo falta todo lo base, ACA BD NO OLVIDAR BD
-  // Aca va la llamada para guardar la carrera en base de datos.
-  // Ejemplo futuro: await backend.carreras.crear({ nombre });
+  // Nota: arriba ya se hizo la llamada real a backend/DB.
 
   closeCreateCareerModal();
 }

@@ -57,39 +57,8 @@ const INITIAL_DATA = {
       subtitle: "Ingenieria en Sistemas",
       lectiveTerm: "Primer semestre 2025",
       visible: true,
-      classes: [
-        {
-          title: "Matematica Basica",
-          group: "G1 - Compartida",
-          detail: "Sistemas/Industrial | Aula 200",
-          day: "MIE",
-          start: "08:00",
-          end: "09:20",
-          type: "theory"
-        },
-        {
-          title: "Fundamentos",
-          group: "G1 - Alicia Mora",
-          detail: "Aula 330",
-          day: "VIE",
-          start: "18:15",
-          end: "19:35",
-          type: "practice"
-        },
-        {
-          title: "Taller 1",
-          group: "G1 - Sin confirmar",
-          detail: "Lab 3",
-          day: "MAR",
-          start: "11:00",
-          end: "12:20",
-          type: "lab"
-        }
-      ],
-      alerts: [
-        "Matematica 1 (compartida) se pisa con Fisica 1 en Industrial.",
-        "Programacion I (G2) sin docente confirmado."
-      ]
+      classes: [],
+      alerts: []
     },
     {
       id: "s2y1",
@@ -97,26 +66,7 @@ const INITIAL_DATA = {
       subtitle: "Ingenieria en Sistemas",
       lectiveTerm: "Primer semestre 2025",
       visible: true,
-      classes: [
-        {
-          title: "Algebra",
-          group: "G1 - Compartida",
-          detail: "Aula 206",
-          day: "LUN",
-          start: "09:30",
-          end: "10:50",
-          type: "theory"
-        },
-        {
-          title: "Programacion II",
-          group: "G1 - Docente a confirmar",
-          detail: "Lab 1",
-          day: "JUE",
-          start: "12:25",
-          end: "13:45",
-          type: "lab"
-        }
-      ],
+      classes: [],
       alerts: []
     },
     {

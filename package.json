@@ -7,11 +7,7 @@
     "start": "electron .",
     "postinstall": "electron-rebuild -f -w better-sqlite3",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "dev:react": "cd renderer && npm run dev",
-    "build:react": "cd renderer && npm run build",
-    "dev:electron": "electron electron/main.js",
-    "dev": "concurrently \"npm run dev:react\" \"npm run dev:electron\""
+    "db:migrate": "drizzle-kit migrate"
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.3",
@@ -25,6 +21,7 @@
     "@libsql/client": "^0.17.0",
     "better-sqlite3": "^12.6.2",
     "drizzle-orm": "^0.44.7",
+    "exceljs": "^4.4.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   }

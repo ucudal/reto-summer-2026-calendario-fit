@@ -43,6 +43,10 @@ contextBridge.exposeInMainWorld("api", {
     asignarProfesor: (data) => ipcRenderer.invoke("grupos:asignarProfesor", data),
     agregarHorarios: (idGrupo, horarios) => ipcRenderer.invoke("grupos:agregarHorarios", { idGrupo, horarios }),
     agregarRequerimientos: (idGrupo, requerimientos) => ipcRenderer.invoke("grupos:agregarRequerimientos", { idGrupo, requerimientos })
+  },
+
+  excel: {
+    guardarArchivo: (buffer) =>
+        ipcRenderer.invoke("excel:guardarArchivo", buffer)
   }
-  
 });
