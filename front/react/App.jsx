@@ -54,7 +54,17 @@ function App() {
 
   const [isCreateCareerOpen, setIsCreateCareerOpen] = React.useState(false);
   const [careerModalError, setCareerModalError] = React.useState("");
-  const [careerForm, setCareerForm] = React.useState({ nombre: "" });
+
+  // Formulario del modal de carrera.
+  const [careerForm, setCareerForm] = React.useState({
+    nombre: ""
+  });
+
+  // Modo de edición de carrera (guarda el nombre original).
+  const [careerEditMode, setCareerEditMode] = React.useState(null);
+
+  // Indica si el modal de carrera fue abierto desde la lista.
+  const [careerOpenedFromList, setCareerOpenedFromList] = React.useState(false);
 
   const [isCreateTeacherOpen, setIsCreateTeacherOpen] = React.useState(false);
   const [teacherModalError, setTeacherModalError] = React.useState("");
@@ -64,9 +74,91 @@ function App() {
     correo: ""
   });
 
-  const hourOptionsFrom = React.useMemo(() => TIME_BLOCKS.map((block) => block.start), [TIME_BLOCKS]);
-  const hourOptionsTo = React.useMemo(() => TIME_BLOCKS.map((block) => block.end), [TIME_BLOCKS]);
+  // Modo de edición de docente (guarda el ID del docente).
+  const [teacherEditMode, setTeacherEditMode] = React.useState(null);
 
+  // Indica si el modal de docente fue abierto desde la lista.
+  const [teacherOpenedFromList, setTeacherOpenedFromList] = React.useState(false);
+
+  // ===== GESTIÓN DE CARRERAS =====
+  // Estado visual del modal de lista de carreras.
+  const [isCareersListOpen, setIsCareersListOpen] = React.useState(false);
+
+  // ===== GESTIÓN DE DOCENTES =====
+  // Lista de docentes (mock data en memoria).
+  const [teachers, setTeachers] = React.useState([
+    { id: 1, nombre: "Javier", apellido: "Yannone", correo: "javier.yannone@ucu.edu.uy" },
+    { id: 2, nombre: "Angel", apellido: "Mamberto", correo: "angel.mamberto@ucu.edu.uy" },
+    { id: 3, nombre: "María", apellido: "González", correo: "maria.gonzalez@ucu.edu.uy" },
+    { id: 4, nombre: "Carlos", apellido: "Rodríguez", correo: "carlos.rodriguez@ucu.edu.uy" }
+  ]);
+
+  // Estado visual del modal de lista de docentes.
+  const [isTeachersListOpen, setIsTeachersListOpen] = React.useState(false);
+
+  // ===== GESTIÓN DE ASIGNATURAS =====
+  // Lista de asignaturas (mock data en memoria).
+  const [subjects, setSubjects] = React.useState([
+    { 
+      id: 1, 
+      nombre: "Programación 1", 
+      tipo: "A", 
+      creditos: 8,
+      carreras: ["Ingeniería en Sistemas"],
+      carrerasSemestre: { "Ingeniería en Sistemas": "1er s 1er año" },
+      requerimientosSalon: "Laboratorio con 30 computadoras"
+    },
+    { 
+      id: 2, 
+      nombre: "Matemática Discreta", 
+      tipo: "B", 
+      creditos: 6,
+      carreras: ["Ingeniería en Sistemas", "Ingeniería en Electrónica"],
+      carrerasSemestre: { 
+        "Ingeniería en Sistemas": "1er s 1er año",
+        "Ingeniería en Electrónica": "1er s 1er año"
+      },
+      requerimientosSalon: ""
+    }
+  ]);
+
+  // Estado visual del modal de lista de asignaturas.
+  const [isSubjectsListOpen, setIsSubjectsListOpen] = React.useState(false);
+
+  // Estado visual del modal de crear asignatura.
+  const [isCreateSubjectOpen, setIsCreateSubjectOpen] = React.useState(false);
+
+  // Estado de error del modal de asignatura.
+  const [subjectModalError, setSubjectModalError] = React.useState("");
+
+  // Formulario del modal de asignatura.
+  const [subjectForm, setSubjectForm] = React.useState({
+    id: null,
+    nombre: "",
+    tipo: "",
+    creditos: "",
+    carreras: [],
+    carrerasSemestre: {},
+    requerimientosSalon: ""
+  });
+
+  // Modo de edición de asignatura (guarda el objeto completo).
+  const [subjectEditMode, setSubjectEditMode] = React.useState(null);
+
+  // Indica si el modal de asignatura fue abierto desde la lista.
+  const [subjectOpenedFromList, setSubjectOpenedFromList] = React.useState(false);
+
+  // Horas posibles para "desde".
+  const hourOptionsFrom = React.useMemo(() => {
+    return TIME_BLOCKS.map((block) => block.start);
+  }, [TIME_BLOCKS]);
+
+  // Horas posibles para "hasta".
+  const hourOptionsTo = React.useMemo(() => {
+    return TIME_BLOCKS.map((block) => block.end);
+  }, [TIME_BLOCKS]);
+
+  // Calendarios visibles para pintar y alertar.
   const visibleCalendars = data.calendars.filter((calendar) => calendar.visible);
   const visibleAlerts = visibleCalendars.flatMap((calendar) => calendar.alerts);
 
@@ -245,7 +337,8 @@ function App() {
     setIsSubjectGroupsModalOpen,
     setSelectedSubject,
     setData,
-    replaceSubjectGroupsInCalendar
+    replaceSubjectGroupsInCalendar,
+    subjects
   });
 
   const groupsModalHandlers = groupsModalFns.createGroupsModalHandlers({
@@ -257,11 +350,15 @@ function App() {
   function openCreateCareerModal() {
     setCareerForm({ nombre: "" });
     setCareerModalError("");
+    setCareerEditMode(null);
+    setCareerOpenedFromList(false);
     setIsCreateCareerOpen(true);
   }
 
   function closeCreateCareerModal() {
     setCareerModalError("");
+    setCareerEditMode(null);
+    setCareerOpenedFromList(false);
     setIsCreateCareerOpen(false);
   }
 
@@ -269,25 +366,46 @@ function App() {
     setCareerForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  async function confirmCreateCareer() {
-    await createCareerModalFns.confirmCreateCareer({
-      careerForm,
-      careers,
-      setCareerModalError,
-      setCareers,
-      setSelectedCareer,
-      closeCreateCareerModal
-    });
+  // Crea o edita carrera según el modo.
+  function confirmCreateCareer() {
+    if (!careerForm.nombre.trim()) {
+      setCareerModalError("El nombre no puede estar vacío");
+      return;
+    }
+
+    if (careerEditMode) {
+      // Modo edición
+      setCareers((prev) => prev.map((c) => (c === careerEditMode ? careerForm.nombre : c)));
+      if (selectedCareer === careerEditMode) {
+        setSelectedCareer(careerForm.nombre);
+      }
+      closeCreateCareerModal();
+      setIsCareersListOpen(true);
+    } else {
+      // Modo creación
+      createCareerModalFns.confirmCreateCareer({
+        careerForm,
+        careers,
+        setCareerModalError,
+        setCareers,
+        setSelectedCareer,
+        closeCreateCareerModal
+      });
+    }
   }
 
   function openCreateTeacherModal() {
     setTeacherForm({ nombre: "", apellido: "", correo: "" });
     setTeacherModalError("");
+    setTeacherEditMode(null);
+    setTeacherOpenedFromList(false);
     setIsCreateTeacherOpen(true);
   }
 
   function closeCreateTeacherModal() {
     setTeacherModalError("");
+    setTeacherEditMode(null);
+    setTeacherOpenedFromList(false);
     setIsCreateTeacherOpen(false);
   }
 
@@ -295,30 +413,310 @@ function App() {
     setTeacherForm((prev) => ({ ...prev, [field]: value }));
   }
 
+  // Crea o edita docente según el modo.
   async function confirmCreateTeacher() {
-    await createTeacherModalFns.confirmCreateTeacher({
-      teacherForm,
-      setTeacherModalError,
-      closeCreateTeacherModal
-    });
-  }
+    if (!teacherForm.nombre.trim() || !teacherForm.apellido.trim() || !teacherForm.correo.trim()) {
+      setTeacherModalError("Todos los campos son obligatorios");
+      return;
+    }
 
-  async function handleExportExcel() {
-    try {
-      if (!window.exportSchedulesToExcel) return;
-      const result = await window.exportSchedulesToExcel(data);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(teacherForm.correo)) {
+      setTeacherModalError("Ingrese un correo válido");
+      return;
+    }
 
-      if (result?.success) {
-        await window.api?.mensajes?.mostrar?.("Excel exportado correctamente.", "info");
-      } else {
-        await window.api?.mensajes?.mostrar?.("Exportación cancelada.", "warning");
-      }
-    } catch (error) {
-      console.error("Error exportando Excel:", error);
-      await window.api?.mensajes?.mostrar?.(error.message || "Error al exportar Excel.", "error");
+    if (teacherEditMode) {
+      // Modo edición
+      setTeachers((prev) =>
+        prev.map((t) => (t.id === teacherEditMode ? { ...t, ...teacherForm } : t))
+      );
+      closeCreateTeacherModal();
+      setIsTeachersListOpen(true);
+    } else {
+      // Modo creación
+      const newTeacher = {
+        id: Date.now(),
+        ...teacherForm
+      };
+      setTeachers((prev) => [...prev, newTeacher]);
+      
+      // Intentar guardar en backend (opcional)
+      await createTeacherModalFns.confirmCreateTeacher({
+        teacherForm,
+        setTeacherModalError,
+        closeCreateTeacherModal: () => {}
+      });
+      
+      closeCreateTeacherModal();
     }
   }
 
+  // ===== FUNCIONES DE GESTIÓN DE CARRERAS =====
+  // Abre modal de lista de carreras.
+  function openCareersListModal() {
+    setIsCareersListOpen(true);
+  }
+
+  // Cierra modal de lista de carreras.
+  function closeCareersListModal() {
+    setIsCareersListOpen(false);
+  }
+
+  // Selecciona carrera para editar y abre modal en modo edición.
+  function selectCareerToManage(career) {
+    setCareerForm({ nombre: career });
+    setCareerEditMode(career);
+    setCareerModalError("");
+    setCareerOpenedFromList(true);
+    setIsCareersListOpen(false);
+    setIsCreateCareerOpen(true);
+  }
+
+  // Elimina una carrera.
+  function deleteCareer() {
+    if (!careerEditMode) return;
+    
+    if (confirm(`¿Estás seguro de eliminar la carrera "${careerEditMode}"?`)) {
+      setCareers((prev) => prev.filter((c) => c !== careerEditMode));
+      if (selectedCareer === careerEditMode && careers.length > 1) {
+        setSelectedCareer(careers.find((c) => c !== careerEditMode));
+      }
+      closeCreateCareerModal();
+      setIsCareersListOpen(true);
+    }
+  }
+
+  // Abre modal de crear carrera desde lista.
+  function openCreateCareerFromList() {
+    setCareerForm({ nombre: "" });
+    setCareerModalError("");
+    setCareerEditMode(null);
+    setCareerOpenedFromList(true);
+    setIsCareersListOpen(false);
+    setIsCreateCareerOpen(true);
+  }
+
+  // Vuelve de crear/editar carrera a la lista.
+  function backToCareersListFromModal() {
+    closeCreateCareerModal();
+    setIsCareersListOpen(true);
+  }
+
+  // ===== FUNCIONES DE GESTIÓN DE DOCENTES =====
+  // Abre modal de lista de docentes.
+  function openTeachersListModal() {
+    setIsTeachersListOpen(true);
+  }
+
+  // Cierra modal de lista de docentes.
+  function closeTeachersListModal() {
+    setIsTeachersListOpen(false);
+  }
+
+  // Selecciona docente para editar y abre modal en modo edición.
+  function selectTeacherToManage(teacher) {
+    setTeacherForm({
+      nombre: teacher.nombre,
+      apellido: teacher.apellido,
+      correo: teacher.correo
+    });
+    setTeacherEditMode(teacher.id);
+    setTeacherModalError("");
+    setTeacherOpenedFromList(true);
+    setIsTeachersListOpen(false);
+    setIsCreateTeacherOpen(true);
+  }
+
+  // Elimina un docente.
+  function deleteTeacher() {
+    if (!teacherEditMode) return;
+    
+    const teacher = teachers.find((t) => t.id === teacherEditMode);
+    if (teacher && confirm(`¿Estás seguro de eliminar al docente "${teacher.apellido}, ${teacher.nombre}"?`)) {
+      setTeachers((prev) => prev.filter((t) => t.id !== teacherEditMode));
+      closeCreateTeacherModal();
+      setIsTeachersListOpen(true);
+    }
+  }
+
+  // Abre modal de crear docente desde lista.
+  function openCreateTeacherFromList() {
+    setTeacherForm({ nombre: "", apellido: "", correo: "" });
+    setTeacherModalError("");
+    setTeacherEditMode(null);
+    setTeacherOpenedFromList(true);
+    setIsTeachersListOpen(false);
+    setIsCreateTeacherOpen(true);
+  }
+
+  // Vuelve de crear/editar docente a la lista.
+  function backToTeachersListFromModal() {
+    closeCreateTeacherModal();
+    setIsTeachersListOpen(true);
+  }
+
+  // ===== FUNCIONES DE GESTIÓN DE ASIGNATURAS =====
+  // Abre modal de lista de asignaturas.
+  function openSubjectsListModal() {
+    setIsSubjectsListOpen(true);
+  }
+
+  // Cierra modal de lista de asignaturas.
+  function closeSubjectsListModal() {
+    setIsSubjectsListOpen(false);
+  }
+
+  // Abre modal para crear asignatura.
+  function openCreateSubjectModal() {
+    setSubjectForm({
+      id: null,
+      nombre: "",
+      tipo: "",
+      creditos: "",
+      tieneContrasemestre: false,
+      carreras: [],
+      carrerasSemestre: {}
+    });
+    setSubjectModalError("");
+    setSubjectEditMode(null);
+    setSubjectOpenedFromList(false);
+    setIsCreateSubjectOpen(true);
+  }
+
+  // Cierra modal de asignatura.
+  function closeCreateSubjectModal() {
+    setSubjectModalError("");
+    setSubjectEditMode(null);
+    setSubjectOpenedFromList(false);
+    setIsCreateSubjectOpen(false);
+  }
+
+  // Actualiza campo del modal de asignatura.
+  function updateSubjectForm(field, value) {
+    setSubjectForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  // Toggle de carrera en el formulario de asignatura.
+  function toggleSubjectCareer(career) {
+    setSubjectForm((prev) => {
+      const carreras = prev.carreras || [];
+      const carrerasSemestre = { ...prev.carrerasSemestre } || {};
+      
+      if (carreras.includes(career)) {
+        // Desmarca: remover carrera y su semestre
+        delete carrerasSemestre[career];
+        return { 
+          ...prev, 
+          carreras: carreras.filter(c => c !== career),
+          carrerasSemestre
+        };
+      } else {
+        // Marca: agregar carrera (el semestre se asigna después)
+        return { 
+          ...prev, 
+          carreras: [...carreras, career],
+          carrerasSemestre
+        };
+      }
+    });
+  }
+
+  // Cambia el semestre/año de una carrera.
+  function changeSubjectCareerSemester(career, semester) {
+    setSubjectForm((prev) => ({
+      ...prev,
+      carrerasSemestre: {
+        ...prev.carrerasSemestre,
+        [career]: semester
+      }
+    }));
+  }
+
+  // Crea o edita asignatura según el modo.
+  function confirmCreateSubject() {
+    const createSubjectModalFns = window.CreateSubjectModalFunctions;
+    
+    if (subjectEditMode) {
+      // Modo edición
+      createSubjectModalFns.confirmEditSubject({
+        subjectForm,
+        subjects,
+        originalSubject: subjectEditMode,
+        setSubjectModalError,
+        setSubjects,
+        closeCreateSubjectModal
+      });
+      setIsSubjectsListOpen(true);
+    } else {
+      // Modo creación
+      createSubjectModalFns.confirmCreateSubject({
+        subjectForm,
+        subjects,
+        setSubjectModalError,
+        setSubjects,
+        closeCreateSubjectModal
+      });
+    }
+  }
+
+  // Selecciona asignatura para editar y abre modal en modo edición.
+  function selectSubjectToManage(subject) {
+    setSubjectForm({
+      id: subject.id,
+      nombre: subject.nombre,
+      tipo: subject.tipo,
+      creditos: subject.creditos,
+      tieneContrasemestre: subject.tieneContrasemestre,
+      carreras: [...subject.carreras],
+      carrerasSemestre: { ...subject.carrerasSemestre }
+    });
+    setSubjectEditMode(subject);
+    setSubjectModalError("");
+    setSubjectOpenedFromList(true);
+    setIsSubjectsListOpen(false);
+    setIsCreateSubjectOpen(true);
+  }
+
+  // Elimina una asignatura.
+  function deleteSubject() {
+    if (!subjectEditMode) return;
+    
+    const createSubjectModalFns = window.CreateSubjectModalFunctions;
+    createSubjectModalFns.confirmDeleteSubject({
+      subjectForm,
+      subjects,
+      setSubjects,
+      closeCreateSubjectModal
+    });
+    setIsSubjectsListOpen(true);
+  }
+
+  // Abre modal de crear asignatura desde lista.
+  function openCreateSubjectFromList() {
+    setSubjectForm({
+      id: null,
+      nombre: "",
+      tipo: "",
+      creditos: "",
+      tieneContrasemestre: false,
+      carreras: [],
+      carrerasSemestre: {}
+    });
+    setSubjectModalError("");
+    setSubjectEditMode(null);
+    setSubjectOpenedFromList(true);
+    setIsSubjectsListOpen(false);
+    setIsCreateSubjectOpen(true);
+  }
+
+  // Vuelve de crear/editar asignatura a la lista.
+  function backToSubjectsListFromModal() {
+    closeCreateSubjectModal();
+    setIsSubjectsListOpen(true);
+  }
+
+  // Cambia visibilidad de calendario por id.
   function toggleCalendarVisible(calendarId, checked) {
     setData((prev) => ({
       ...prev,
@@ -326,6 +724,84 @@ function App() {
         calendar.id === calendarId ? { ...calendar, visible: checked } : calendar
       )
     }));
+  }
+
+  // Devuelve calendario destino segun anio elegido.
+  function findCalendarForYear(selectedYear, calendars) {
+    const calendarsOfYear = calendars.filter(
+      (calendar) => yearFromCalendarName(calendar.name) === selectedYear
+    );
+
+    if (calendarsOfYear.length === 0) return null;
+
+    // Prioriza uno visible del anio; si no, toma el primero del anio.
+    return calendarsOfYear.find((calendar) => calendar.visible) || calendarsOfYear[0];
+  }
+
+  function findCalendarForSemesterAndYear(selectedSemester, selectedYear, calendars) {
+    // Normalizar semestre para matching ("1er" o "2do")
+    const normalizedSemester = selectedSemester.toLowerCase();
+    
+    return calendars.find(calendar => {
+      const name = calendar.name.toLowerCase();
+      const hasSemester = name.includes(`${normalizedSemester} semestre`);
+      const hasYear = yearFromCalendarName(name) === selectedYear;
+      return hasSemester && hasYear;
+    }) || null;
+  }
+
+  /*
+    Funcion simple para principiantes:
+    - Recibe el estado actual (prevData)
+    - Busca el calendario del anio elegido
+    - Agrega el nuevo grupo al array "classes" de ese calendario
+    - Devuelve el nuevo estado
+  */
+  function addGroupToCalendar(prevData, selectedYear, newGroups) {
+    const targetCalendar = findCalendarForYear(selectedYear, prevData.calendars);
+
+    // Si no existe calendario para ese anio, no cambia nada.
+    if (!targetCalendar) return prevData;
+
+    return {
+      ...prevData,
+      calendars: prevData.calendars.map((calendar) => {
+        if (calendar.id !== targetCalendar.id) return calendar;
+
+        // Importante: NO reemplaza grupos existentes.
+        // Siempre agrega al final, asi pueden coexistir varios
+        // en el mismo dia y horario.
+        return {
+          ...calendar,
+          classes: [...calendar.classes, ...newGroups]
+        };
+      })
+    };
+  }
+
+  function replaceSubjectGroupsInCalendar(prevData, selectedSemester, selectedYear, subject, newGroups) {
+    const targetCalendar = findCalendarForSemesterAndYear(selectedSemester, selectedYear, prevData.calendars);
+
+    if (!targetCalendar) {
+      console.warn(`No se encontró calendario para ${selectedSemester} semestre ${selectedYear} año`);
+      return prevData;
+    }
+
+    return {
+      ...prevData,
+      calendars: prevData.calendars.map((calendar) => {
+        if (calendar.id !== targetCalendar.id) return calendar;
+
+        const classesWithoutSubjectPractice = calendar.classes.filter(
+          (classItem) => !(classItem.title === subject && classItem.type === "practice")
+        );
+
+        return {
+          ...calendar,
+          classes: [...classesWithoutSubjectPractice, ...newGroups]
+        };
+      })
+    };
   }
 
   return (
@@ -347,9 +823,9 @@ function App() {
             calendars={data.calendars}
             onToggleCalendarVisible={toggleCalendarVisible}
             onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
-            onOpenCreateCareer={openCreateCareerModal}
-            onOpenCreateTeacher={openCreateTeacherModal}
-            onExportExcel={handleExportExcel}
+            onOpenCreateTeacher={openTeachersListModal}
+            onOpenCreateCareer={openCareersListModal}
+            onOpenSubjects={openSubjectsListModal}
             alerts={visibleAlerts}
           />
 
@@ -389,6 +865,7 @@ function App() {
       <SubjectGroupsModal
         isOpen={isSubjectGroupsModalOpen}
         subject={selectedSubject}
+        subjects={subjects}
         careers={careers}
         days={DAYS}
         existingClasses={existingSubjectClasses}
@@ -413,13 +890,32 @@ function App() {
         errorMessage={modalError}
       />
 
+      <CareersListModal
+        isOpen={isCareersListOpen}
+        careers={careers}
+        onClose={closeCareersListModal}
+        onSelectCareer={selectCareerToManage}
+        onCreateNew={openCreateCareerFromList}
+      />
+
       <CreateCareerModal
         isOpen={isCreateCareerOpen}
         form={careerForm}
         errorMessage={careerModalError}
         onClose={closeCreateCareerModal}
+        onBack={careerOpenedFromList ? backToCareersListFromModal : null}
         onChange={updateCareerForm}
         onSubmit={confirmCreateCareer}
+        onDelete={careerEditMode ? deleteCareer : null}
+        isEditMode={!!careerEditMode}
+      />
+
+      <TeachersListModal
+        isOpen={isTeachersListOpen}
+        teachers={teachers}
+        onClose={closeTeachersListModal}
+        onSelectTeacher={selectTeacherToManage}
+        onCreateNew={openCreateTeacherFromList}
       />
 
       <CreateTeacherModal
@@ -427,8 +923,34 @@ function App() {
         form={teacherForm}
         errorMessage={teacherModalError}
         onClose={closeCreateTeacherModal}
+        onBack={teacherOpenedFromList ? backToTeachersListFromModal : null}
         onChange={updateTeacherForm}
         onSubmit={confirmCreateTeacher}
+        onDelete={teacherEditMode ? deleteTeacher : null}
+        isEditMode={!!teacherEditMode}
+      />
+
+      <SubjectsListModal
+        isOpen={isSubjectsListOpen}
+        subjects={subjects}
+        onClose={closeSubjectsListModal}
+        onSelectSubject={selectSubjectToManage}
+        onCreateNew={openCreateSubjectFromList}
+      />
+
+      <CreateSubjectModal
+        isOpen={isCreateSubjectOpen}
+        form={subjectForm}
+        errorMessage={subjectModalError}
+        onClose={closeCreateSubjectModal}
+        onBack={subjectOpenedFromList ? backToSubjectsListFromModal : null}
+        onChange={updateSubjectForm}
+        onCareerToggle={toggleSubjectCareer}
+        onCareerSemesterChange={changeSubjectCareerSemester}
+        onSubmit={confirmCreateSubject}
+        onDelete={subjectEditMode ? deleteSubject : null}
+        isEditMode={!!subjectEditMode}
+        availableCareers={careers}
       />
     </>
   );

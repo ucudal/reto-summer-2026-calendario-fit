@@ -1,8 +1,8 @@
 /*
   Componente: CreateTeacherModal
-  ------------------------------
-  Modal para crear docentes.
-  Usa el estilo azul de los modales de grupos para mantener coherencia visual.
+  -----------------------------
+  Modal para crear o editar un docente.
+  Recibe todo por props y no guarda estado interno.
 */
 
 function CreateTeacherModal(props) {
@@ -11,8 +11,11 @@ function CreateTeacherModal(props) {
     form,
     errorMessage,
     onClose,
+    onBack,
     onChange,
-    onSubmit
+    onSubmit,
+    onDelete,
+    isEditMode = false
   } = props;
 
   if (!isOpen) return null;
@@ -24,10 +27,17 @@ function CreateTeacherModal(props) {
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <section className="group-modal groups-list-modal create-teacher-modal" role="dialog" aria-modal="true" aria-labelledby="teacherModalTitle">
+      <section className="group-modal groups-list-modal" role="dialog" aria-modal="true" aria-labelledby="teacherModalTitle">
         <button type="button" className="modal-close-btn" aria-label="Cerrar" onClick={onClose}>X</button>
 
-        <h2 id="teacherModalTitle" className="modal-title">Crear docente</h2>
+        {onBack ? (
+          <div className="modal-header-with-back">
+            <button type="button" className="modal-back-btn" onClick={onBack}>← Volver</button>
+            <h2 id="teacherModalTitle" className="modal-title">{isEditMode ? 'Editar docente' : 'Crear docente'}</h2>
+          </div>
+        ) : (
+          <h2 id="teacherModalTitle" className="modal-title">{isEditMode ? 'Editar docente' : 'Crear docente'}</h2>
+        )}
 
         <form
           className="group-form"
@@ -74,7 +84,12 @@ function CreateTeacherModal(props) {
 
           {errorMessage && <div className="modal-error">{errorMessage}</div>}
 
-          <button type="submit" className="modal-confirm-btn">Confirmar</button>
+          <div className="modal-actions">
+            <button type="submit" className="modal-confirm-btn">{isEditMode ? 'Guardar cambios' : 'Confirmar'}</button>
+            {isEditMode && onDelete && (
+              <button type="button" className="modal-delete-btn" onClick={onDelete}>Eliminar docente</button>
+            )}
+          </div>
         </form>
       </section>
     </div>
