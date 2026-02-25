@@ -71,7 +71,7 @@ function CreateNewGroupModal(props) {
           </fieldset>
 
           <label className="form-label">
-            Anio
+            Año
             <select
               className="form-input"
               value={form.year}
