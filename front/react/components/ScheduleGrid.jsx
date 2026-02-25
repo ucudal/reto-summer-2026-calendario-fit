@@ -204,8 +204,15 @@ function ScheduleGrid(props) {
             {calendar.classes.map((classItem, index) => (
               <article key={`${calendar.id}-${index}`} className="event-card" style={getEventStyle(classItem, index)}>
                 <div className="event-title">{classItem.title}</div>
-                <div className="event-meta">{classItem.group}</div>
-                <div className="event-meta">{classItem.detail}</div>
+                {classItem.classNumber && (
+                  <div className="event-meta">N° de clase: {classItem.classNumber}</div>
+                )}
+                {Number.isFinite(classItem.credits) && classItem.credits > 0 && (
+                  <div className="event-meta">Créditos: {classItem.credits}</div>
+                )}
+                {Array.isArray(classItem.teachers) && classItem.teachers.length > 0 && (
+                  <div className="event-meta">Docente: {classItem.teachers.join(", ")}</div>
+                )}
               </article>
             ))}
           </div>

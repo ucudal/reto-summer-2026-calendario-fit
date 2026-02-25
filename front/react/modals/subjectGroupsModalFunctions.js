@@ -47,8 +47,7 @@ function createSubjectGroupsModalHandlers(params) {
             end: schedule.toTime,
             type: "practice",
             careers: group.assignedCareers,
-            teachers: group.teachers,
-            plans: [] // Por ahora sin planes
+            teachers: group.teachers
           };
           allClasses.push(classItem);
         });

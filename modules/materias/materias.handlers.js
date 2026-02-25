@@ -23,6 +23,16 @@ export function registrarMateriasHandlers() {
         }
     });
 
+    // --- IPC: Listar carreras-plan de una materia por nombre ---
+    ipcMain.handle("materias:listarCarrerasPlanes", async (_, nombreMateria) => {
+        try {
+            const rows = await materiasService.obtenerCarrerasPlanesPorMateriaNombre(nombreMateria);
+            return { success: true, data: rows };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    });
+
     // --- IPC: Obtener materia por ID ---
     ipcMain.handle("materias:obtenerPorId", async (_, id) => {
         try {

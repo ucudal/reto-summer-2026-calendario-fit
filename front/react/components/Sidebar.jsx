@@ -1,28 +1,26 @@
 /*
-  Componente: Sidebar
-  Que hace:
-  - Muestra acciones rapidas.
-  - Muestra checkboxes de calendarios visibles.
-  - Permite abrir modal de crear grupo.
+  Sidebar izquierda.
+  Acciones rápidas + filtro de calendarios visibles.
 */
 
 function Sidebar(props) {
   const {
-    calendars,
-    onToggleCalendarVisible,
-    onOpenCreateGroup,
-    onOpenCreateCareer,
-    onOpenCreateTeacher,
-    onExportExcel,
-    onExportExcelDatos,
-    onImportExcel,
+    calendars = [],
+    onToggleCalendarVisible = () => {},
+    onOpenCreateGroup = () => {},
+    onOpenCreateCareer = () => {},
+    onOpenCreateTeacher = () => {},
+    onExportExcel = () => {},
+    onExportExcelDatos = () => {},
+    onImportExcel = () => {},
     alerts = []
   } = props;
+
+  const [isCalendarsDropdownOpen, setIsCalendarsDropdownOpen] = React.useState(false);
 
   return (
     <aside className="sidebar">
       <div className="card side-card">
-        <button className="action-btn" type="button">ASIGNATURAS</button>
         <button className="action-btn" type="button" onClick={onOpenCreateCareer}>CARRERAS</button>
         <button className="action-btn" type="button" onClick={onOpenCreateTeacher}>DOCENTES</button>
         <button className="action-btn" type="button" onClick={onOpenCreateGroup}>GRUPOS</button>
@@ -31,17 +29,31 @@ function Sidebar(props) {
       <div className="card side-card">
         <h2 className="side-title">Calendarios visibles</h2>
 
-        <div className="calendar-list">
-          {calendars.map((calendar) => (
-            <label key={calendar.id} className="calendar-option">
-              <input
-                type="checkbox"
-                checked={calendar.visible}
-                onChange={(event) => onToggleCalendarVisible(calendar.id, event.target.checked)}
-              />
-              <span>{calendar.name}</span>
-            </label>
-          ))}
+        <div className="calendar-dropdown">
+          <button
+            type="button"
+            className="calendar-dropdown-trigger"
+            onClick={() => setIsCalendarsDropdownOpen((prev) => !prev)}
+          >
+            Seleccionar calendarios
+          </button>
+
+          {isCalendarsDropdownOpen && (
+            <div className="calendar-dropdown-menu">
+              <div className="calendar-list">
+                {calendars.map((calendar) => (
+                  <label key={calendar.id} className="calendar-option">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(calendar.visible)}
+                      onChange={(event) => onToggleCalendarVisible(calendar.id, event.target.checked)}
+                    />
+                    <span>{calendar.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

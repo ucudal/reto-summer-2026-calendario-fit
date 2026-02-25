@@ -1,669 +1,541 @@
 /*
   Componente: SubjectGroupsModal
   Que hace:
-  - Muestra modal para gestionar grupos de una asignatura específica.
-  - Permite agregar horarios con días seleccionables y módulos.
-  - Permite crear grupos por cada horario.
-  - Permite asignar docentes y carreras a cada grupo.
+  - Es el segundo paso despues de elegir una materia.
+  - Permite crear un grupo con: nombre, docentes, carreras, dias, desde y hasta.
+  - Al confirmar, envia el grupo al calendario con onSaveGroups.
 */
 
 function SubjectGroupsModal(props) {
   const {
     isOpen,
     subject,
-    careers,
-    days,
-    existingClasses,
+    careers = [],
+    days = [],
     onClose,
     onBack,
-    onSaveGroups
+    onSaveGroups,
+    onGroupCreated
   } = props;
 
-  // Estado para horarios de la asignatura
-  const [schedules, setSchedules] = React.useState([]);
+  const [groupName, setGroupName] = React.useState("");
+  const [teacherSearch, setTeacherSearch] = React.useState("");
+  const [selectedTeachers, setSelectedTeachers] = React.useState([]);
+  const [availableTeachers, setAvailableTeachers] = React.useState([]);
+  const [isCareerDropdownOpen, setIsCareerDropdownOpen] = React.useState(false);
+  const [careerOptions, setCareerOptions] = React.useState([]);
+  const [selectedCareers, setSelectedCareers] = React.useState([]);
+  const [selectedDays, setSelectedDays] = React.useState([]);
+  const [fromTime, setFromTime] = React.useState("08:00");
+  const [toTime, setToTime] = React.useState("09:20");
+  const [error, setError] = React.useState("");
+  const [isSaving, setIsSaving] = React.useState(false);
+  const careerDropdownRef = React.useRef(null);
 
-  // Estado para controlar qué dropdown de carreras está abierto
-  const [openCareerDropdown, setOpenCareerDropdown] = React.useState(null);
+  // Fallback por si no hay backend de docentes disponible.
+  const fallbackTeachers = [
+    "Angel Mamberto",
+    "Javier Yannone",
+    "Maria Gonzalez",
+    "Carlos Rodriguez",
+    "Ana Martinez",
+    "Pedro Sanchez",
+    "Laura Fernandez",
+    "Diego Lopez"
+  ];
 
-  // Estado para controlar qué buscador de docentes está abierto
-  const [openTeacherSearch, setOpenTeacherSearch] = React.useState(null);
+  const startTimes = ["08:00", "09:30", "11:00", "12:25", "16:50", "18:15", "19:45", "21:15"];
+  const endTimes = ["09:20", "10:50", "12:20", "13:45", "18:10", "19:35", "21:05", "22:35"];
 
-  // Estado para búsqueda de docentes
-  const [teacherSearchTerm, setTeacherSearchTerm] = React.useState("");
-
-  // Estado para agregar nuevo horario
-  const [newSchedule, setNewSchedule] = React.useState({
-    selectedDays: [],
-    fromTime: "08:00",
-    toTime: "09:20"
-  });
-
-  // Cierra el dropdown cuando se hace clic fuera
-  React.useEffect(() => {
-    function handleClickOutside(event) {
-      if (openCareerDropdown && !event.target.closest('.career-dropdown-container')) {
-        setOpenCareerDropdown(null);
-      }
-      if (openTeacherSearch && !event.target.closest('.teacher-search-container')) {
-        setOpenTeacherSearch(null);
-        setTeacherSearchTerm("");
-      }
-    }
-    
-    if (openCareerDropdown || openTeacherSearch) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [openCareerDropdown, openTeacherSearch]);
-
-  // Hidrata horarios desde clases ya guardadas para poder editar sin duplicar.
   React.useEffect(() => {
     if (!isOpen) return;
 
-    if (!existingClasses || existingClasses.length === 0) {
-      setSchedules([]);
+    setGroupName("");
+    setTeacherSearch("");
+    setSelectedTeachers([]);
+    setAvailableTeachers([]);
+    setIsCareerDropdownOpen(false);
+    setCareerOptions([]);
+    setSelectedCareers([]);
+    setSelectedDays([]);
+    setFromTime("08:00");
+    setToTime("09:20");
+    setError("");
+    setIsSaving(false);
+  }, [isOpen, subject, careers]);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    let isCancelled = false;
+
+    async function loadTeachers() {
+      try {
+        if (!window.api?.docentes?.listar) {
+          if (!isCancelled) setAvailableTeachers(fallbackTeachers);
+          return;
+        }
+
+        const response = await window.api.docentes.listar();
+        if (isCancelled) return;
+
+        if (!response?.success || !Array.isArray(response.data)) {
+          setAvailableTeachers(fallbackTeachers);
+          return;
+        }
+
+        const names = response.data
+          .map((row) => {
+            const nombre = String(row?.nombre || "").trim();
+            const apellido = String(row?.apellido || "").trim();
+            return `${nombre} ${apellido}`.trim();
+          })
+          .filter(Boolean);
+
+        if (names.length === 0) {
+          setAvailableTeachers(fallbackTeachers);
+          return;
+        }
+
+        setAvailableTeachers([...new Set(names)]);
+      } catch (error) {
+        if (!isCancelled) setAvailableTeachers(fallbackTeachers);
+      }
+    }
+
+    loadTeachers();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isOpen]);
+
+  React.useEffect(() => {
+    if (!isOpen || !subject) return;
+
+    let isCancelled = false;
+
+    async function loadCareerPlanOptions() {
+      try {
+        if (!window.api?.materias?.listarCarrerasPlanes) {
+          if (!isCancelled) {
+            setCareerOptions([]);
+            setSelectedCareers([]);
+          }
+          return;
+        }
+
+        const response = await window.api.materias.listarCarrerasPlanes(subject);
+        if (isCancelled) return;
+
+        if (!response?.success || !Array.isArray(response.data)) {
+          setCareerOptions([]);
+          setSelectedCareers([]);
+          return;
+        }
+
+        const options = response.data
+          .map((row) => ({
+            key: String(row.carreraNombre || "").trim(),
+            label: String(row.carreraNombre || "").trim(),
+            semestre: Number(row.semestre),
+            anio: Number(row.anio)
+          }))
+          .filter((row) => row.label && !row.label.includes("undefined"));
+
+        const unique = [];
+        const seen = new Set();
+        for (const option of options) {
+          if (seen.has(option.key)) continue;
+          seen.add(option.key);
+          unique.push(option);
+        }
+
+        setCareerOptions(unique);
+        setSelectedCareers(unique.map((item) => item.key));
+      } catch (e) {
+        if (!isCancelled) {
+          setCareerOptions([]);
+          setSelectedCareers([]);
+        }
+      }
+    }
+
+    loadCareerPlanOptions();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isOpen, subject]);
+
+  React.useEffect(() => {
+    if (!isOpen || !isCareerDropdownOpen) return;
+
+    function handleOutsideClick(event) {
+      if (!careerDropdownRef.current) return;
+      if (!careerDropdownRef.current.contains(event.target)) {
+        setIsCareerDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [isOpen, isCareerDropdownOpen]);
+
+  if (!isOpen || !subject) return null;
+
+  const filteredTeachers = availableTeachers.filter((teacher) => {
+    const matches = teacher.toLowerCase().includes(teacherSearch.toLowerCase());
+    const notSelected = !selectedTeachers.includes(teacher);
+    return matches && notSelected;
+  });
+
+  function toggleDay(day) {
+    setSelectedDays((prev) =>
+      prev.includes(day) ? prev.filter((item) => item !== day) : [...prev, day]
+    );
+  }
+
+  function toggleCareer(optionKey) {
+    setSelectedCareers((prev) =>
+      prev.includes(optionKey) ? prev.filter((item) => item !== optionKey) : [...prev, optionKey]
+    );
+    setIsCareerDropdownOpen(false);
+  }
+
+  function addTeacher(teacher) {
+    setSelectedTeachers((prev) => [...prev, teacher]);
+    setTeacherSearch("");
+  }
+
+  function removeTeacher(teacher) {
+    setSelectedTeachers((prev) => prev.filter((item) => item !== teacher));
+  }
+
+  function dayUiToDb(dayUi) {
+    const key = String(dayUi || "").trim().toUpperCase();
+    if (key === "LUN") return "Lunes";
+    if (key === "MAR") return "Martes";
+    if (key === "MIE") return "Miercoles";
+    if (key === "JUE") return "Jueves";
+    if (key === "VIE") return "Viernes";
+    if (key === "SAB") return "Sabado";
+    return "";
+  }
+
+  async function handleAddGroup() {
+    if (isSaving) return;
+
+    if (!groupName.trim()) {
+      setError("Escribe un nombre de grupo.");
       return;
     }
 
-    const scheduleMap = new Map();
+    if (selectedDays.length === 0) {
+      setError("Selecciona al menos un dia.");
+      return;
+    }
 
-    existingClasses.forEach((classItem) => {
-      const scheduleKey = `${classItem.start}-${classItem.end}`;
+    const finalSelectedCareers =
+      selectedCareers.length > 0
+        ? [...selectedCareers]
+        : careerOptions.length > 0
+        ? careerOptions.map((option) => option.key)
+        : careers.length > 0
+        ? [careers[0]]
+        : [];
 
-      if (!scheduleMap.has(scheduleKey)) {
-        scheduleMap.set(scheduleKey, {
-          id: Date.now() + scheduleMap.size,
-          days: [],
-          fromTime: classItem.start,
-          toTime: classItem.end,
-          groups: []
-        });
-      }
+    if (finalSelectedCareers.length === 0) {
+      setError("No hay carreras disponibles para crear el grupo.");
+      return;
+    }
 
-      const schedule = scheduleMap.get(scheduleKey);
+    const selectedMeta = careerOptions.filter((option) => finalSelectedCareers.includes(option.key));
+    // Si hay diferencias entre carreras, usamos el primer año/semestre disponible.
+    // (segun tu criterio actual, esto no debe bloquear la creación del grupo)
+    const resolvedSemester = Number(selectedMeta[0]?.semestre || 1);
+    const resolvedYear = Number(selectedMeta[0]?.anio || 1);
 
-      if (classItem.day && !schedule.days.includes(classItem.day)) {
-        schedule.days.push(classItem.day);
-      }
+    const startIndex = startTimes.indexOf(fromTime);
+    const endIndex = endTimes.indexOf(toTime);
+    if (startIndex < 0 || endIndex < 0 || endIndex < startIndex) {
+      setError("Rango de horario inválido.");
+      return;
+    }
 
-      const existingGroup = schedule.groups.find((group) => group.name === classItem.group);
-      const classTeachers = Array.isArray(classItem.teachers) ? classItem.teachers : [];
-      const classCareers = Array.isArray(classItem.careers) ? classItem.careers : [...careers];
+    setError("");
+    setIsSaving(true);
 
-      if (!existingGroup) {
-        schedule.groups.push({
-          id: Date.now() + schedule.groups.length + scheduleMap.size,
-          name: classItem.group || `Grupo ${String.fromCharCode(65 + schedule.groups.length)}`,
-          teachers: [...classTeachers],
-          assignedCareers: [...classCareers]
-        });
+    try {
+      if (!window.api?.materias?.listar || !window.api?.grupos?.crear) {
+        setError("No está disponible la API de grupos/materias.");
+        setIsSaving(false);
         return;
       }
 
-      existingGroup.teachers = [...new Set([...existingGroup.teachers, ...classTeachers])];
-      existingGroup.assignedCareers = [...new Set([...existingGroup.assignedCareers, ...classCareers])];
-    });
+      const materiasResp = await window.api.materias.listar();
+      if (!materiasResp?.success || !Array.isArray(materiasResp.data)) {
+        setError("No se pudo obtener la materia seleccionada.");
+        setIsSaving(false);
+        return;
+      }
 
-    setSchedules(Array.from(scheduleMap.values()));
-  }, [isOpen, existingClasses, careers]);
+      const materia = materiasResp.data.find(
+        (m) => String(m.nombre || "").trim().toLowerCase() === String(subject || "").trim().toLowerCase()
+      );
+      if (!materia?.id) {
+        setError("No se encontró la materia en la base de datos.");
+        setIsSaving(false);
+        return;
+      }
 
-  // Si no está abierto, no renderiza nada
-  if (!isOpen || !subject) return null;
+      const codigo = groupName.trim();
+      const createResp = await window.api.grupos.crear({
+        codigo,
+        idMateria: materia.id,
+        horasSemestrales: (endIndex - startIndex + 1) * 20,
+        esContrasemestre: false,
+        cupo: 30,
+        semestre: resolvedSemester,
+        anio: resolvedYear
+      });
 
-  // Lista mock de docentes
-  const availableTeachers = [
-    "Javier Yannone",
-    "Angel Mamberto",
-    "María González",
-    "Carlos Rodríguez",
-    "Ana Martínez",
-    "Pedro Sánchez",
-    "Laura Fernández",
-    "Diego López",
-    "Carolina Pérez",
-    "Martín Torres"
-  ];
+      if (!createResp?.success) {
+        setError(createResp?.error || "No se pudo crear el grupo en la base.");
+        setIsSaving(false);
+        return;
+      }
 
-  // Horas de inicio de módulos
-  const startTimes = ["08:00", "09:30", "11:00", "12:25", "16:50", "18:15", "19:45", "21:15"];
-  
-  // Horas de fin de módulos
-  const endTimes = ["09:20", "10:50", "12:20", "13:45", "18:10", "19:35", "21:05", "22:35"];
+      const idGrupo = Number(createResp?.data?.id || 0);
+      if (!idGrupo) {
+        setError("No se pudo obtener el ID del grupo creado.");
+        setIsSaving(false);
+        return;
+      }
 
-  // Cambia selección de día
-  function toggleDay(day) {
-    setNewSchedule((prev) => ({
-      ...prev,
-      selectedDays: prev.selectedDays.includes(day)
-        ? prev.selectedDays.filter((d) => d !== day)
-        : [...prev.selectedDays, day]
-    }));
-  }
+      const horariosPayload = [];
+      for (const day of selectedDays) {
+        const dbDay = dayUiToDb(day);
+        if (!dbDay) continue;
+        for (let idx = startIndex; idx <= endIndex; idx += 1) {
+          horariosPayload.push({ dia: dbDay, modulo: idx + 1 });
+        }
+      }
 
-  // Agrega nuevo horario
-  function addSchedule() {
-    if (newSchedule.selectedDays.length === 0) {
-      alert("Selecciona al menos un día");
-      return;
+      if (horariosPayload.length > 0 && window.api?.grupos?.agregarHorarios) {
+        const horariosResp = await window.api.grupos.agregarHorarios(idGrupo, horariosPayload);
+        if (!horariosResp?.success) {
+          setError(horariosResp?.error || "No se pudieron guardar horarios.");
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      if (selectedTeachers.length > 0 && window.api?.docentes?.listar && window.api?.grupos?.asignarProfesor) {
+        const docentesResp = await window.api.docentes.listar();
+        const docentes = docentesResp?.success && Array.isArray(docentesResp.data) ? docentesResp.data : [];
+
+        for (let i = 0; i < selectedTeachers.length; i += 1) {
+          const teacherName = selectedTeachers[i];
+          const [nombre = "", ...rest] = String(teacherName).split(" ");
+          const apellido = rest.join(" ").trim();
+          const docente = docentes.find((d) => {
+            const nom = String(d.nombre || "").trim().toLowerCase();
+            const ape = String(d.apellido || "").trim().toLowerCase();
+            return nom === nombre.toLowerCase() && ape === apellido.toLowerCase();
+          });
+
+          if (!docente?.id) continue;
+
+          await window.api.grupos.asignarProfesor({
+            idGrupo,
+            idProfesor: docente.id,
+            carga: i === 0 ? "Titular" : "Ayudante",
+            esPrincipal: i === 0
+          });
+        }
+      }
+
+    const payloadSchedules = [
+      {
+        id: Date.now(),
+        days: [...selectedDays],
+        fromTime,
+        toTime,
+        groups: [
+          {
+            id: Date.now() + 1,
+            name: groupName.trim(),
+            teachers: [...selectedTeachers],
+            assignedCareers: [...finalSelectedCareers]
+          }
+        ]
+      }
+    ];
+
+      if (onSaveGroups) {
+        onSaveGroups(payloadSchedules, subject, String(resolvedYear));
+      }
+
+      if (onGroupCreated) {
+        await onGroupCreated();
+      }
+
+      if (onClose) onClose();
+      else onBack();
+    } catch (e) {
+      setError(e?.message || "Ocurrió un error guardando el grupo.");
+    } finally {
+      setIsSaving(false);
     }
-
-    if (!newSchedule.fromTime || !newSchedule.toTime) {
-      alert("Selecciona horario de inicio y fin");
-      return;
-    }
-
-    const schedule = {
-      id: Date.now(),
-      days: [...newSchedule.selectedDays],
-      fromTime: newSchedule.fromTime,
-      toTime: newSchedule.toTime,
-      groups: []
-    };
-
-    setSchedules((prev) => [...prev, schedule]);
-    setNewSchedule({ selectedDays: [], fromTime: "08:00", toTime: "09:20" });
-  }
-
-  // Agrega grupo a un horario
-  function addGroupToSchedule(scheduleId) {
-    setSchedules((prev) =>
-      prev.map((sch) => {
-        if (sch.id === scheduleId) {
-          return {
-            ...sch,
-            groups: [
-              ...sch.groups,
-              {
-                id: Date.now(),
-                name: `Grupo ${String.fromCharCode(65 + sch.groups.length)}`,
-                teachers: [],
-                assignedCareers: [...careers]
-              }
-            ]
-          };
-        }
-        return sch;
-      })
-    );
-  }
-
-  // Actualiza grupo
-  function updateGroup(scheduleId, groupId, field, value) {
-    setSchedules((prev) =>
-      prev.map((sch) => {
-        if (sch.id === scheduleId) {
-          return {
-            ...sch,
-            groups: sch.groups.map((grp) =>
-              grp.id === groupId ? { ...grp, [field]: value } : grp
-            )
-          };
-        }
-        return sch;
-      })
-    );
-  }
-
-  // Toggle carrera de un grupo
-  function toggleCareerForGroup(scheduleId, groupId, careerName) {
-    setSchedules((prev) =>
-      prev.map((sch) => {
-        if (sch.id === scheduleId) {
-          return {
-            ...sch,
-            groups: sch.groups.map((grp) => {
-              if (grp.id === groupId) {
-                const assigned = grp.assignedCareers.includes(careerName)
-                  ? grp.assignedCareers.filter((c) => c !== careerName)
-                  : [...grp.assignedCareers, careerName];
-                return { ...grp, assignedCareers: assigned };
-              }
-              return grp;
-            })
-          };
-        }
-        return sch;
-      })
-    );
-  }
-
-  // Agrega docente a un grupo
-  function addTeacherToGroup(scheduleId, groupId, teacherName) {
-    setSchedules((prev) =>
-      prev.map((sch) => {
-        if (sch.id === scheduleId) {
-          return {
-            ...sch,
-            groups: sch.groups.map((grp) => {
-              if (grp.id === groupId && !grp.teachers.includes(teacherName)) {
-                return { ...grp, teachers: [...grp.teachers, teacherName] };
-              }
-              return grp;
-            })
-          };
-        }
-        return sch;
-      })
-    );
-    setTeacherSearchTerm("");
-    setOpenTeacherSearch(null);
-  }
-
-  // Elimina docente de un grupo
-  function removeTeacherFromGroup(scheduleId, groupId, teacherName) {
-    setSchedules((prev) =>
-      prev.map((sch) => {
-        if (sch.id === scheduleId) {
-          return {
-            ...sch,
-            groups: sch.groups.map((grp) => {
-              if (grp.id === groupId) {
-                return { ...grp, teachers: grp.teachers.filter(t => t !== teacherName) };
-              }
-              return grp;
-            })
-          };
-        }
-        return sch;
-      })
-    );
-  }
-
-  // Toggle todas las carreras de un grupo
-  function toggleAllCareersForGroup(scheduleId, groupId) {
-    setSchedules((prev) =>
-      prev.map((sch) => {
-        if (sch.id === scheduleId) {
-          return {
-            ...sch,
-            groups: sch.groups.map((grp) => {
-              if (grp.id === groupId) {
-                const allSelected = grp.assignedCareers.length === careers.length;
-                return { ...grp, assignedCareers: allSelected ? [] : [...careers] };
-              }
-              return grp;
-            })
-          };
-        }
-        return sch;
-      })
-    );
-  }
-
-  // Elimina horario
-  function removeSchedule(scheduleId) {
-    setSchedules((prev) => prev.filter((sch) => sch.id !== scheduleId));
-  }
-
-  // Elimina grupo
-  function removeGroup(scheduleId, groupId) {
-    setSchedules((prev) =>
-      prev.map((sch) => {
-        if (sch.id === scheduleId) {
-          return {
-            ...sch,
-            groups: sch.groups.filter((grp) => grp.id !== groupId)
-          };
-        }
-        return sch;
-      })
-    );
-  }
-
-  // Actualiza días de un horario
-  function updateScheduleDays(scheduleId, days) {
-    setSchedules((prev) =>
-      prev.map((sch) =>
-        sch.id === scheduleId ? { ...sch, days } : sch
-      )
-    );
-  }
-
-  // Actualiza horario de inicio de un horario
-  function updateScheduleTime(scheduleId, field, value) {
-    setSchedules((prev) =>
-      prev.map((sch) =>
-        sch.id === scheduleId ? { ...sch, [field]: value } : sch
-      )
-    );
-  }
-
-  // Función para guardar y cerrar (usa año 1 por defecto, vendrá de BD)
-  function handleSaveAndClose() {
-    if (onSaveGroups) {
-      onSaveGroups(schedules, subject, "1");
-    }
-    onBack();
   }
 
   return (
     <div
       className="modal-backdrop groups-list-backdrop"
       onClick={(event) => {
-        if (event.target === event.currentTarget) onBack();
+        if (event.target === event.currentTarget) {
+          if (onClose) onClose();
+          else onBack();
+        }
       }}
     >
-      <section className="group-modal groups-list-modal subject-groups-modal-container" role="dialog" aria-modal="true">
+      <section className="group-modal groups-list-modal second-step-modal" role="dialog" aria-modal="true">
         <div className="modal-header-with-button">
+          <h2 className="modal-title">Grupos por horario / {subject}</h2>
           <button
             type="button"
-            className="modal-back-btn"
-            aria-label="Volver"
-            onClick={onBack}
+            className="modal-close-btn"
+            onClick={() => {
+              if (onClose) onClose();
+              else onBack();
+            }}
           >
-            ← Volver
+            X
           </button>
-          <h2 className="modal-title">Grupos por horario / {subject}</h2>
         </div>
 
-        <div className="subject-groups-modal-scroll">
-        {/* Sección para agregar nuevo horario */}
-        <div className="subject-schedule-form">
-          <div className="form-new-group-header">+ Nuevo horario</div>
+        <div className="second-step-card">
+          <input
+            className="second-step-group-name"
+            type="text"
+            value={groupName}
+            onChange={(event) => setGroupName(event.target.value)}
+            placeholder="Grupo A"
+          />
 
-          <div className="form-section">
-            <div className="days-selector">
-              {days.map((day) => (
-                <button
-                  key={day}
-                  type="button"
-                  className={`day-btn ${
-                    newSchedule.selectedDays.includes(day) ? "active" : ""
-                  }`}
-                  onClick={() => toggleDay(day)}
-                >
-                  {day}.
-                </button>
+          <div className="second-step-top-row">
+            <div className="teacher-picker">
+              <input
+                className="second-step-teacher-search"
+                type="text"
+                placeholder="Buscar docente"
+                value={teacherSearch}
+                onChange={(event) => setTeacherSearch(event.target.value)}
+              />
+
+              {teacherSearch && (
+                <div className="second-step-dropdown">
+                  {filteredTeachers.length === 0 && (
+                    <div className="second-step-dropdown-item">No se encontraron docentes.</div>
+                  )}
+
+                  {filteredTeachers.map((teacher) => (
+                    <button
+                      key={teacher}
+                      type="button"
+                      className="second-step-dropdown-item"
+                      onClick={() => addTeacher(teacher)}
+                    >
+                      {teacher}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="second-step-teacher-chips">
+              {selectedTeachers.map((teacher) => (
+                <span key={teacher} className="teacher-chip">
+                  {teacher}
+                  <button type="button" className="teacher-chip-remove-btn" onClick={() => removeTeacher(teacher)}>
+                    X
+                  </button>
+                </span>
               ))}
+            </div>
+
+            <div className="second-step-careers" ref={careerDropdownRef}>
+              <button
+                type="button"
+                className="second-step-careers-btn"
+                onClick={() => setIsCareerDropdownOpen((prev) => !prev)}
+              >
+                {careerOptions.length === 0
+                  ? "Sin carreras para esta materia"
+                  : selectedCareers.length === careerOptions.length
+                  ? "Todas las carreras posibles"
+                  : `${selectedCareers.length} seleccionadas`}
+              </button>
+
+              {isCareerDropdownOpen && (
+                <div className="second-step-dropdown second-step-careers-dropdown">
+                  {careerOptions.length === 0 && (
+                    <div className="second-step-dropdown-item">No hay carreras para esta materia.</div>
+                  )}
+
+                  {careerOptions.map((option) => (
+                    <label key={option.key} className="second-step-career-option">
+                      <input
+                        type="checkbox"
+                        checked={selectedCareers.includes(option.key)}
+                        onChange={() => toggleCareer(option.key)}
+                      />
+                      <span>{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="form-section modules-section">
-            <label className="time-select-label">
-              Desde
-              <select
-                className="modules-dropdown-btn"
-                value={newSchedule.fromTime}
-                onChange={(e) =>
-                  setNewSchedule((prev) => ({
-                    ...prev,
-                    fromTime: e.target.value
-                  }))
-                }
+          <div className="days-selector second-step-days">
+            {days.map((day) => (
+              <button
+                key={day}
+                type="button"
+                className={`day-btn ${selectedDays.includes(day) ? "active" : ""}`}
+                onClick={() => toggleDay(day)}
               >
+                {day}.
+              </button>
+            ))}
+          </div>
+
+          <div className="second-step-time-row">
+            <label className="second-step-time-label">
+              Desde
+              <select className="second-step-time-select" value={fromTime} onChange={(event) => setFromTime(event.target.value)}>
                 {startTimes.map((time) => (
-                  <option key={time} value={time}>
-                    {time}
-                  </option>
+                  <option key={time} value={time}>{time}</option>
                 ))}
               </select>
             </label>
 
-            <label className="time-select-label">
+            <label className="second-step-time-label">
               Hasta
-              <select
-                className="modules-dropdown-btn"
-                value={newSchedule.toTime}
-                onChange={(e) =>
-                  setNewSchedule((prev) => ({
-                    ...prev,
-                    toTime: e.target.value
-                  }))
-                }
-              >
+              <select className="second-step-time-select" value={toTime} onChange={(event) => setToTime(event.target.value)}>
                 {endTimes.map((time) => (
-                  <option key={time} value={time}>
-                    {time}
-                  </option>
+                  <option key={time} value={time}>{time}</option>
                 ))}
               </select>
             </label>
           </div>
 
-          <button
-            type="button"
-            className="add-schedule-btn"
-            onClick={addSchedule}
-          >
-            + Agregar horario
-          </button>
-        </div>
+          {error && <div className="modal-error">{error}</div>}
 
-        {/* Lista de horarios con grupos */}
-        <div className="schedules-list">
-          {schedules.length === 0 ? (
-            <p className="empty-schedules-message">
-              Aún no hay ningún horario creado
-            </p>
-          ) : (
-            schedules.map((schedule) => (
-              <div key={schedule.id} className="schedule-card">
-                {/* Sección de grupos */}
-                <div className="schedule-groups-section">
-                  {schedule.groups.length === 0 ? (
-                    <button
-                      type="button"
-                      className="modules-dropdown-btn"
-                      onClick={() => addGroupToSchedule(schedule.id)}
-                    >
-                      + Crear primer grupo
-                    </button>
-                  ) : (
-                    <>
-                      {schedule.groups.map((group) => (
-                        <div key={group.id} className="group-card-wrapper">
-                          {/* Encabezado del grupo */}
-                          <div className="group-card-header-row">
-                            <h3 className="group-card-title">{group.name}</h3>
-                            <button
-                              type="button"
-                              className="group-delete-btn-inline"
-                              onClick={() => removeGroup(schedule.id, group.id)}
-                            >
-                              🗑
-                            </button>
-                          </div>
-
-                          {/* Grid de 3 columnas */}
-                          <div className="group-grid-3col">
-                            {/* Columna 1: Buscador de docentes */}
-                            <div className="teacher-search-container">
-                              <input
-                                type="text"
-                                placeholder="Buscar docente"
-                                className="modules-dropdown-btn teacher-search-input"
-                                value={openTeacherSearch === `${schedule.id}-${group.id}` ? teacherSearchTerm : ""}
-                                onFocus={() => setOpenTeacherSearch(`${schedule.id}-${group.id}`)}
-                                onChange={(e) => setTeacherSearchTerm(e.target.value)}
-                              />
-
-                              {openTeacherSearch === `${schedule.id}-${group.id}` && (
-                                <div className="dropdown-menu-absolute">
-                                  {availableTeachers
-                                    .filter(teacher => 
-                                      teacher.toLowerCase().includes(teacherSearchTerm.toLowerCase()) &&
-                                      !group.teachers.includes(teacher)
-                                    )
-                                    .map((teacher) => (
-                                      <div
-                                        key={teacher}
-                                        className="dropdown-item-block"
-                                        onClick={() => addTeacherToGroup(schedule.id, group.id, teacher)}
-                                      >
-                                        {teacher}
-                                      </div>
-                                    ))}
-                                  {availableTeachers.filter(teacher => 
-                                    teacher.toLowerCase().includes(teacherSearchTerm.toLowerCase()) &&
-                                    !group.teachers.includes(teacher)
-                                  ).length === 0 && (
-                                    <div className="dropdown-empty-message">
-                                      No hay docentes disponibles
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Columna 2: Chips de docentes o mensaje */}
-                            <div className="teacher-chips-container">
-                              {group.teachers.length === 0 ? (
-                                <span className="teacher-empty-message">Docente sin asignar</span>
-                              ) : (
-                                group.teachers.map((teacher) => (
-                                  <span key={teacher} className="teacher-chip">
-                                    {teacher}
-                                    <button
-                                      type="button"
-                                      onClick={() => removeTeacherFromGroup(schedule.id, group.id, teacher)}
-                                      className="teacher-chip-remove-btn"
-                                    >
-                                      ✕
-                                    </button>
-                                  </span>
-                                ))
-                              )}
-                            </div>
-
-                            {/* Columna 3: Selector de carreras */}
-                            <div className="career-dropdown-container">
-                              <button
-                                type="button"
-                                className="modules-dropdown-btn group-careers-select career-dropdown-btn-full"
-                                onClick={() => {
-                                  const dropdownId = `${schedule.id}-${group.id}`;
-                                  setOpenCareerDropdown(openCareerDropdown === dropdownId ? null : dropdownId);
-                                }}
-                              >
-                                {group.assignedCareers.length === 0
-                                  ? "Seleccionar carreras"
-                                  : group.assignedCareers.length === careers.length
-                                  ? "Todas las carreras"
-                                  : `${group.assignedCareers.length} seleccionadas`}
-                                {" ▼"}
-                              </button>
-
-                              {openCareerDropdown === `${schedule.id}-${group.id}` && (
-                                <div className="dropdown-menu-absolute">
-                                  <label className="dropdown-item-block dropdown-item-bold">
-                                    <input
-                                      type="checkbox"
-                                      checked={group.assignedCareers.length === careers.length}
-                                      onChange={() => toggleAllCareersForGroup(schedule.id, group.id)}
-                                    />
-                                    {" "}Todas las carreras
-                                  </label>
-                                  {careers.map((career) => (
-                                    <label key={career} className="dropdown-item-block">
-                                      <input
-                                        type="checkbox"
-                                        checked={group.assignedCareers.includes(career)}
-                                        onChange={() => toggleCareerForGroup(schedule.id, group.id, career)}
-                                      />
-                                      {" "}{career}
-                                    </label>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-
-                      <button
-                        type="button"
-                        className="modules-dropdown-btn new-group-btn-spaced"
-                        onClick={() => addGroupToSchedule(schedule.id)}
-                      >
-                        + Nuevo grupo
-                      </button>
-                    </>
-                  )}
-                </div>
-
-                {/* Separador visual */}
-                <div className="schedule-divider"></div>
-
-                {/* Sección de días y horarios */}
-                <div className="schedule-footer">
-                  <div className="days-selector">
-                    {days.map((day) => (
-                      <button
-                        key={day}
-                        type="button"
-                        className={`day-btn ${
-                          schedule.days.includes(day) ? "active" : ""
-                        }`}
-                        onClick={() => {
-                          const newDays = schedule.days.includes(day)
-                            ? schedule.days.filter((d) => d !== day)
-                            : [...schedule.days, day];
-                          updateScheduleDays(schedule.id, newDays);
-                        }}
-                      >
-                        {day}.
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="form-section modules-section">
-                    <label className="time-select-label">
-                      Desde
-                      <select
-                        className="modules-dropdown-btn"
-                        value={schedule.fromTime}
-                        onChange={(e) =>
-                          updateScheduleTime(schedule.id, "fromTime", e.target.value)
-                        }
-                      >
-                        {startTimes.map((time) => (
-                          <option key={time} value={time}>
-                            {time}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="time-select-label">
-                      Hasta
-                      <select
-                        className="modules-dropdown-btn"
-                        value={schedule.toTime}
-                        onChange={(e) =>
-                          updateScheduleTime(schedule.id, "toTime", e.target.value)
-                        }
-                      >
-                        {endTimes.map((time) => (
-                          <option key={time} value={time}>
-                            {time}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="schedule-delete-btn"
-                    onClick={() => removeSchedule(schedule.id)}
-                  >
-                    🗑
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-        </div>
-
-        {/* Botón para guardar y cerrar */}
-        <div className="subject-groups-modal-footer">
-          <button
-            type="button"
-            className="add-schedule-btn"
-            onClick={handleSaveAndClose}
-          >
-            Guardar y cerrar
+          <button type="button" className="add-schedule-btn second-step-submit" onClick={handleAddGroup} disabled={isSaving}>
+            {isSaving ? "Guardando..." : "+ Agregar grupo"}
           </button>
         </div>
       </section>
