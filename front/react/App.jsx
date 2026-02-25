@@ -19,6 +19,7 @@ function App() {
   const createCareerModalFns = window.CreateCareerModalFunctions;
   const createGroupModalFns = window.CreateGroupModalFunctions;
   const createTeacherModalFns = window.CreateTeacherModalFunctions;
+  const createSubjectModalFns = window.CreateSubjectModalFunctions;
   const groupsModalFns = window.GroupsModalFunctions;
   const subjectGroupsModalFns = window.SubjectGroupsModalFunctions;
   const createNewGroupModalFns = window.CreateNewGroupModalFunctions;
@@ -45,6 +46,44 @@ function App() {
   const [isCreateTeacherOpen, setIsCreateTeacherOpen] = React.useState(false);
   const [teacherModalError, setTeacherModalError] = React.useState("");
   const [teacherForm, setTeacherForm] = React.useState({ nombre: "", apellido: "", correo: "" });
+
+  const [subjects, setSubjects] = React.useState([
+    {
+      id: 1,
+      nombre: "Programación 1",
+      tipo: "A",
+      creditos: 8,
+      carreras: ["Ingenieria en Sistemas 2021"],
+      carrerasSemestre: { "Ingenieria en Sistemas 2021": "1er s 1er año" },
+      requerimientosSalon: "Laboratorio con 30 computadoras"
+    },
+    {
+      id: 2,
+      nombre: "Matemática Discreta",
+      tipo: "B",
+      creditos: 6,
+      carreras: ["Ingenieria en Sistemas 2021", "Ingenieria Electrica 2021"],
+      carrerasSemestre: {
+        "Ingenieria en Sistemas 2021": "1er s 1er año",
+        "Ingenieria Electrica 2021": "1er s 1er año"
+      },
+      requerimientosSalon: ""
+    }
+  ]);
+  const [isSubjectsListOpen, setIsSubjectsListOpen] = React.useState(false);
+  const [isCreateSubjectOpen, setIsCreateSubjectOpen] = React.useState(false);
+  const [subjectModalError, setSubjectModalError] = React.useState("");
+  const [subjectForm, setSubjectForm] = React.useState({
+    id: null,
+    nombre: "",
+    tipo: "",
+    creditos: "",
+    carreras: [],
+    carrerasSemestre: {},
+    requerimientosSalon: ""
+  });
+  const [subjectEditMode, setSubjectEditMode] = React.useState(null);
+  const [subjectOpenedFromList, setSubjectOpenedFromList] = React.useState(false);
 
   const [isCreateSemesterOpen, setIsCreateSemesterOpen] = React.useState(false);
   const [semesterModalError, setSemesterModalError] = React.useState("");
@@ -335,6 +374,126 @@ function App() {
     });
   }
 
+  function openSubjectsListModal() {
+    setIsSubjectsListOpen(true);
+  }
+
+  function closeSubjectsListModal() {
+    setIsSubjectsListOpen(false);
+  }
+
+  function openCreateSubjectFromList() {
+    setSubjectForm({
+      id: null,
+      nombre: "",
+      tipo: "",
+      creditos: "",
+      carreras: [],
+      carrerasSemestre: {},
+      requerimientosSalon: ""
+    });
+    setSubjectModalError("");
+    setSubjectEditMode(null);
+    setSubjectOpenedFromList(true);
+    setIsSubjectsListOpen(false);
+    setIsCreateSubjectOpen(true);
+  }
+
+  function closeCreateSubjectModal() {
+    setSubjectModalError("");
+    setIsCreateSubjectOpen(false);
+    setSubjectEditMode(null);
+    setSubjectOpenedFromList(false);
+  }
+
+  function backToSubjectsListFromModal() {
+    closeCreateSubjectModal();
+    setIsSubjectsListOpen(true);
+  }
+
+  function updateSubjectForm(field, value) {
+    setSubjectForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function toggleSubjectCareer(career) {
+    setSubjectForm((prev) => {
+      const current = Array.isArray(prev.carreras) ? prev.carreras : [];
+      const nextCareers = current.includes(career)
+        ? current.filter((item) => item !== career)
+        : [...current, career];
+
+      const nextSemesters = { ...(prev.carrerasSemestre || {}) };
+      if (!nextCareers.includes(career)) delete nextSemesters[career];
+
+      return {
+        ...prev,
+        carreras: nextCareers,
+        carrerasSemestre: nextSemesters
+      };
+    });
+  }
+
+  function changeSubjectCareerSemester(career, semesterValue) {
+    setSubjectForm((prev) => ({
+      ...prev,
+      carrerasSemestre: {
+        ...(prev.carrerasSemestre || {}),
+        [career]: semesterValue
+      }
+    }));
+  }
+
+  function selectSubjectToManage(subject) {
+    setSubjectForm({
+      id: subject.id,
+      nombre: subject.nombre || "",
+      tipo: subject.tipo || "",
+      creditos: subject.creditos || "",
+      carreras: Array.isArray(subject.carreras) ? [...subject.carreras] : [],
+      carrerasSemestre: { ...(subject.carrerasSemestre || {}) },
+      requerimientosSalon: subject.requerimientosSalon || ""
+    });
+    setSubjectModalError("");
+    setSubjectEditMode(subject);
+    setSubjectOpenedFromList(true);
+    setIsSubjectsListOpen(false);
+    setIsCreateSubjectOpen(true);
+  }
+
+  function confirmCreateSubject() {
+    if (!createSubjectModalFns) return;
+
+    if (subjectEditMode) {
+      createSubjectModalFns.confirmEditSubject({
+        subjectForm,
+        subjects,
+        originalSubject: subjectEditMode,
+        setSubjectModalError,
+        setSubjects,
+        closeCreateSubjectModal
+      });
+      return;
+    }
+
+    createSubjectModalFns.confirmCreateSubject({
+      subjectForm,
+      subjects,
+      setSubjectModalError,
+      setSubjects,
+      closeCreateSubjectModal
+    });
+  }
+
+  function deleteSubject() {
+    if (!createSubjectModalFns || !subjectEditMode) return;
+    createSubjectModalFns.confirmDeleteSubject({
+      subjectForm,
+      subjects,
+      setSubjects,
+      closeCreateSubjectModal
+    });
+  }
+
   async function handleExportExcel() {
     try {
       if (!window.exportSchedulesToExcel) return;
@@ -440,6 +599,7 @@ function App() {
           <Sidebar
             calendars={data.calendars}
             onToggleCalendarVisible={toggleCalendarVisible}
+            onOpenSubjects={openSubjectsListModal}
             onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
             onOpenCreateCareer={openCreateCareerModal}
             onOpenCreateTeacher={openCreateTeacherModal}
@@ -525,6 +685,29 @@ function App() {
         onClose={closeCreateTeacherModal}
         onChange={updateTeacherForm}
         onSubmit={confirmCreateTeacher}
+      />
+
+      <SubjectsListModal
+        isOpen={isSubjectsListOpen}
+        subjects={subjects}
+        onClose={closeSubjectsListModal}
+        onSelectSubject={selectSubjectToManage}
+        onCreateNew={openCreateSubjectFromList}
+      />
+
+      <CreateSubjectModal
+        isOpen={isCreateSubjectOpen}
+        form={subjectForm}
+        errorMessage={subjectModalError}
+        onClose={closeCreateSubjectModal}
+        onBack={subjectOpenedFromList ? backToSubjectsListFromModal : null}
+        onChange={updateSubjectForm}
+        onCareerToggle={toggleSubjectCareer}
+        onCareerSemesterChange={changeSubjectCareerSemester}
+        onSubmit={confirmCreateSubject}
+        onDelete={subjectEditMode ? deleteSubject : null}
+        isEditMode={Boolean(subjectEditMode)}
+        availableCareers={careers}
       />
 
       <CreateSemesterModal
