@@ -1,12 +1,23 @@
 import { writeFile } from "node:fs/promises";
-import XLSX from "xlsx";
 import { listarFilasExportacionDesdeDb } from "./exportaciones.repository.js";
 import { ipcMain, dialog } from "electron";
 import { importarModulosDesdeExcel } from "./importaciones.service.js";
 
+let xlsxModulePromise = null;
+
+async function getXlsxModule() {
+  if (!xlsxModulePromise) {
+    xlsxModulePromise = import("xlsx");
+  }
+  const mod = await xlsxModulePromise;
+  return mod.default || mod;
+}
+
 export function registerExportacionesHandlers() {
   ipcMain.handle("exportaciones:guardarExcel", async (event, payload = {}) => {
     try {
+      const XLSX = await getXlsxModule();
+
       const {
         defaultFileName = "calendario-bd.xlsx",
         sheetName = "Datos",
