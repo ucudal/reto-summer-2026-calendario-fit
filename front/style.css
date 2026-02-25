@@ -225,12 +225,71 @@ body {
   gap: 8px;
 }
 
+.calendar-dropdown-container {
+  position: relative;
+}
+
+.calendar-dropdown-btn {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d0d7db;
+  border-radius: 8px;
+  background: #fff;
+  color: #4f5b5f;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.calendar-dropdown-btn:hover {
+  border-color: #3ba9ab;
+  background: #f9fbfc;
+}
+
+.calendar-dropdown-btn:active {
+  border-color: #3ba9ab;
+}
+
+.dropdown-arrow {
+  display: inline-block;
+  font-size: 11px;
+  transition: transform 0.2s ease;
+}
+
+.dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+
+.calendar-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #d0d7db;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  padding: 8px 0;
+}
+
 .calendar-option {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
   color: #4f5b5f;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.calendar-option:hover {
+  background: #f0f7f8;
 }
 
 /* Make checked checkboxes use a green accent instead of blue */
@@ -397,6 +456,19 @@ body {
   padding: 8px;
   overflow: hidden;
   border: 1px solid rgba(30, 40, 50, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  pointer-events: auto;
+}
+
+.event-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.event-card:focus {
+  outline: 2px solid #3ba9ab;
+  outline-offset: -1px;
 }
 
 .event-title {

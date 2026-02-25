@@ -18,6 +18,22 @@ function Sidebar(props) {
         alerts = []
     } = props;
 
+    const [isCalendarDropdownOpen, setIsCalendarDropdownOpen] = React.useState(false);
+
+    // Cierra el dropdown cuando se hace clic fuera
+    React.useEffect(() => {
+        function handleClickOutside(event) {
+            if (isCalendarDropdownOpen && !event.target.closest('.calendar-dropdown-container')) {
+                setIsCalendarDropdownOpen(false);
+            }
+        }
+
+        if (isCalendarDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [isCalendarDropdownOpen]);
+
     return (
         <aside className="sidebar">
             <div className="card side-card">
@@ -30,17 +46,30 @@ function Sidebar(props) {
             <div className="card side-card">
                 <h2 className="side-title">Calendarios visibles</h2>
 
-                <div className="calendar-list">
-                    {calendars.map((calendar) => (
-                        <label key={calendar.id} className="calendar-option">
-                            <input
-                                type="checkbox"
-                                checked={calendar.visible}
-                                onChange={(event) => onToggleCalendarVisible(calendar.id, event.target.checked)}
-                            />
-                            <span>{calendar.name}</span>
-                        </label>
-                    ))}
+                <div className="calendar-dropdown-container">
+                    <button
+                        type="button"
+                        className="calendar-dropdown-btn"
+                        onClick={() => setIsCalendarDropdownOpen(!isCalendarDropdownOpen)}
+                    >
+                        {calendars.filter(c => c.visible).length} de {calendars.length} calendarios
+                        <span className={`dropdown-arrow ${isCalendarDropdownOpen ? 'open' : ''}`}>▼</span>
+                    </button>
+
+                    {isCalendarDropdownOpen && (
+                        <div className="calendar-dropdown-menu">
+                            {calendars.map((calendar) => (
+                                <label key={calendar.id} className="calendar-option">
+                                    <input
+                                        type="checkbox"
+                                        checked={calendar.visible}
+                                        onChange={(event) => onToggleCalendarVisible(calendar.id, event.target.checked)}
+                                    />
+                                    <span>{calendar.name}</span>
+                                </label>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 

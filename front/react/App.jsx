@@ -123,7 +123,7 @@ function App() {
     if (!targetCalendar) return [];
 
     return targetCalendar.classes.filter(
-      (classItem) => classItem.title === selectedSubject && classItem.type === "practice"
+      (classItem) => classItem.title === selectedSubject
     );
   }, [data.calendars, selectedSubject]);
 
@@ -328,6 +328,69 @@ function App() {
     }));
   }
 
+  // Devuelve calendario destino segun anio elegido.
+  function findCalendarForYear(selectedYear, calendars) {
+    const calendarsOfYear = calendars.filter(
+      (calendar) => yearFromCalendarName(calendar.name) === selectedYear
+    );
+
+    if (calendarsOfYear.length === 0) return null;
+
+    // Prioriza uno visible del anio; si no, toma el primero del anio.
+    return calendarsOfYear.find((calendar) => calendar.visible) || calendarsOfYear[0];
+  }
+
+  /*
+    Funcion simple para principiantes:
+    - Recibe el estado actual (prevData)
+    - Busca el calendario del anio elegido
+    - Agrega el nuevo grupo al array "classes" de ese calendario
+    - Devuelve el nuevo estado
+  */
+  function addGroupToCalendar(prevData, selectedYear, newGroups) {
+    const targetCalendar = findCalendarForYear(selectedYear, prevData.calendars);
+
+    // Si no existe calendario para ese anio, no cambia nada.
+    if (!targetCalendar) return prevData;
+
+    return {
+      ...prevData,
+      calendars: prevData.calendars.map((calendar) => {
+        if (calendar.id !== targetCalendar.id) return calendar;
+
+        // Importante: NO reemplaza grupos existentes.
+        // Siempre agrega al final, asi pueden coexistir varios
+        // en el mismo dia y horario.
+        return {
+          ...calendar,
+          classes: [...calendar.classes, ...newGroups]
+        };
+      })
+    };
+  }
+
+  function replaceSubjectGroupsInCalendar(prevData, selectedYear, subject, newGroups) {
+    const targetCalendar = findCalendarForYear(selectedYear, prevData.calendars);
+
+    if (!targetCalendar) return prevData;
+
+    return {
+      ...prevData,
+      calendars: prevData.calendars.map((calendar) => {
+        if (calendar.id !== targetCalendar.id) return calendar;
+
+        const classesWithoutSubject = calendar.classes.filter(
+          (classItem) => classItem.title !== subject
+        );
+
+        return {
+          ...calendar,
+          classes: [...classesWithoutSubject, ...newGroups]
+        };
+      })
+    };
+  }
+
   return (
     <>
       <HeaderBar
@@ -371,6 +434,7 @@ function App() {
                   headerHeight={HEADER_HEIGHT}
                   timeColWidth={TIME_COL_WIDTH}
                   colorByType={COLOR_BY_TYPE}
+                  onSelectSubject={subjectGroupsModalHandlers.openSubjectGroupsModal}
                 />
               ))}
             </div>

@@ -13,7 +13,8 @@ function ScheduleGrid(props) {
     rowHeight,
     headerHeight,
     timeColWidth,
-    colorByType
+    colorByType,
+    onSelectSubject
   } = props;
 
   // Ancho base de una columna de dia.
@@ -202,7 +203,23 @@ function ScheduleGrid(props) {
             }}
           >
             {calendar.classes.map((classItem, index) => (
-              <article key={`${calendar.id}-${index}`} className="event-card" style={getEventStyle(classItem, index)}>
+              <article
+                key={`${calendar.id}-${index}`}
+                className="event-card"
+                style={getEventStyle(classItem, index)}
+                onClick={() => {
+                  if (onSelectSubject) {
+                    onSelectSubject(classItem.title);
+                  }
+                }}
+                role="button"
+                tabIndex="0"
+                onKeyDown={(e) => {
+                  if ((e.key === "Enter" || e.key === " ") && onSelectSubject) {
+                    onSelectSubject(classItem.title);
+                  }
+                }}
+              >
                 <div className="event-title">{classItem.title}</div>
                 <div className="event-meta">{classItem.group}</div>
                 <div className="event-meta">{classItem.detail}</div>
