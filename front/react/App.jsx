@@ -187,27 +187,6 @@ function App() {
     };
   }
 
-  function replaceSubjectGroupsInCalendar(prevData, selectedYear, subject, newGroups) {
-    const targetCalendar = findCalendarForYear(selectedYear, prevData.calendars);
-    if (!targetCalendar) return prevData;
-
-    return {
-      ...prevData,
-      calendars: prevData.calendars.map((calendar) => {
-        if (calendar.id !== targetCalendar.id) return calendar;
-
-        const classesWithoutSubjectPractice = calendar.classes.filter(
-          (classItem) => !(classItem.title === subject && classItem.type === "practice")
-        );
-
-        return {
-          ...calendar,
-          classes: [...classesWithoutSubjectPractice, ...newGroups]
-        };
-      })
-    };
-  }
-
   const existingSubjectClasses = React.useMemo(() => {
     if (!selectedSubject) return [];
 
