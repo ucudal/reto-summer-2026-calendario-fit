@@ -48,7 +48,12 @@ function App() {
 
   const [isCreateSemesterOpen, setIsCreateSemesterOpen] = React.useState(false);
   const [semesterModalError, setSemesterModalError] = React.useState("");
-  const [semesterForm, setSemesterForm] = React.useState({ sourceLectiveTerm: "", newLectiveName: "" });
+  const [dbSemesters, setDbSemesters] = React.useState([]);
+  const [semesterForm, setSemesterForm] = React.useState({
+    sourceLectiveTerm: "",
+    newSemester: "1er semestre",
+    newYear: String(new Date().getFullYear())
+  });
 
   const hourOptionsFrom = React.useMemo(() => TIME_BLOCKS.map((block) => block.start), [TIME_BLOCKS]);
   const hourOptionsTo = React.useMemo(() => TIME_BLOCKS.map((block) => block.end), [TIME_BLOCKS]);
@@ -59,6 +64,14 @@ function App() {
   const currentLectiveTerm = React.useMemo(() => {
     return visibleCalendars[0]?.lectiveTerm || data.calendars[0]?.lectiveTerm || "";
   }, [visibleCalendars, data.calendars]);
+
+  const calendarsForSidebar = React.useMemo(() => {
+    if (!currentLectiveTerm) return data.calendars;
+    const filtered = data.calendars.filter(
+      (calendar) => String(calendar.lectiveTerm || "") === String(currentLectiveTerm)
+    );
+    return filtered.length > 0 ? filtered : data.calendars;
+  }, [data.calendars, currentLectiveTerm]);
 
   function normalizeText(value) {
     return String(value || "")
@@ -157,6 +170,47 @@ function App() {
   React.useEffect(() => {
     reloadGroupsFromDb();
   }, []);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function loadSemestersFromDb() {
+      try {
+        if (!window.api?.semestres?.listar) return;
+        const response = await window.api.semestres.listar();
+        if (cancelled) return;
+        if (!response?.success || !Array.isArray(response.data)) return;
+        setDbSemesters(response.data);
+      } catch (error) {
+        console.error("No se pudieron cargar semestres lectivos desde DB:", error);
+      }
+    }
+
+    loadSemestersFromDb();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const semesterPickerItems = React.useMemo(() => {
+    const fromCalendars = data.calendars
+      .map((calendar) => String(calendar?.lectiveTerm || "").trim())
+      .filter(Boolean)
+      .map((lectiveTerm) => ({ lectiveTerm }));
+
+    const fromDb = dbSemesters
+      .map((row) => String(row?.nombre || "").trim())
+      .filter(Boolean)
+      .map((lectiveTerm) => ({ lectiveTerm }));
+
+    const map = new Map();
+    [...fromCalendars, ...fromDb].forEach((item) => {
+      if (!map.has(item.lectiveTerm)) map.set(item.lectiveTerm, item);
+    });
+
+    return Array.from(map.values());
+  }, [data.calendars, dbSemesters]);
 
   React.useEffect(() => {
     const selectedCareerNormalized = normalizeText(selectedCareer);
@@ -367,7 +421,11 @@ function App() {
   }
 
   function openCreateSemesterModal() {
-    setSemesterForm({ sourceLectiveTerm: "", newLectiveName: "" });
+    setSemesterForm({
+      sourceLectiveTerm: "",
+      newSemester: "1er semestre",
+      newYear: String(new Date().getFullYear())
+    });
     setSemesterModalError("");
     setIsCreateSemesterOpen(true);
   }
@@ -381,24 +439,46 @@ function App() {
     setSemesterForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  function confirmCreateSemester() {
+  async function confirmCreateSemester() {
     const sourceTerm = String(semesterForm.sourceLectiveTerm || "").trim();
-    const newName = String(semesterForm.newLectiveName || "").trim();
+    const selectedSemester = String(semesterForm.newSemester || "").trim();
+    const selectedYear = String(semesterForm.newYear || "").trim();
+    const newName = `${selectedSemester} ${selectedYear}`.trim();
 
     if (!sourceTerm) {
       setSemesterModalError("Debe seleccionar el semestre lectivo a copiar.");
       return;
     }
 
-    if (!newName) {
-      setSemesterModalError("Debe ingresar el nombre del nuevo semestre lectivo.");
+    if (!selectedSemester || !selectedYear) {
+      setSemesterModalError("Debe seleccionar semestre y año para el nuevo semestre lectivo.");
       return;
     }
 
-    const calendarsToCopy = data.calendars.filter((calendar) => calendar.lectiveTerm === sourceTerm);
-    if (calendarsToCopy.length === 0) {
-      setSemesterModalError("No hay calendarios para ese semestre lectivo.");
-      return;
+    const isBlankSemester = sourceTerm === "__blank__";
+    let calendarsToCopy = [];
+
+    if (isBlankSemester) {
+      calendarsToCopy = [];
+      for (let year = 1; year <= 5; year += 1) {
+        for (let semester = 1; semester <= 2; semester += 1) {
+          calendarsToCopy.push({
+            id: `s${semester}y${year}`,
+            name: `${semester === 1 ? "1er" : "2do"} semestre ${year}° año`,
+            subtitle: selectedCareer || "",
+            lectiveTerm: newName,
+            visible: true,
+            classes: [],
+            alerts: []
+          });
+        }
+      }
+    } else {
+      calendarsToCopy = data.calendars.filter((calendar) => calendar.lectiveTerm === sourceTerm);
+      if (calendarsToCopy.length === 0) {
+        setSemesterModalError("No hay calendarios para ese semestre lectivo.");
+        return;
+      }
     }
 
     const now = Date.now();
@@ -407,18 +487,36 @@ function App() {
       id: `${calendar.id}-copy-${now}-${index}`,
       lectiveTerm: newName,
       visible: true,
-      classes: calendar.classes.map((item) => ({ ...item })),
+      classes: isBlankSemester ? [] : calendar.classes.map((item) => ({ ...item })),
       alerts: []
     }));
 
     setData((prev) => ({
       ...prev,
       calendars: prev.calendars
-        .map((calendar) =>
-          calendar.lectiveTerm === sourceTerm ? { ...calendar, visible: false } : calendar
-        )
+        .map((calendar) => {
+          if (isBlankSemester) return { ...calendar, visible: false };
+          return calendar.lectiveTerm === sourceTerm ? { ...calendar, visible: false } : calendar;
+        })
         .concat(copies)
     }));
+
+    try {
+      if (window.api?.semestres?.crear) {
+        await window.api.semestres.crear({
+          nombre: newName,
+          esEnBlanco: isBlankSemester,
+          origenNombre: isBlankSemester ? null : sourceTerm
+        });
+
+        const refreshed = await window.api.semestres.listar();
+        if (refreshed?.success && Array.isArray(refreshed.data)) {
+          setDbSemesters(refreshed.data);
+        }
+      }
+    } catch (error) {
+      console.error("No se pudo persistir el semestre lectivo en DB:", error);
+    }
 
     closeCreateSemesterModal();
   }
@@ -438,7 +536,7 @@ function App() {
       <main className="page">
         <section className="layout">
           <Sidebar
-            calendars={data.calendars}
+            calendars={calendarsForSidebar}
             onToggleCalendarVisible={toggleCalendarVisible}
             onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
             onOpenCreateCareer={openCreateCareerModal}
@@ -530,7 +628,7 @@ function App() {
       <CreateSemesterModal
         isOpen={isCreateSemesterOpen}
         form={semesterForm}
-        availableSemesters={data.calendars}
+        availableSemesters={semesterPickerItems}
         errorMessage={semesterModalError}
         onClose={closeCreateSemesterModal}
         onChange={updateSemesterForm}
