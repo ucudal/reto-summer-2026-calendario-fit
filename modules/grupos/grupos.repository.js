@@ -1,7 +1,7 @@
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "../../db/database.js";
-import { grupos, horarios, materias } from "../../db/drizzle/schema/base.js";
-import { grupoHorario, grupoRequerimientoSalon, profesorGrupo } from "../../db/drizzle/schema/links.js";
+import { carreras, grupos, horarios, materias } from "../../db/drizzle/schema/base.js";
+import { grupoHorario, grupoRequerimientoSalon, materiaCarrera, profesorGrupo } from "../../db/drizzle/schema/links.js";
 
 export function crearGrupo(grupo) {
   return db
@@ -53,6 +53,23 @@ export function listarGrupos() {
     .orderBy(asc(grupos.codigo))
     .all();
 
+  const careerRows = db
+    .select({
+      idGrupo: grupos.id,
+      carreraNombre: carreras.nombre
+    })
+    .from(grupos)
+    .leftJoin(materiaCarrera, eq(materiaCarrera.idMateria, grupos.idMateria))
+    .leftJoin(carreras, eq(carreras.id, materiaCarrera.idCarrera))
+    .all();
+
+  const careersByGroup = new Map();
+  for (const row of careerRows) {
+    const groupId = row.idGrupo;
+    if (!careersByGroup.has(groupId)) careersByGroup.set(groupId, new Set());
+    if (row.carreraNombre) careersByGroup.get(groupId).add(row.carreraNombre);
+  }
+
   const byId = new Map();
 
   for (const row of rows) {
@@ -67,6 +84,7 @@ export function listarGrupos() {
         cupo: row.cupo,
         semestre: row.semestre,
         anio: row.anio,
+        carreras: Array.from(careersByGroup.get(row.id) || []),
         horarios: []
       });
     }

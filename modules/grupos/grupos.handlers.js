@@ -16,7 +16,14 @@ export function registerGruposHandlers() {
     ipcMain.handle('grupos:crear', async (event, data) => {
         try {
             const result = altaGrupo(data);
-            return { success: true, data: result };
+            const id = Number(result?.lastInsertRowid || 0);
+            return {
+                success: true,
+                data: {
+                    id,
+                    changes: Number(result?.changes || 0)
+                }
+            };
         } catch (error) {
             console.error("Error en grupos:crear →", error);
             return { success: false, error: error.message };

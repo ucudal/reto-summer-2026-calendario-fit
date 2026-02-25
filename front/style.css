@@ -225,6 +225,32 @@ body {
   gap: 8px;
 }
 
+.calendar-dropdown {
+  position: relative;
+}
+
+.calendar-dropdown-trigger {
+  width: 100%;
+  height: 34px;
+  border: 1px solid #bcc7be;
+  border-radius: 12px;
+  background: #f7f4ea;
+  color: #3c5457;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.calendar-dropdown-menu {
+  margin-top: 8px;
+  border: 1px solid #d5d1c8;
+  border-radius: 10px;
+  background: #fffdf8;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
 .calendar-option {
   display: flex;
   align-items: center;

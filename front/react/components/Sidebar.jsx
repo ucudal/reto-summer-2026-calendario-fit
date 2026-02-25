@@ -17,6 +17,7 @@ function Sidebar(props) {
         onOpenCreateTeacher,
         alerts = []
     } = props;
+    const [isCalendarsDropdownOpen, setIsCalendarsDropdownOpen] = React.useState(false);
 
     return (
         <aside className="sidebar">
@@ -30,17 +31,31 @@ function Sidebar(props) {
             <div className="card side-card">
                 <h2 className="side-title">Calendarios visibles</h2>
 
-                <div className="calendar-list">
-                    {calendars.map((calendar) => (
-                        <label key={calendar.id} className="calendar-option">
-                            <input
-                                type="checkbox"
-                                checked={calendar.visible}
-                                onChange={(event) => onToggleCalendarVisible(calendar.id, event.target.checked)}
-                            />
-                            <span>{calendar.name}</span>
-                        </label>
-                    ))}
+                <div className="calendar-dropdown">
+                    <button
+                        type="button"
+                        className="calendar-dropdown-trigger"
+                        onClick={() => setIsCalendarsDropdownOpen((prev) => !prev)}
+                    >
+                        Seleccionar calendarios
+                    </button>
+
+                    {isCalendarsDropdownOpen && (
+                        <div className="calendar-dropdown-menu">
+                            <div className="calendar-list">
+                                {calendars.map((calendar) => (
+                                    <label key={calendar.id} className="calendar-option">
+                                        <input
+                                            type="checkbox"
+                                            checked={calendar.visible}
+                                            onChange={(event) => onToggleCalendarVisible(calendar.id, event.target.checked)}
+                                        />
+                                        <span>{calendar.name}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

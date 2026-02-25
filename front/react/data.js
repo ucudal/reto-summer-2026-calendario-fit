@@ -41,57 +41,41 @@ const COLOR_BY_TYPE = {
   lab: "#cb6345"
 };
 
+function ordinalYearLabel(year) {
+  if (year === 1) return "1er";
+  if (year === 2) return "2do";
+  if (year === 3) return "3er";
+  if (year === 4) return "4to";
+  return "5to";
+}
+
+function buildCalendars() {
+  const calendars = [];
+
+  for (let year = 1; year <= 5; year += 1) {
+    for (let semester = 1; semester <= 2; semester += 1) {
+      calendars.push({
+        id: `s${semester}y${year}`,
+        name: `${semester}er semestre ${ordinalYearLabel(year)} año`.replace("2er", "2do"),
+        subtitle: "Ingenieria en Sistemas",
+        visible: year === 1 && semester <= 2,
+        classes: [],
+        alerts: []
+      });
+    }
+  }
+
+  return calendars;
+}
+
 // Datos iniciales en memoria.
 const INITIAL_DATA = {
-  careers: ["Ingenieria en Sistemas", "Ingenieria Industrial"],
-  plans: ["Plan 2021", "Plan 2024"],
-  // Relacion simple carrera -> planes habilitados.
-  careerPlans: {
-    "Ingenieria en Sistemas": ["Plan 2021", "Plan 2024"],
-    "Ingenieria Industrial": ["Plan 2021"]
-  },
-  calendars: [
-    {
-      id: "s1y1",
-      name: "1er semestre 1er anio",
-      subtitle: "Ingenieria en Sistemas",
-      visible: true,
-      classes: [],
-      alerts: []
-    },
-    {
-      id: "s2y1",
-      name: "2do semestre 1er anio",
-      subtitle: "Ingenieria en Sistemas",
-      visible: true,
-      classes: [],
-      alerts: []
-    },
-    {
-      id: "s1y2",
-      name: "1er semestre 2do anio",
-      subtitle: "Ingenieria en Sistemas",
-      visible: false,
-      classes: [],
-      alerts: []
-    },
-    {
-      id: "s2y2",
-      name: "2do semestre 2do anio",
-      subtitle: "Ingenieria en Sistemas",
-      visible: false,
-      classes: [],
-      alerts: []
-    },
-    {
-      id: "s3",
-      name: "3er anio",
-      subtitle: "Ingenieria en Sistemas",
-      visible: false,
-      classes: [],
-      alerts: []
-    }
-  ]
+  careers: [
+    "Ingenieria en Sistemas 2021",
+    "Ingenieria en Sistemas 2026",
+    "Ingenieria Industrial 2021"
+  ],
+  calendars: buildCalendars()
 };
 
 // Devuelve una copia profunda para evitar compartir referencias.
@@ -110,22 +94,21 @@ function formatHour(hour) {
   return `${String(hour).padStart(2, "0")}:00`;
 }
 
-// Detecta anio segun el nombre del calendario.
+// Detecta año segun el nombre del calendario.
 function yearFromCalendarName(name) {
-  const normalized = name.toLowerCase();
-
-  if (normalized.includes("1er anio")) return "1";
-  if (normalized.includes("2do anio")) return "2";
-  if (normalized.includes("3er anio")) return "3";
-
+  const normalized = String(name || "").toLowerCase();
+  const match = normalized.match(/([1-5])(er|do|to)\s+a(ñ|n)io/);
+  if (match) return match[1];
   return "";
 }
 
-// Etiqueta corta para mostrar anio en mensajes.
+// Etiqueta corta para mostrar año en mensajes.
 function yearLabel(year) {
   if (year === "1") return "1er";
   if (year === "2") return "2do";
-  return "3er";
+  if (year === "3") return "3er";
+  if (year === "4") return "4to";
+  return "5to";
 }
 
 // Se expone todo en un solo objeto global para mantenerlo simple.

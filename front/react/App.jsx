@@ -28,12 +28,11 @@ function App() {
   const createNewGroupModalFns = window.CreateNewGroupModalFunctions;
 
   const [data, setData] = React.useState(cloneInitialData());
-  const plansByCareer = data.careerPlans || {};
 
   const exampleCareers = data.careers;
   const [careers, setCareers] = React.useState(exampleCareers);
   const [selectedCareer, setSelectedCareer] = React.useState(exampleCareers[0]);
-  const [selectedPlan, setSelectedPlan] = React.useState(data.plans[0]);
+  const [dbGroups, setDbGroups] = React.useState([]);
 
   const [isGroupsListOpen, setIsGroupsListOpen] = React.useState(false);
   const [isSubjectGroupsModalOpen, setIsSubjectGroupsModalOpen] = React.useState(false);
@@ -46,9 +45,7 @@ function App() {
     createNewGroupModalFns.createInitialGroupForm({
       DAYS,
       TIME_BLOCKS,
-      selectedCareer,
-      selectedPlan,
-      plansByCareer
+      selectedCareer
     })
   );
 
@@ -89,6 +86,7 @@ function App() {
         if (calendar.id !== targetCalendar.id) return calendar;
         return {
           ...calendar,
+          visible: true,
           classes: [...calendar.classes, ...newGroups]
         };
       })
@@ -110,6 +108,7 @@ function App() {
 
         return {
           ...calendar,
+          visible: true,
           classes: [...classesWithoutSubjectPractice, ...newGroups]
         };
       })
@@ -141,18 +140,16 @@ function App() {
   function getCalendarIdFromDbGroup(grupo) {
     const semestre = Number(grupo.semestre || 1);
     const rawAnio = Number(grupo.anio || 1);
-    const anio = rawAnio >= 1 && rawAnio <= 3 ? rawAnio : 1;
-
-    if (anio === 1 && semestre === 1) return "s1y1";
-    if (anio === 1 && semestre === 2) return "s2y1";
-    if (anio === 2 && semestre === 1) return "s1y2";
-    if (anio === 2 && semestre === 2) return "s2y2";
-    return "s3";
+    const anio = rawAnio >= 1 && rawAnio <= 5 ? rawAnio : 1;
+    const sem = semestre === 2 ? 2 : 1;
+    return `s${sem}y${anio}`;
   }
 
   function mapDbGroupToClasses(grupo) {
     const horarios = Array.isArray(grupo.horarios) ? grupo.horarios : [];
     const title = grupo.nombreMateria || `Materia ${grupo.idMateria}`;
+    const groupCareers = Array.isArray(grupo.carreras) ? grupo.carreras : [];
+    const careersLabel = groupCareers.length > 0 ? groupCareers.join(", ") : "-";
 
     return horarios
       .map((h) => {
@@ -164,7 +161,7 @@ function App() {
         return {
           title,
           group: grupo.codigo ? `Grupo ${grupo.codigo}` : "Grupo sin codigo",
-          detail: `Cupo: ${grupo.cupo ?? "-"} | HS: ${grupo.horasSemestrales ?? "-"}`,
+          detail: `Carreras: ${careersLabel} | Cupo: ${grupo.cupo ?? "-"} | HS: ${grupo.horasSemestrales ?? "-"}`,
           day,
           start: block.start,
           end: block.end,
@@ -174,33 +171,55 @@ function App() {
       .filter(Boolean);
   }
 
+  const reloadGroupsFromDb = React.useCallback(async () => {
+    try {
+      if (!window.api?.grupos?.listar) return;
+      const response = await window.api.grupos.listar();
+      if (!response?.success || !Array.isArray(response.data)) return;
+      setDbGroups(response.data);
+    } catch (error) {
+      console.error("No se pudieron recargar grupos desde DB:", error);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function loadCareersFromDb() {
+      try {
+        if (!window.api?.carreras?.listar) return;
+        const response = await window.api.carreras.listar();
+        if (cancelled) return;
+        if (!response?.success || !Array.isArray(response.data)) return;
+
+        const names = response.data
+          .map((item) => String(item?.nombre || "").trim())
+          .filter(Boolean);
+
+        if (names.length > 0) {
+          setCareers(names);
+          setSelectedCareer((prev) => (names.includes(prev) ? prev : names[0]));
+        }
+      } catch (error) {
+        console.error("No se pudieron cargar carreras desde DB:", error);
+      }
+    }
+
+    loadCareersFromDb();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   React.useEffect(() => {
     let isCancelled = false;
 
     async function loadGroupsFromDb() {
       try {
-        if (!window.api?.grupos?.listar) return;
-
-        const response = await window.api.grupos.listar();
+        const response = await (window.api?.grupos?.listar?.() || Promise.resolve(null));
         if (!response?.success || !Array.isArray(response.data)) return;
-
-        const classesByCalendar = new Map();
-        for (const grupo of response.data) {
-          const calendarId = getCalendarIdFromDbGroup(grupo);
-          const blocks = mapDbGroupToClasses(grupo);
-          const prev = classesByCalendar.get(calendarId) || [];
-          classesByCalendar.set(calendarId, [...prev, ...blocks]);
-        }
-
         if (isCancelled) return;
-
-        setData((prev) => ({
-          ...prev,
-          calendars: prev.calendars.map((calendar) => ({
-            ...calendar,
-            classes: classesByCalendar.get(calendar.id) || []
-          }))
-        }));
+        setDbGroups(response.data);
       } catch (error) {
         console.error("No se pudieron cargar grupos desde DB:", error);
       }
@@ -212,25 +231,61 @@ function App() {
     };
   }, [TIME_BLOCKS]);
 
-  const availablePlansForGroup = React.useMemo(() => {
-    const selectedCareers = groupForm.careers || [];
-    const merged = selectedCareers.flatMap((career) => plansByCareer[career] || []);
-    return [...new Set(merged)];
-  }, [groupForm.careers, plansByCareer]);
+  React.useEffect(() => {
+    function normalizeText(value) {
+      return String(value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+    }
+
+    const classesByCalendar = new Map();
+    const allGroupCareerNames = new Set();
+    for (const grupo of dbGroups) {
+      const groupCareers = Array.isArray(grupo.carreras) ? grupo.carreras : [];
+      for (const careerName of groupCareers) {
+        allGroupCareerNames.add(normalizeText(careerName));
+      }
+    }
+    const selectedCareerNormalized = normalizeText(selectedCareer);
+    const shouldApplyCareerFilter =
+      selectedCareerNormalized && allGroupCareerNames.has(selectedCareerNormalized);
+
+    const filteredGroups = dbGroups.filter((grupo) => {
+      const groupCareers = Array.isArray(grupo.carreras) ? grupo.carreras : [];
+      if (!selectedCareer) return true;
+      if (!shouldApplyCareerFilter) return true;
+      if (groupCareers.length === 0) return true;
+      return groupCareers.some((careerName) => normalizeText(careerName) === selectedCareerNormalized);
+    });
+
+    for (const grupo of filteredGroups) {
+      const calendarId = getCalendarIdFromDbGroup(grupo);
+      const blocks = mapDbGroupToClasses(grupo);
+      const prev = classesByCalendar.get(calendarId) || [];
+      classesByCalendar.set(calendarId, [...prev, ...blocks]);
+    }
+
+    setData((prev) => ({
+      ...prev,
+      calendars: prev.calendars.map((calendar) => ({
+        ...calendar,
+        classes: classesByCalendar.get(calendar.id) || []
+      }))
+    }));
+  }, [dbGroups, selectedCareer]);
 
   const createNewGroupHandlers = createNewGroupModalFns.createNewGroupModalHandlers({
     DAYS,
     TIME_BLOCKS,
     selectedCareer,
-    selectedPlan,
-    plansByCareer,
     setGroupForm,
     setModalError,
     setIsCreateNewGroupOpen,
     createGroupModalFns,
     groupForm,
     data,
-    availablePlansForGroup,
     hourOptionsFrom,
     hourOptionsTo,
     timeToMinutes,
@@ -332,11 +387,8 @@ function App() {
     <>
       <HeaderBar
         careers={careers}
-        plans={data.plans}
         selectedCareer={selectedCareer}
-        selectedPlan={selectedPlan}
         onCareerChange={setSelectedCareer}
-        onPlanChange={setSelectedPlan}
         onOpenCreateCareer={openCreateCareerModal}
         onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
       />
@@ -395,6 +447,7 @@ function App() {
         onBack={subjectGroupsModalHandlers.backToGroupsList}
         onClose={subjectGroupsModalHandlers.closeSubjectGroupsModal}
         onSaveGroups={subjectGroupsModalHandlers.saveGroupsToCalendar}
+        onGroupCreated={reloadGroupsFromDb}
       />
 
       <CreateNewGroupModal
@@ -405,7 +458,6 @@ function App() {
         hourOptionsFrom={hourOptionsFrom}
         hourOptionsTo={hourOptionsTo}
         careerOptions={careers}
-        planOptions={availablePlansForGroup}
         onClose={createNewGroupHandlers.closeCreateNewGroupModal}
         onChange={createNewGroupHandlers.updateGroupForm}
         onToggleList={createNewGroupHandlers.toggleGroupFormList}

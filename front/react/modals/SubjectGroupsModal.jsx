@@ -12,8 +12,10 @@ function SubjectGroupsModal(props) {
     subject,
     careers = [],
     days = [],
+    onClose,
     onBack,
-    onSaveGroups
+    onSaveGroups,
+    onGroupCreated
   } = props;
 
   const [groupName, setGroupName] = React.useState("");
@@ -21,15 +23,14 @@ function SubjectGroupsModal(props) {
   const [selectedTeachers, setSelectedTeachers] = React.useState([]);
   const [availableTeachers, setAvailableTeachers] = React.useState([]);
   const [isCareerDropdownOpen, setIsCareerDropdownOpen] = React.useState(false);
-  const [careerPlanOptions, setCareerPlanOptions] = React.useState([]);
-  const [selectedCareerPlans, setSelectedCareerPlans] = React.useState([]);
+  const [careerOptions, setCareerOptions] = React.useState([]);
+  const [selectedCareers, setSelectedCareers] = React.useState([]);
   const [selectedDays, setSelectedDays] = React.useState([]);
-  const [selectedYear, setSelectedYear] = React.useState("1");
-  const [selectedSemester, setSelectedSemester] = React.useState("1");
   const [fromTime, setFromTime] = React.useState("08:00");
   const [toTime, setToTime] = React.useState("09:20");
   const [error, setError] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
+  const careerDropdownRef = React.useRef(null);
 
   // Fallback por si no hay backend de docentes disponible.
   const fallbackTeachers = [
@@ -54,11 +55,9 @@ function SubjectGroupsModal(props) {
     setSelectedTeachers([]);
     setAvailableTeachers([]);
     setIsCareerDropdownOpen(false);
-    setCareerPlanOptions([]);
-    setSelectedCareerPlans([]);
+    setCareerOptions([]);
+    setSelectedCareers([]);
     setSelectedDays([]);
-    setSelectedYear("1");
-    setSelectedSemester("1");
     setFromTime("08:00");
     setToTime("09:20");
     setError("");
@@ -120,8 +119,8 @@ function SubjectGroupsModal(props) {
       try {
         if (!window.api?.materias?.listarCarrerasPlanes) {
           if (!isCancelled) {
-            setCareerPlanOptions([]);
-            setSelectedCareerPlans([]);
+            setCareerOptions([]);
+            setSelectedCareers([]);
           }
           return;
         }
@@ -130,15 +129,17 @@ function SubjectGroupsModal(props) {
         if (isCancelled) return;
 
         if (!response?.success || !Array.isArray(response.data)) {
-          setCareerPlanOptions([]);
-          setSelectedCareerPlans([]);
+          setCareerOptions([]);
+          setSelectedCareers([]);
           return;
         }
 
         const options = response.data
           .map((row) => ({
-            key: `${row.carreraNombre} - Plan ${row.plan}`,
-            label: `${row.carreraNombre} - Plan ${row.plan}`
+            key: String(row.carreraNombre || "").trim(),
+            label: String(row.carreraNombre || "").trim(),
+            semestre: Number(row.semestre),
+            anio: Number(row.anio)
           }))
           .filter((row) => row.label && !row.label.includes("undefined"));
 
@@ -150,12 +151,12 @@ function SubjectGroupsModal(props) {
           unique.push(option);
         }
 
-        setCareerPlanOptions(unique);
-        setSelectedCareerPlans(unique.map((item) => item.key));
+        setCareerOptions(unique);
+        setSelectedCareers(unique.map((item) => item.key));
       } catch (e) {
         if (!isCancelled) {
-          setCareerPlanOptions([]);
-          setSelectedCareerPlans([]);
+          setCareerOptions([]);
+          setSelectedCareers([]);
         }
       }
     }
@@ -166,6 +167,20 @@ function SubjectGroupsModal(props) {
       isCancelled = true;
     };
   }, [isOpen, subject]);
+
+  React.useEffect(() => {
+    if (!isOpen || !isCareerDropdownOpen) return;
+
+    function handleOutsideClick(event) {
+      if (!careerDropdownRef.current) return;
+      if (!careerDropdownRef.current.contains(event.target)) {
+        setIsCareerDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [isOpen, isCareerDropdownOpen]);
 
   if (!isOpen || !subject) return null;
 
@@ -181,10 +196,11 @@ function SubjectGroupsModal(props) {
     );
   }
 
-  function toggleCareerPlan(optionKey) {
-    setSelectedCareerPlans((prev) =>
+  function toggleCareer(optionKey) {
+    setSelectedCareers((prev) =>
       prev.includes(optionKey) ? prev.filter((item) => item !== optionKey) : [...prev, optionKey]
     );
+    setIsCareerDropdownOpen(false);
   }
 
   function addTeacher(teacher) {
@@ -220,10 +236,25 @@ function SubjectGroupsModal(props) {
       return;
     }
 
-    if (selectedCareerPlans.length === 0) {
-      setError("Selecciona al menos una carrera-plan.");
+    const finalSelectedCareers =
+      selectedCareers.length > 0
+        ? [...selectedCareers]
+        : careerOptions.length > 0
+        ? careerOptions.map((option) => option.key)
+        : careers.length > 0
+        ? [careers[0]]
+        : [];
+
+    if (finalSelectedCareers.length === 0) {
+      setError("No hay carreras disponibles para crear el grupo.");
       return;
     }
+
+    const selectedMeta = careerOptions.filter((option) => finalSelectedCareers.includes(option.key));
+    // Si hay diferencias entre carreras, usamos el primer año/semestre disponible.
+    // (segun tu criterio actual, esto no debe bloquear la creación del grupo)
+    const resolvedSemester = Number(selectedMeta[0]?.semestre || 1);
+    const resolvedYear = Number(selectedMeta[0]?.anio || 1);
 
     const startIndex = startTimes.indexOf(fromTime);
     const endIndex = endTimes.indexOf(toTime);
@@ -265,8 +296,8 @@ function SubjectGroupsModal(props) {
         horasSemestrales: (endIndex - startIndex + 1) * 20,
         esContrasemestre: false,
         cupo: 30,
-        semestre: Number(selectedSemester),
-        anio: Number(selectedYear)
+        semestre: resolvedSemester,
+        anio: resolvedYear
       });
 
       if (!createResp?.success) {
@@ -275,7 +306,7 @@ function SubjectGroupsModal(props) {
         return;
       }
 
-      const idGrupo = Number(createResp?.data?.lastInsertRowid || createResp?.data?.id);
+      const idGrupo = Number(createResp?.data?.id || 0);
       if (!idGrupo) {
         setError("No se pudo obtener el ID del grupo creado.");
         setIsSaving(false);
@@ -336,17 +367,22 @@ function SubjectGroupsModal(props) {
             id: Date.now() + 1,
             name: groupName.trim(),
             teachers: [...selectedTeachers],
-            assignedCareers: [...selectedCareerPlans]
+            assignedCareers: [...finalSelectedCareers]
           }
         ]
       }
     ];
 
-    if (onSaveGroups) {
-      onSaveGroups(payloadSchedules, subject, selectedYear);
-    }
+      if (onSaveGroups) {
+        onSaveGroups(payloadSchedules, subject, String(resolvedYear));
+      }
 
-    onBack();
+      if (onGroupCreated) {
+        await onGroupCreated();
+      }
+
+      if (onClose) onClose();
+      else onBack();
     } catch (e) {
       setError(e?.message || "Ocurrió un error guardando el grupo.");
     } finally {
@@ -358,13 +394,25 @@ function SubjectGroupsModal(props) {
     <div
       className="modal-backdrop groups-list-backdrop"
       onClick={(event) => {
-        if (event.target === event.currentTarget) onBack();
+        if (event.target === event.currentTarget) {
+          if (onClose) onClose();
+          else onBack();
+        }
       }}
     >
       <section className="group-modal groups-list-modal second-step-modal" role="dialog" aria-modal="true">
         <div className="modal-header-with-button">
           <h2 className="modal-title">Grupos por horario / {subject}</h2>
-          <button type="button" className="modal-close-btn" onClick={onBack}>X</button>
+          <button
+            type="button"
+            className="modal-close-btn"
+            onClick={() => {
+              if (onClose) onClose();
+              else onBack();
+            }}
+          >
+            X
+          </button>
         </div>
 
         <div className="second-step-card">
@@ -417,31 +465,31 @@ function SubjectGroupsModal(props) {
               ))}
             </div>
 
-            <div className="second-step-careers">
+            <div className="second-step-careers" ref={careerDropdownRef}>
               <button
                 type="button"
                 className="second-step-careers-btn"
                 onClick={() => setIsCareerDropdownOpen((prev) => !prev)}
               >
-                {careerPlanOptions.length === 0
-                  ? "Sin carreras-plan para esta materia"
-                  : selectedCareerPlans.length === careerPlanOptions.length
+                {careerOptions.length === 0
+                  ? "Sin carreras para esta materia"
+                  : selectedCareers.length === careerOptions.length
                   ? "Todas las carreras posibles"
-                  : `${selectedCareerPlans.length} seleccionadas`}
+                  : `${selectedCareers.length} seleccionadas`}
               </button>
 
               {isCareerDropdownOpen && (
                 <div className="second-step-dropdown second-step-careers-dropdown">
-                  {careerPlanOptions.length === 0 && (
-                    <div className="second-step-dropdown-item">No hay carreras-plan para esta materia.</div>
+                  {careerOptions.length === 0 && (
+                    <div className="second-step-dropdown-item">No hay carreras para esta materia.</div>
                   )}
 
-                  {careerPlanOptions.map((option) => (
+                  {careerOptions.map((option) => (
                     <label key={option.key} className="second-step-career-option">
                       <input
                         type="checkbox"
-                        checked={selectedCareerPlans.includes(option.key)}
-                        onChange={() => toggleCareerPlan(option.key)}
+                        checked={selectedCareers.includes(option.key)}
+                        onChange={() => toggleCareer(option.key)}
                       />
                       <span>{option.label}</span>
                     </label>
@@ -465,31 +513,6 @@ function SubjectGroupsModal(props) {
           </div>
 
           <div className="second-step-time-row">
-            <label className="second-step-time-label">
-              Año
-              <select
-                className="second-step-time-select"
-                value={selectedYear}
-                onChange={(event) => setSelectedYear(event.target.value)}
-              >
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-              </select>
-            </label>
-
-            <label className="second-step-time-label">
-              Semestre
-              <select
-                className="second-step-time-select"
-                value={selectedSemester}
-                onChange={(event) => setSelectedSemester(event.target.value)}
-              >
-                <option value="1">1</option>
-                <option value="2">2</option>
-              </select>
-            </label>
-
             <label className="second-step-time-label">
               Desde
               <select className="second-step-time-select" value={fromTime} onChange={(event) => setFromTime(event.target.value)}>

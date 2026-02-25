@@ -2,7 +2,7 @@
   Componente: HeaderBar
   Que hace:
   - Muestra la franja azul superior con titulo y marca.
-  - Muestra select de carrera y plan.
+  - Muestra select de carrera.
   - Muestra botones de acciones superiores.
   - Dispara "onOpenCreateGroup" cuando se presiona CREAR GRUPO.
   - Dispara "onOpenCreateCareer" cuando se presiona CREAR CARRERA.
@@ -11,11 +11,8 @@
 function HeaderBar(props) {
   const {
     careers = [],
-    plans = [],
     selectedCareer = "",
-    selectedPlan = "",
     onCareerChange = () => {},
-    onPlanChange = () => {},
     onOpenCreateCareer = () => {},
     onOpenCreateGroup = () => {}
   } = props;
@@ -31,12 +28,6 @@ function HeaderBar(props) {
         <select className="header-select" value={selectedCareer} onChange={(event) => onCareerChange(event.target.value)}>
           {careers.map((career) => (
             <option key={career} value={career}>{career}</option>
-          ))}
-        </select>
-
-        <select className="header-select" value={selectedPlan} onChange={(event) => onPlanChange(event.target.value)}>
-          {plans.map((plan) => (
-            <option key={plan} value={plan}>{plan}</option>
           ))}
         </select>
 

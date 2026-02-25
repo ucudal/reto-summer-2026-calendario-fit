@@ -77,7 +77,9 @@ export function eliminarMateria(id) {
 export function listarCarrerasPlanesPorMateriaNombre(nombreMateria) {
   return db.select({
     carreraNombre: carreras.nombre,
-    plan: materiaCarrera.plan
+    plan: materiaCarrera.plan,
+    semestre: materiaCarrera.semestre,
+    anio: materiaCarrera.anio
   })
     .from(materiaCarrera)
     .innerJoin(materias, eq(materias.id, materiaCarrera.idMateria))
