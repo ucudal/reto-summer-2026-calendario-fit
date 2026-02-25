@@ -1,6 +1,6 @@
-import { db } from '../../db/database.js';
+import { db, sqlite } from '../../db/database.js';
 import { grupos }  from "../../db/drizzle/schema/base.js";
-import { asc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 export function crearGrupo(grupo) {
   return db.insert(grupos).values({
@@ -35,19 +35,40 @@ export function obtenerGrupoPorId(id) {
 };
 
 export function listarGrupos() {
-  return db.select({
-    id: grupos.id,
-    codigo: grupos.codigo,
-    idMateria: grupos.idMateria,
-    horasSemestrales: grupos.horasSemestrales,
-    esContrasemestre: grupos.esContrasemestre,
-    cupo: grupos.cupo,
-    semestre: grupos.semestre,
-    anio: grupos.anio
-  })
-  .from(grupos)
-  .orderBy(asc(grupos.codigo))
-  .all();
+  const query = `
+    SELECT
+      g.id AS id,
+      g.codigo AS codigo,
+      g.id_materia AS idMateria,
+      m.nombre AS nombreMateria,
+      g.horas_anuales AS horasSemestrales,
+      g.es_contrasemestre AS esContrasemestre,
+      g.cupo AS cupo,
+      g.semestre AS semestre,
+      g.anio AS anio,
+      COALESCE(GROUP_CONCAT(DISTINCT (h.dia || '|' || h.modulo)), '') AS horariosRaw
+    FROM grupos g
+    LEFT JOIN materias m ON m.id = g.id_materia
+    LEFT JOIN grupo_horario gh ON gh.id_grupo = g.id
+    LEFT JOIN horarios h ON h.id = gh.id_horario
+    GROUP BY
+      g.id, g.codigo, g.id_materia, m.nombre,
+      g.horas_anuales, g.es_contrasemestre, g.cupo, g.semestre, g.anio
+    ORDER BY g.codigo ASC
+  `;
+
+  const rows = sqlite.prepare(query).all();
+  return rows.map((row) => ({
+    ...row,
+    horarios: String(row.horariosRaw || "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .map((item) => {
+        const [dia, modulo] = item.split("|");
+        return { dia, modulo: Number(modulo) };
+      })
+  }));
 };
 
 export function asignarProfesor(data) {

@@ -171,7 +171,61 @@ function buildHorarioMap(workbook) {
 }
 
 function headerIndex(headers, headerName) {
-  return headers.findIndex((h) => h === headerName);
+  const normalizeHeader = (value) =>
+    normalizeText(value)
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+
+  const normalizedHeaders = headers.map((h) => normalizeHeader(h));
+  const candidates = []
+    .concat(headerName || [])
+    .flat()
+    .map((h) => normalizeHeader(h))
+    .filter(Boolean);
+
+  for (const candidate of candidates) {
+    const exact = normalizedHeaders.findIndex((h) => h === candidate);
+    if (exact >= 0) return exact;
+  }
+
+  for (let i = 0; i < normalizedHeaders.length; i += 1) {
+    const current = normalizedHeaders[i];
+    if (!current) continue;
+    for (const candidate of candidates) {
+      if (current.includes(candidate) || candidate.includes(current)) {
+        return i;
+      }
+    }
+  }
+
+  return -1;
+}
+
+function splitCellValues(value) {
+  const text = normalizeText(value);
+  if (!text) return [];
+  return [...new Set(
+    text
+      .split(/[|;,/\n]+/)
+      .map((v) => normalizeText(v))
+      .filter((v) => v && !["-", "tbd", "n/a", "na"].includes(v.toLowerCase()))
+  )];
+}
+
+function parseSalonCell(value) {
+  const tokens = splitCellValues(value);
+  return tokens
+    .map((token) => {
+      const m = token.match(/^(.+?)\s*\((.+)\)$/);
+      if (m) {
+        return { nombre: normalizeText(m[1]), edificio: normalizeText(m[2]) || "Sin edificio" };
+      }
+      return { nombre: token, edificio: "Sin edificio" };
+    })
+    .filter((s) => s.nombre);
 }
 
 export function importarModulosDesdeExcel(filePath, options = {}) {
@@ -189,18 +243,27 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
     .filter((row) => normalizeText(row[headerIndex(headers, "Curso")]) !== "");
 
   const idx = {
-    cx: headerIndex(headers, "cx"),
-    curso: headerIndex(headers, "Curso"),
-    tipo: headerIndex(headers, "Tipo"),
-    horas: headerIndex(headers, "Horas"),
-    idClase: headerIndex(headers, "ID Clase"),
-    cupo: headerIndex(headers, "Cupo"),
-    requerimiento: headerIndex(headers, "Requerim. salón"),
-    creditos: headerIndex(headers, "Créditos"),
-    prof1: headerIndex(headers, "Prof 1"),
-    prof2: headerIndex(headers, "Prof 2"),
-    prof3: headerIndex(headers, "Prof 3"),
-    asis1: headerIndex(headers, "Asis 1")
+    cx: headerIndex(headers, ["cx", "cx "]),
+    curso: headerIndex(headers, ["Curso"]),
+    tipo: headerIndex(headers, ["Tipo"]),
+    horas: headerIndex(headers, ["Horas"]),
+    idClase: headerIndex(headers, ["ID Clase", "Id Clase", "IDClase"]),
+    cupo: headerIndex(headers, ["Cupo"]),
+    requerimiento: headerIndex(headers, [
+      "Requerim. salón",
+      "Requerim. salon",
+      "Requerimiento salón",
+      "Requerimiento salon",
+      "Requerimientos",
+      "Req salón",
+      "Req salon"
+    ]),
+    salon: headerIndex(headers, ["Salón", "Salon", "Salones", "Aula", "Aulas"]),
+    creditos: headerIndex(headers, ["Créditos", "Creditos"]),
+    prof1: headerIndex(headers, ["Prof 1", "Profesor 1"]),
+    prof2: headerIndex(headers, ["Prof 2", "Profesor 2"]),
+    prof3: headerIndex(headers, ["Prof 3", "Profesor 3"]),
+    asis1: headerIndex(headers, ["Asis 1", "Asistente 1"])
   };
 
   if (idx.curso < 0 || idx.idClase < 0) {
@@ -246,6 +309,19 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
   const linkGrupoReq = sqlite.prepare(
     "INSERT OR IGNORE INTO grupo_requerimiento_salon (id_grupo, id_requerimiento_salon) VALUES (?, ?)"
   );
+  const getSalonByNombreEdificio = sqlite.prepare(
+    "SELECT id FROM salones WHERE nombre = ? AND edificio = ?"
+  );
+  const getSalonByNombre = sqlite.prepare("SELECT id FROM salones WHERE nombre = ?");
+  const insertSalon = sqlite.prepare(
+    "INSERT INTO salones (nombre, edificio, aforo) VALUES (?, ?, ?)"
+  );
+  const linkSalonGrupo = sqlite.prepare(
+    "INSERT OR IGNORE INTO salon_grupo (id_salon, id_grupo) VALUES (?, ?)"
+  );
+  const linkSalonReq = sqlite.prepare(
+    "INSERT OR IGNORE INTO salon_requerimiento_salon (id_salon, id_requerimiento_salon) VALUES (?, ?)"
+  );
   const getHorario = sqlite.prepare("SELECT id FROM horarios WHERE dia = ? AND modulo = ?");
   const insertHorario = sqlite.prepare("INSERT INTO horarios (dia, modulo) VALUES (?, ?)");
   const linkGrupoHorario = sqlite.prepare(
@@ -262,13 +338,16 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
       grupos: 0,
       profesores: 0,
       requerimientos: 0,
-      horarios: 0
+      horarios: 0,
+      salones: 0
     },
     linked: {
       materiaCarrera: 0,
       profesorGrupo: 0,
       grupoReq: 0,
-      grupoHorario: 0
+      grupoHorario: 0,
+      grupoSalon: 0,
+      salonReq: 0
     },
     skipped: {
       rowsWithoutClassId: 0,
@@ -279,6 +358,13 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
   };
 
   const run = sqlite.transaction(() => {
+    if (idx.requerimiento < 0) {
+      summary.warnings.push("No se encontro columna de requerimientos de salon en la hoja Modulos.");
+    }
+    if (idx.salon < 0) {
+      summary.warnings.push("No se encontro columna de salon/aula en la hoja Modulos.");
+    }
+
     let carrera = getCarrera.get(carreraNombre);
     if (!carrera) {
       const result = insertCarrera.run(carreraNombre);
@@ -388,8 +474,9 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
         if (linkResult.changes > 0) summary.linked.profesorGrupo += 1;
       });
 
-      const reqText = normalizeText(row[idx.requerimiento]);
-      if (reqText) {
+      const reqIds = [];
+      const reqTexts = splitCellValues(row[idx.requerimiento]);
+      for (const reqText of reqTexts) {
         let req = getReq.get(reqText);
         if (!req) {
           const reqResult = insertReq.run(reqText);
@@ -398,6 +485,27 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
         }
         const linkReqResult = linkGrupoReq.run(grupo.id, req.id);
         if (linkReqResult.changes > 0) summary.linked.grupoReq += 1;
+        reqIds.push(req.id);
+      }
+
+      const salones = parseSalonCell(row[idx.salon]);
+      for (const salonData of salones) {
+        let salon =
+          getSalonByNombreEdificio.get(salonData.nombre, salonData.edificio) ||
+          getSalonByNombre.get(salonData.nombre);
+        if (!salon) {
+          const salonResult = insertSalon.run(salonData.nombre, salonData.edificio, 0);
+          salon = { id: Number(salonResult.lastInsertRowid) };
+          summary.inserted.salones += 1;
+        }
+
+        const linkSalonResult = linkSalonGrupo.run(salon.id, grupo.id);
+        if (linkSalonResult.changes > 0) summary.linked.grupoSalon += 1;
+
+        for (const reqId of reqIds) {
+          const salonReqResult = linkSalonReq.run(salon.id, reqId);
+          if (salonReqResult.changes > 0) summary.linked.salonReq += 1;
+        }
       }
 
       const horarios = horarioMap.get(idClase) || new Set();
