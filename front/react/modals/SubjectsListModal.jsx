@@ -65,6 +65,9 @@ function SubjectsListModal(props) {
                 <div className="subject-info">
                   <span className="subject-name">{subject.nombre}</span>
                   <span className="subject-meta">Tipo {subject.tipo} • {subject.creditos} créditos</span>
+                  {subject.requerimientosSalon && (
+                    <span className="subject-requirements">Req: {subject.requerimientosSalon}</span>
+                  )}
                 </div>
               </div>
             ))

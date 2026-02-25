@@ -128,7 +128,8 @@ function App() {
       creditos: 8, 
       tieneContrasemestre: false,
       carreras: ["Ingeniería en Sistemas"],
-      carrerasSemestre: { "Ingeniería en Sistemas": "1er s 1er año" }
+      carrerasSemestre: { "Ingeniería en Sistemas": "1er s 1er año" },
+      requerimientosSalon: "Laboratorio con 30 computadoras"
     },
     { 
       id: 2, 
@@ -140,7 +141,8 @@ function App() {
       carrerasSemestre: { 
         "Ingeniería en Sistemas": "1er s 1er año",
         "Ingeniería en Electrónica": "1er s 1er año"
-      }
+      },
+      requerimientosSalon: ""
     }
   ]);
 
@@ -161,7 +163,8 @@ function App() {
     creditos: "",
     tieneContrasemestre: false,
     carreras: [],
-    carrerasSemestre: {}
+    carrerasSemestre: {},
+    requerimientosSalon: ""
   });
 
   // Modo de edición de asignatura (guarda el objeto completo).

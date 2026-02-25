@@ -75,41 +75,54 @@ function CreateSubjectModal(props) {
             />
           </label>
 
-          <label className="form-label">
-            Tipo
-            <select
-              className="form-input"
-              value={form.tipo}
-              onChange={(event) => onChange("tipo", event.target.value)}
-              required
-            >
-              <option value="">Seleccione un tipo</option>
-              <option value="A">A</option>
-              <option value="B">B</option>
-              <option value="C">C</option>
-            </select>
-          </label>
+          <div className="form-row">
+            <label className="form-label form-label-compact">
+              Tipo
+              <select
+                className="form-input"
+                value={form.tipo}
+                onChange={(event) => onChange("tipo", event.target.value)}
+                required
+              >
+                <option value="">Seleccione un tipo</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+              </select>
+            </label>
+
+            <label className="form-label form-label-compact">
+              Créditos
+              <input
+                className="form-input"
+                type="number"
+                min="1"
+                value={form.creditos}
+                onChange={(event) => onChange("creditos", event.target.value)}
+                placeholder="Ej: 8"
+                required
+              />
+            </label>
+
+            <label className="checkbox-row checkbox-main">
+              <input
+                type="checkbox"
+                checked={form.tieneContrasemestre}
+                onChange={(event) => onChange("tieneContrasemestre", event.target.checked)}
+              />
+              Es contrasemestre
+            </label>
+          </div>
 
           <label className="form-label">
-            Créditos
-            <input
+            Requerimientos de salón
+            <textarea
               className="form-input"
-              type="number"
-              min="1"
-              value={form.creditos}
-              onChange={(event) => onChange("creditos", event.target.value)}
-              placeholder="Ej: 8"
-              required
+              rows="3"
+              value={form.requerimientosSalon}
+              onChange={(event) => onChange("requerimientosSalon", event.target.value)}
+              placeholder="Ej: Laboratorio con 30 computadoras, proyector, pizarra digital..."
             />
-          </label>
-
-          <label className="checkbox-row checkbox-main" style={{ marginTop: '8px' }}>
-            <input
-              type="checkbox"
-              checked={form.tieneContrasemestre}
-              onChange={(event) => onChange("tieneContrasemestre", event.target.checked)}
-            />
-            <span>Es contrasemestre</span>
           </label>
 
           <div>

@@ -20,6 +20,7 @@ function confirmCreateSubject(params) {
   const tieneContrasemestre = Boolean(subjectForm.tieneContrasemestre);
   const carreras = subjectForm.carreras || [];
   const carrerasSemestre = subjectForm.carrerasSemestre || {};
+  const requerimientosSalon = String(subjectForm.requerimientosSalon || "").trim();
 
   // Validaciones
   if (!nombre) {
@@ -65,7 +66,8 @@ function confirmCreateSubject(params) {
     creditos,
     tieneContrasemestre,
     carreras: [...carreras],
-    carrerasSemestre: { ...carrerasSemestre }
+    carrerasSemestre: { ...carrerasSemestre },
+    requerimientosSalon
   };
 
   setSubjects([...subjects, newSubject]);
@@ -93,6 +95,7 @@ function confirmEditSubject(params) {
   const tieneContrasemestre = Boolean(subjectForm.tieneContrasemestre);
   const carreras = subjectForm.carreras || [];
   const carrerasSemestre = subjectForm.carrerasSemestre || {};
+  const requerimientosSalon = String(subjectForm.requerimientosSalon || "").trim();
 
   // Validaciones
   if (!nombre) {
@@ -136,7 +139,7 @@ function confirmEditSubject(params) {
   // Actualizar materia
   const updatedSubjects = subjects.map(s => 
     s.id === originalSubject.id 
-      ? { ...s, nombre, tipo, creditos, tieneContrasemestre, carreras: [...carreras], carrerasSemestre: { ...carrerasSemestre } }
+      ? { ...s, nombre, tipo, creditos, tieneContrasemestre, carreras: [...carreras], carrerasSemestre: { ...carrerasSemestre }, requerimientosSalon }
       : s
   );
 
