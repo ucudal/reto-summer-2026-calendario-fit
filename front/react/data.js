@@ -1,15 +1,10 @@
 /*
-  Este archivo guarda:
-  1) Constantes de calendario (dias y bloques horarios)
-  2) Colores para los bloques
-  3) Datos iniciales de la app
-  4) Funciones utilitarias simples
+  Datos base de la app de calendario.
+  Este archivo mantiene constantes y funciones simples reutilizables.
 */
 
-// Dias visibles en la grilla semanal.
 const DAYS = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB"];
 
-// Bloques fijos de horario para todos los dias.
 const TIME_BLOCKS = [
   { start: "08:00", end: "09:20", label: "08:00 - 09:20" },
   { start: "09:30", end: "10:50", label: "09:30 - 10:50" },
@@ -21,155 +16,86 @@ const TIME_BLOCKS = [
   { start: "21:15", end: "22:35", label: "21:15 - 22:35" }
 ];
 
-// Para dibujar la grilla "como antes", usamos rango horario continuo.
 const START_HOUR = 8;
 const END_HOUR = 23;
-
-// Alto de cada fila de hora (en pixeles).
 const ROW_HEIGHT = 88;
-
-// Alto de la fila de encabezado de dias (en pixeles).
 const HEADER_HEIGHT = 28;
-
-// Ancho de la columna de horas (en pixeles).
 const TIME_COL_WIDTH = 72;
 
-// Color por tipo de bloque.
 const COLOR_BY_TYPE = {
   theory: "#ef8a3b",
   practice: "#3ba9ab",
   lab: "#cb6345"
 };
 
-// Datos iniciales en memoria.
-const INITIAL_DATA = {
-  careers: ["Ingenieria en Sistemas", "Ingenieria Industrial"],
-  plans: ["Plan 2021", "Plan 2024"],
-  // Relacion simple carrera -> planes habilitados.
-  careerPlans: {
-    "Ingenieria en Sistemas": ["Plan 2021", "Plan 2024"],
-    "Ingenieria Industrial": ["Plan 2021"]
-  },
-  calendars: [
-    {
-      id: "s1y1",
-      name: "1er semestre 1er anio",
-      subtitle: "Ingenieria en Sistemas",
-      visible: true,
-      classes: [],
-      alerts: []
-    },
-    {
-      id: "s2y1",
-      name: "2do semestre 1er anio",
-      subtitle: "Ingenieria en Sistemas",
-      visible: true,
-      classes: [],
-      alerts: []
-    },
-    {
-      id: "s1y2",
-      name: "1er semestre 2do anio",
-      subtitle: "Ingenieria en Sistemas",
-      visible: false,
-      classes: [],
-      alerts: []
-    },
-    {
-      id: "s2y2",
-      name: "2do semestre 2do anio",
-      subtitle: "Ingenieria en Sistemas",
-      visible: false,
-      classes: [],
-      alerts: []
-    },
-    {
-      id: "s1y3",
-      name: "1er semestre 3er anio",
-      subtitle: "Ingenieria en Sistemas",
-      visible: false,
-      classes: [],
-      alerts: []
-    },
-    {
-      id: "s2y3",
-      name: "2do semestre 3er anio",
-      subtitle: "Ingenieria en Sistemas",
-      visible: false,
-      classes: [],
-      alerts: []
-    },
-    {
-      id: "s1y4",
-      name: "1er semestre 4to anio",
-      subtitle: "Ingenieria en Sistemas",
-      visible: false,
-      classes: [],
-      alerts: []
-    },
-    {
-      id: "s2y4",
-      name: "2do semestre 4to anio",
-      subtitle: "Ingenieria en Sistemas",
-      visible: false,
-      classes: [],
-      alerts: []
-    },
-    {
-      id: "s1y5",
-      name: "1er semestre 5to anio",
-      subtitle: "Ingenieria en Sistemas",
-      visible: false,
-      classes: [],
-      alerts: []
-    },
-    {
-      id: "s2y5",
-      name: "2do semestre 5to anio",
-      subtitle: "Ingenieria en Sistemas",
-      visible: false,
-      classes: [],
-      alerts: []
+function ordinalYearLabel(year) {
+  if (year === 1) return "1er";
+  if (year === 2) return "2do";
+  if (year === 3) return "3er";
+  if (year === 4) return "4to";
+  return "5to";
+}
+
+function buildCalendars() {
+  const calendars = [];
+
+  for (let year = 1; year <= 5; year += 1) {
+    for (let semester = 1; semester <= 2; semester += 1) {
+      calendars.push({
+        id: `s${semester}y${year}`,
+        name: `${semester === 1 ? "1er" : "2do"} semestre ${ordinalYearLabel(year)} año`,
+        subtitle: "Ingenieria en Sistemas 2021",
+        lectiveTerm: "Semestre lectivo actual",
+        visible: year === 1,
+        classes: [],
+        alerts: []
+      });
     }
-  ]
+  }
+
+  return calendars;
+}
+
+const INITIAL_DATA = {
+  careers: [
+    "Ingenieria en Sistemas 2021",
+    "Ingenieria en Sistemas 2026",
+    "Ingenieria Electrica 2021"
+  ],
+  calendars: buildCalendars()
 };
 
-// Devuelve una copia profunda para evitar compartir referencias.
 function cloneInitialData() {
   return JSON.parse(JSON.stringify(INITIAL_DATA));
 }
 
-// Convierte "HH:MM" a minutos totales.
 function timeToMinutes(time) {
-  const parts = time.split(":").map(Number);
-  return parts[0] * 60 + parts[1];
+  const [hours, minutes] = String(time).split(":").map(Number);
+  return hours * 60 + minutes;
 }
 
-// Convierte numero de hora a formato "HH:00".
-function formatHour(hour) {
-  return `${String(hour).padStart(2, "0")}:00`;
-}
-
-// Detecta anio segun el nombre del calendario.
 function yearFromCalendarName(name) {
-  const normalized = name.toLowerCase();
+  const normalized = String(name || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 
-  // Extrae el número del año directamente del texto (hasta 5to año)
-  const match = normalized.match(/(\d+)(?:er|do|to)?\s*(?:s)?\s*anio/);
-  return match ? match[1] : "";
+  if (normalized.includes("1er")) return "1";
+  if (normalized.includes("2do")) return "2";
+  if (normalized.includes("3er")) return "3";
+  if (normalized.includes("4to")) return "4";
+  if (normalized.includes("5to")) return "5";
+  return "";
 }
 
-// Etiqueta corta para mostrar anio en mensajes.
 function yearLabel(year) {
-  const yearNum = parseInt(year);
-  if (yearNum === 1) return "1er";
-  if (yearNum === 2) return "2do";
-  if (yearNum === 3) return "3er";
-  if (yearNum === 4 || yearNum === 5) return `${yearNum}to`;
-  return `${year}to`; // Fallback
+  if (year === "1") return "1er";
+  if (year === "2") return "2do";
+  if (year === "3") return "3er";
+  if (year === "4") return "4to";
+  return "5to";
 }
 
-// Se expone todo en un solo objeto global para mantenerlo simple.
 window.AppData = {
   DAYS,
   TIME_BLOCKS,
@@ -181,7 +107,6 @@ window.AppData = {
   COLOR_BY_TYPE,
   cloneInitialData,
   timeToMinutes,
-  formatHour,
   yearFromCalendarName,
   yearLabel
 };

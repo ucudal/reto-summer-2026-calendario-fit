@@ -1,27 +1,10 @@
 /*
   Componente: GroupsModal
   Que hace:
-  - Muestra modal con listado de asignaturas que ya tienen grupos creados.
-  - Permite buscar asignaturas alfabéticamente.
-  - Permite agregar grupos de nuevas asignaturas.
+  - Muestra modal con listado de materias.
+  - Carga materias desde la BD (window.api.materias.listar).
+  - Permite buscarlas y abrir detalle por materia.
 */
-
-function fetchMockSubjects() {
-  const mockSubjects = [
-    "Matematica Basica",
-    "Algebra",
-    "Programacion I",
-    "Programacion II",
-    "Arquitectura de Computadoras",
-    "Base de Datos",
-    "Sistemas Operativos",
-    "Fisica I"
-  ];
-
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(mockSubjects), 450);
-  });
-}
 
 function GroupsModal(props) {
   const {
@@ -35,7 +18,7 @@ function GroupsModal(props) {
 
   // Estado del buscador
   const [searchTerm, setSearchTerm] = React.useState("");
-  const [mockSubjects, setMockSubjects] = React.useState([]);
+  const [dbSubjects, setDbSubjects] = React.useState([]);
   const [isLoadingSubjects, setIsLoadingSubjects] = React.useState(false);
 
   React.useEffect(() => {
@@ -43,7 +26,7 @@ function GroupsModal(props) {
 
     const hasRealSubjects = Array.isArray(subjectsList) && subjectsList.length > 0;
     if (hasRealSubjects) {
-      setMockSubjects([]);
+      setDbSubjects([]);
       setIsLoadingSubjects(false);
       return;
     }
@@ -51,15 +34,35 @@ function GroupsModal(props) {
     let isMounted = true;
     setIsLoadingSubjects(true);
 
-    fetchMockSubjects()
-      .then((subjectsFromMockBackend) => {
+    async function loadSubjectsFromDb() {
+      try {
+        if (!window.api?.materias?.listar) {
+          if (isMounted) setDbSubjects([]);
+          return;
+        }
+
+        const response = await window.api.materias.listar();
         if (!isMounted) return;
-        setMockSubjects(subjectsFromMockBackend);
-      })
-      .finally(() => {
+
+        if (!response?.success || !Array.isArray(response.data)) {
+          setDbSubjects([]);
+          return;
+        }
+
+        const names = response.data
+          .map((item) => String(item?.nombre || "").trim())
+          .filter(Boolean);
+
+        setDbSubjects([...new Set(names)]);
+      } catch (error) {
+        if (isMounted) setDbSubjects([]);
+      } finally {
         if (!isMounted) return;
         setIsLoadingSubjects(false);
-      });
+      }
+    }
+
+    loadSubjectsFromDb();
 
     return () => {
       isMounted = false;
@@ -85,7 +88,7 @@ function GroupsModal(props) {
 
     // Usar subjectsList para mostrar todas, protegiendo null/undefined
     const hasRealSubjects = Array.isArray(subjectsList) && subjectsList.length > 0;
-    const safeSubjects = hasRealSubjects ? subjectsList : mockSubjects;
+    const safeSubjects = hasRealSubjects ? subjectsList : dbSubjects;
     return safeSubjects
       .map((name) => {
         const groups = subjectMap.get(name) || [];

@@ -15,7 +15,9 @@ contextBridge.exposeInMainWorld("api", {
     crear: (data) => ipcRenderer.invoke("materias:crear", data),
     actualizar: (data) => ipcRenderer.invoke("materias:actualizar", data),
     eliminar: (id) => ipcRenderer.invoke("materias:eliminar", id),
-    listar: () => ipcRenderer.invoke("materias:listar")
+    listar: () => ipcRenderer.invoke("materias:listar"),
+    listarCarrerasPlanes: (nombreMateria) =>
+      ipcRenderer.invoke("materias:listarCarrerasPlanes", nombreMateria)
   },
 
   //Expose Mostrar Mensajes
@@ -47,6 +49,10 @@ contextBridge.exposeInMainWorld("api", {
 
   excel: {
     guardarArchivo: (buffer) =>
-        ipcRenderer.invoke("excel:guardarArchivo", buffer)
+        ipcRenderer.invoke("excel:guardarArchivo", buffer)},
+  // Expose Exportaciones
+  exportaciones: {
+    guardarExcel: (payload) => ipcRenderer.invoke("exportaciones:guardarExcel", payload),
+    importarExcelModulos: (payload) => ipcRenderer.invoke("exportaciones:importarExcelModulos", payload)
   }
 });

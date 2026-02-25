@@ -1,7 +1,7 @@
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "../../db/database.js";
-import { grupos, horarios, materias } from "../../db/drizzle/schema/base.js";
-import { grupoHorario, grupoRequerimientoSalon, profesorGrupo } from "../../db/drizzle/schema/links.js";
+import { carreras, grupos, horarios, materias, profesores } from "../../db/drizzle/schema/base.js";
+import { grupoHorario, grupoRequerimientoSalon, materiaCarrera, profesorGrupo } from "../../db/drizzle/schema/links.js";
 
 export function crearGrupo(grupo) {
   return db
@@ -38,6 +38,7 @@ export function listarGrupos() {
       codigo: grupos.codigo,
       idMateria: grupos.idMateria,
       nombreMateria: materias.nombre,
+      creditosMateria: materias.creditos,
       horasSemestrales: grupos.horasSemestrales,
       esContrasemestre: grupos.esContrasemestre,
       cupo: grupos.cupo,
@@ -53,6 +54,41 @@ export function listarGrupos() {
     .orderBy(asc(grupos.codigo))
     .all();
 
+  const careerRows = db
+    .select({
+      idGrupo: grupos.id,
+      carreraNombre: carreras.nombre
+    })
+    .from(grupos)
+    .leftJoin(materiaCarrera, eq(materiaCarrera.idMateria, grupos.idMateria))
+    .leftJoin(carreras, eq(carreras.id, materiaCarrera.idCarrera))
+    .all();
+
+  const careersByGroup = new Map();
+  for (const row of careerRows) {
+    const groupId = row.idGrupo;
+    if (!careersByGroup.has(groupId)) careersByGroup.set(groupId, new Set());
+    if (row.carreraNombre) careersByGroup.get(groupId).add(row.carreraNombre);
+  }
+
+  const teacherRows = db
+    .select({
+      idGrupo: profesorGrupo.idGrupo,
+      nombre: profesores.nombre,
+      apellido: profesores.apellido
+    })
+    .from(profesorGrupo)
+    .leftJoin(profesores, eq(profesores.id, profesorGrupo.idProfesor))
+    .all();
+
+  const teachersByGroup = new Map();
+  for (const row of teacherRows) {
+    const groupId = row.idGrupo;
+    if (!teachersByGroup.has(groupId)) teachersByGroup.set(groupId, new Set());
+    const fullName = `${String(row.nombre || "").trim()} ${String(row.apellido || "").trim()}`.trim();
+    if (fullName) teachersByGroup.get(groupId).add(fullName);
+  }
+
   const byId = new Map();
 
   for (const row of rows) {
@@ -62,11 +98,14 @@ export function listarGrupos() {
         codigo: row.codigo,
         idMateria: row.idMateria,
         nombreMateria: row.nombreMateria,
+        creditosMateria: row.creditosMateria,
         horasSemestrales: row.horasSemestrales,
         esContrasemestre: row.esContrasemestre,
         cupo: row.cupo,
         semestre: row.semestre,
         anio: row.anio,
+        carreras: Array.from(careersByGroup.get(row.id) || []),
+        docentes: Array.from(teachersByGroup.get(row.id) || []),
         horarios: []
       });
     }
