@@ -35,6 +35,27 @@ function App() {
   const [selectedCareer, setSelectedCareer] = React.useState(exampleCareers[0]);
   const [selectedPlan, setSelectedPlan] = React.useState(data.plans[0]);
 
+  const loadCareersFromDb = React.useCallback(async () => {
+    try {
+      const response = await window.api?.carreras?.listar?.();
+      const rows = response?.success ? (response.data || []) : [];
+      const names = rows
+        .map((item) => item?.nombre)
+        .filter((name) => typeof name === "string" && name.trim() !== "");
+
+      if (names.length === 0) return;
+
+      setCareers(names);
+      setSelectedCareer((prev) => (names.includes(prev) ? prev : names[0]));
+    } catch (error) {
+      // Si falla la carga desde DB, mantiene el fallback en memoria.
+    }
+  }, []);
+
+  React.useEffect(() => {
+    loadCareersFromDb().catch(() => {});
+  }, [loadCareersFromDb]);
+
   const [isGroupsListOpen, setIsGroupsListOpen] = React.useState(false);
   const [isSubjectGroupsModalOpen, setIsSubjectGroupsModalOpen] = React.useState(false);
   const [selectedSubject, setSelectedSubject] = React.useState(null);
@@ -138,7 +159,6 @@ function App() {
         (classItem) => classItem.title === selectedSubject && classItem.type === "practice"
     );
   }, [data.calendars, selectedSubject]);
-
   function normalizeDayToUi(dayText) {
     const value = String(dayText || "").trim().toLowerCase();
     if (value === "lunes" || value === "lun") return "LUN";
@@ -164,26 +184,26 @@ function App() {
 
   function mapDbGroupToClasses(grupo) {
     const horarios = Array.isArray(grupo.horarios) ? grupo.horarios : [];
-    const title = grupo.nombreMateria || `Materia ${grupo.idMateria}`;
+    const title = grupo.nombreMateria || `Materia ${grupo.idMateria || ""}`.trim();
 
     return horarios
-        .map((h) => {
-          const modulo = Number(h.modulo);
-          const block = TIME_BLOCKS[modulo - 1];
-          const day = normalizeDayToUi(h.dia);
-          if (!block || !day) return null;
+      .map((h) => {
+        const modulo = Number(h.modulo);
+        const block = TIME_BLOCKS[modulo - 1];
+        const day = normalizeDayToUi(h.dia);
+        if (!block || !day) return null;
 
-          return {
-            title,
-            group: grupo.codigo ? `Grupo ${grupo.codigo}` : "Grupo sin codigo",
-            detail: `Cupo: ${grupo.cupo ?? "-"} | HS: ${grupo.horasSemestrales ?? "-"}`,
-            day,
-            start: block.start,
-            end: block.end,
-            type: "practice"
-          };
-        })
-        .filter(Boolean);
+        return {
+          title,
+          group: grupo.codigo ? `Grupo ${grupo.codigo}` : "Grupo sin codigo",
+          detail: `Cupo: ${grupo.cupo ?? "-"} | HS: ${grupo.horasSemestrales ?? "-"}`,
+          day,
+          start: block.start,
+          end: block.end,
+          type: "practice"
+        };
+      })
+      .filter(Boolean);
   }
 
   React.useEffect(() => {
@@ -228,7 +248,6 @@ function App() {
   const availableSemesters = React.useMemo(() => {
     return data.calendars;
   }, [data.calendars]);
-
   // Devuelve los planes habilitados para las carreras elegidas en el modal.
   const availablePlansForGroup = React.useMemo(() => {
     const selectedCareers = groupForm.careers || [];
@@ -335,6 +354,83 @@ function App() {
     } catch (error) {
       console.error("Error exportando Excel:", error);
       await window.api?.mensajes?.mostrar?.(error.message || "Error al exportar Excel.", "error");
+    }
+  }
+
+  function toExportSafeName(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-_]/g, "")
+      .slice(0, 40) || "sin-filtro";
+  }
+
+  async function exportInternalExcel() {
+    const exportApi = window.api?.exportaciones;
+    if (!exportApi?.guardarExcel) {
+      window.alert("No se pudo acceder a la API de Electron (preload). Reinicia la app.");
+      await window.api?.mensajes?.mostrar?.(
+        "No esta disponible la API de exportacion para Excel.",
+        "error"
+      );
+      return;
+    }
+
+    const fileName = `calendario-bd-${toExportSafeName(selectedCareer)}-${toExportSafeName(selectedPlan)}.xlsx`;
+    const response = await exportApi.guardarExcel({
+      defaultFileName: fileName,
+      sheetName: "DatosBD",
+      filters: { carrera: selectedCareer }
+    });
+
+    if (response?.success) {
+      await window.api?.mensajes?.mostrar?.(`Excel exportado en:\n${response.data.path}`, "info");
+      return;
+    }
+
+    if (!response?.cancelled) {
+      await window.api?.mensajes?.mostrar?.(
+        `No se pudo exportar Excel: ${response?.error || "error desconocido"}`,
+        "error"
+      );
+    }
+  }
+
+  async function importModulosExcel() {
+    const exportApi = window.api?.exportaciones;
+    if (!exportApi?.importarExcelModulos) {
+      window.alert("No se pudo acceder a la API de importacion.");
+      return;
+    }
+
+    const response = await exportApi.importarExcelModulos({
+      carreraNombre: selectedCareer
+    });
+
+    if (response?.success) {
+      const summary = response.data || {};
+      const ins = summary.inserted || {};
+      const linked = summary.linked || {};
+      const skipped = summary.skipped || {};
+      const message = [
+        "Importacion finalizada.",
+        `Filas procesadas: ${summary.totalRows || 0}`,
+        `Insertados -> carreras:${ins.carreras || 0}, materias:${ins.materias || 0}, grupos:${ins.grupos || 0}, profesores:${ins.profesores || 0}, requerimientos:${ins.requerimientos || 0}, horarios:${ins.horarios || 0}`,
+        `Vinculos -> materia_carrera:${linked.materiaCarrera || 0}, profesor_grupo:${linked.profesorGrupo || 0}, grupo_req:${linked.grupoReq || 0}, grupo_horario:${linked.grupoHorario || 0}`,
+        `Omitidos -> sin ID clase:${skipped.rowsWithoutClassId || 0}, sin horario encontrado:${skipped.horariosNotFound || 0}, sin docente:${skipped.docentesSinNombre || 0}`
+      ].join("\n");
+
+      await window.api?.mensajes?.mostrar?.(message, "info");
+      await loadCareersFromDb();
+      return;
+    }
+
+    if (!response?.cancelled) {
+      await window.api?.mensajes?.mostrar?.(
+        `No se pudo importar Excel: ${response?.error || "error desconocido"}`,
+        "error"
+      );
     }
   }
 
@@ -542,6 +638,8 @@ function App() {
                 onOpenCreateCareer={openCreateCareerModal}
                 onOpenCreateTeacher={openCreateTeacherModal}
                 onExportExcel={handleExportExcel}
+                onExportExcelDatos={exportInternalExcel}
+                onImportExcel={importModulosExcel}
                 alerts={visibleAlerts}
             />
 

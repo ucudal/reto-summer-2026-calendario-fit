@@ -57,7 +57,8 @@ export function registerExportacionesHandlers() {
         "plan_semestre",
         "horarios",
         "docentes",
-        "salones"
+        "salones",
+        "requerimientos"
       ];
 
       const rows = dbRows.map((row) => ({
@@ -79,9 +80,10 @@ export function registerExportacionesHandlers() {
         plan_nombre: row.plan_nombre,
         plan_anio: row.plan_anio,
         plan_semestre: row.plan_semestre,
-        horarios: row.horarios,
-        docentes: row.docentes,
-        salones: row.salones
+        horarios: row.horarios || null,
+        docentes: row.docentes || null,
+        salones: row.salones || null,
+        requerimientos: row.requerimientos || null
       }));
 
       const fuentes = [
@@ -92,6 +94,7 @@ export function registerExportacionesHandlers() {
         { columna: "horarios", fuente_bd: "tablas grupo_horario + horarios (GROUP_CONCAT)" },
         { columna: "docentes", fuente_bd: "tablas profesor_grupo + profesores (GROUP_CONCAT)" },
         { columna: "salones", fuente_bd: "tablas salon_grupo + salones (GROUP_CONCAT)" },
+        { columna: "requerimientos", fuente_bd: "tablas grupo_requerimiento_salon + requerimientos_salon (GROUP_CONCAT)" },
         { columna: "fecha_exportacion", fuente_bd: "timestamp generado al exportar" },
         { columna: "filtros_aplicados", fuente_bd: JSON.stringify(filtrosAplicados) }
       ];

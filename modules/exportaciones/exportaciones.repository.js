@@ -35,9 +35,10 @@ export function listarFilasExportacionDesdeDb(filters = {}) {
       mc.plan AS plan_nombre,
       mc.anio AS plan_anio,
       mc.semestre AS plan_semestre,
-      COALESCE(GROUP_CONCAT(DISTINCT h.dia || ' M' || h.modulo), '') AS horarios,
-      COALESCE(GROUP_CONCAT(DISTINCT (p.nombre || ' ' || p.apellido)), '') AS docentes,
-      COALESCE(GROUP_CONCAT(DISTINCT (s.nombre || ' (' || s.edificio || ')')), '') AS salones
+      GROUP_CONCAT(DISTINCT h.dia || ' M' || h.modulo) AS horarios,
+      GROUP_CONCAT(DISTINCT (p.nombre || ' ' || p.apellido)) AS docentes,
+      GROUP_CONCAT(DISTINCT (s.nombre || ' (' || s.edificio || ')')) AS salones,
+      GROUP_CONCAT(DISTINCT rs.caracteristicas) AS requerimientos
     FROM grupos g
     INNER JOIN materias m ON m.id = g.id_materia
     LEFT JOIN materia_carrera mc ON mc.id_materia = m.id
@@ -48,6 +49,8 @@ export function listarFilasExportacionDesdeDb(filters = {}) {
     LEFT JOIN profesores p ON p.id = pg.id_profesor
     LEFT JOIN salon_grupo sg ON sg.id_grupo = g.id
     LEFT JOIN salones s ON s.id = sg.id_salon
+    LEFT JOIN grupo_requerimiento_salon grs ON grs.id_grupo = g.id
+    LEFT JOIN requerimientos_salon rs ON rs.id = grs.id_requerimiento_salon
     ${whereClause}
     GROUP BY
       g.id, g.codigo, g.anio, g.semestre, g.cupo, g.horas_anuales, g.es_contrasemestre,

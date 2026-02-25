@@ -1,9 +1,12 @@
-const XLSX = require("xlsx");
+import XLSX from "xlsx";
+import { createRequire } from "module";
+
+const require = createRequire(import.meta.url);
 const Database = require("better-sqlite3");
 
 const file = process.argv[2];
 if (!file) {
-  console.error("Uso: node scripts/check_excel_import.cjs <ruta_excel>");
+  console.error("Uso: node scripts/check_excel_import.js <ruta_excel>");
   process.exit(1);
 }
 
@@ -74,7 +77,10 @@ const totalCounts = {
   horarios: db.prepare("SELECT COUNT(*) c FROM horarios").get().c,
   grupo_horario: db.prepare("SELECT COUNT(*) c FROM grupo_horario").get().c,
   requerimientos_salon: db.prepare("SELECT COUNT(*) c FROM requerimientos_salon").get().c,
-  grupo_requerimiento_salon: db.prepare("SELECT COUNT(*) c FROM grupo_requerimiento_salon").get().c
+  grupo_requerimiento_salon: db.prepare("SELECT COUNT(*) c FROM grupo_requerimiento_salon").get().c,
+  salones: db.prepare("SELECT COUNT(*) c FROM salones").get().c,
+  salon_grupo: db.prepare("SELECT COUNT(*) c FROM salon_grupo").get().c,
+  salon_requerimiento_salon: db.prepare("SELECT COUNT(*) c FROM salon_requerimiento_salon").get().c
 };
 
 console.log(
