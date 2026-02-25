@@ -30,7 +30,6 @@ function GroupsModal(props) {
     subjectsList,
     selectedCareer,
     onClose,
-    onAddNewSubject,
     onSelectSubject
   } = props;
 
@@ -108,14 +107,6 @@ function GroupsModal(props) {
 
         <div className="modal-header-with-button">
           <h2 id="groupModalTitle" className="modal-title">Grupos por asignatura</h2>
-          <button 
-            type="button" 
-            className="modal-add-btn" 
-            aria-label="Agregar grupos de nueva asignatura"
-            onClick={onAddNewSubject}
-          >
-            +
-          </button>
         </div>
 
         <div className="subject-search-container">
@@ -150,14 +141,6 @@ function GroupsModal(props) {
                     {subject.groupCount} {subject.groupCount === 1 ? "grupo" : "grupos"}
                   </span>
                 </div>
-                <button 
-                  type="button" 
-                  className="subject-item-delete"
-                  aria-label={`Eliminar ${subject.name}`}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  🗑
-                </button>
               </div>
             ))
           )}

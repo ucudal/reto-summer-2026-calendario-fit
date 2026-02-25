@@ -3,7 +3,7 @@
   Que hace:
   - Guarda todo el estado principal.
   - Coordina componentes visuales.
-  - Maneja crear grupo desde modal.
+  - Carga grupos desde DB y los pinta en calendario.
 */
 
 function App() {
@@ -26,17 +26,17 @@ function App() {
   const subjectGroupsModalFns = window.SubjectGroupsModalFunctions;
   const createNewGroupModalFns = window.CreateNewGroupModalFunctions;
 
-  // Estado raiz con datos del proyecto.
+
   const [data, setData] = React.useState(cloneInitialData());
   const plansByCareer = data.careerPlans || {};
 
-  // Carreras de ejemplo actuales (fallback si DB no tiene datos).
+
   const exampleCareers = data.careers;
 
-  // Lista real que se muestra en el dropdown de carreras.
+
   const [careers, setCareers] = React.useState(exampleCareers);
 
-  // Estado de selects superiores.
+
   const [selectedCareer, setSelectedCareer] = React.useState(exampleCareers[0]);
   const [selectedPlan, setSelectedPlan] = React.useState(data.plans[0]);
 
@@ -72,62 +72,193 @@ function App() {
   // Asignatura seleccionada para gestionar grupos.
   const [selectedSubject, setSelectedSubject] = React.useState(null);
 
-  // Estado visual del modal de crear nuevo grupo.
+
   const [isCreateNewGroupOpen, setIsCreateNewGroupOpen] = React.useState(false);
 
-  // Estado de error del modal de crear grupo.
+
   const [modalError, setModalError] = React.useState("");
 
-  // Estado del formulario del modal.
-  const [groupForm, setGroupForm] = React.useState({
-    ...createNewGroupModalFns.createInitialGroupForm({
+
+  const [groupForm, setGroupForm] = React.useState(
+    createNewGroupModalFns.createInitialGroupForm({
       DAYS,
       TIME_BLOCKS,
       selectedCareer,
       selectedPlan,
       plansByCareer
     })
-  });
+  );
 
-  // Estado visual del modal de carrera.
+
   const [isCreateCareerOpen, setIsCreateCareerOpen] = React.useState(false);
 
-  // Estado de error del modal de carrera.
-  const [careerModalError, setCareerModalError] = React.useState("");
 
-  // Formulario del modal de carrera.
-  const [careerForm, setCareerForm] = React.useState({
-    nombre: ""
-  });
+  const [careerModalError, setCareerModalError] = React.useState("");const [careerForm, setCareerForm] = React.useState({ nombre: "" });
 
-  // Estado visual del modal de docente.
+
   const [isCreateTeacherOpen, setIsCreateTeacherOpen] = React.useState(false);
 
-  // Estado de error del modal de docente.
+
   const [teacherModalError, setTeacherModalError] = React.useState("");
 
-  // Formulario del modal de docente.
+
   const [teacherForm, setTeacherForm] = React.useState({
     nombre: "",
     apellido: "",
     correo: ""
   });
 
-  // Horas posibles para "desde".
-  const hourOptionsFrom = React.useMemo(() => {
-    return TIME_BLOCKS.map((block) => block.start);
-  }, [TIME_BLOCKS]);
 
-  // Horas posibles para "hasta".
-  const hourOptionsTo = React.useMemo(() => {
-    return TIME_BLOCKS.map((block) => block.end);
-  }, [TIME_BLOCKS]);
+  const hourOptionsFrom = React.useMemo(() => TIME_BLOCKS.map((block) => block.start), [TIME_BLOCKS]);
+  const hourOptionsTo = React.useMemo(() => TIME_BLOCKS.map((block) => block.end), [TIME_BLOCKS]);
 
-  // Calendarios visibles para pintar y alertar.
+
   const visibleCalendars = data.calendars.filter((calendar) => calendar.visible);
 
-  // Lista plana de alertas de calendarios visibles.
+
   const visibleAlerts = visibleCalendars.flatMap((calendar) => calendar.alerts);
+
+  function findCalendarForYear(selectedYear, calendars) {
+    const calendarsOfYear = calendars.filter(
+      (calendar) => yearFromCalendarName(calendar.name) === selectedYear
+    );
+
+    if (calendarsOfYear.length === 0) return null;
+    return calendarsOfYear.find((calendar) => calendar.visible) || calendarsOfYear[0];
+  }
+
+  function addGroupToCalendar(prevData, selectedYear, newGroups) {
+    const targetCalendar = findCalendarForYear(selectedYear, prevData.calendars);
+    if (!targetCalendar) return prevData;
+
+    return {
+      ...prevData,
+      calendars: prevData.calendars.map((calendar) => {
+        if (calendar.id !== targetCalendar.id) return calendar;
+        return {
+          ...calendar,
+          classes: [...calendar.classes, ...newGroups]
+        };
+      })
+    };
+  }
+
+  function replaceSubjectGroupsInCalendar(prevData, selectedYear, subject, newGroups) {
+    const targetCalendar = findCalendarForYear(selectedYear, prevData.calendars);
+    if (!targetCalendar) return prevData;
+
+    return {
+      ...prevData,
+      calendars: prevData.calendars.map((calendar) => {
+        if (calendar.id !== targetCalendar.id) return calendar;
+
+        const classesWithoutSubjectPractice = calendar.classes.filter(
+          (classItem) => !(classItem.title === subject && classItem.type === "practice")
+        );
+
+        return {
+          ...calendar,
+          classes: [...classesWithoutSubjectPractice, ...newGroups]
+        };
+      })
+    };
+  }
+
+  const existingSubjectClasses = React.useMemo(() => {
+    if (!selectedSubject) return [];
+
+    const targetCalendar = findCalendarForYear("1", data.calendars);
+    if (!targetCalendar) return [];
+
+    return targetCalendar.classes.filter(
+      (classItem) => classItem.title === selectedSubject && classItem.type === "practice"
+    );
+  }, [data.calendars, selectedSubject]);
+
+  function normalizeDayToUi(dayText) {
+    const value = String(dayText || "").trim().toLowerCase();
+    if (value === "lunes" || value === "lun") return "LUN";
+    if (value === "martes" || value === "mar") return "MAR";
+    if (value === "miercoles" || value === "miércoles" || value === "mie") return "MIE";
+    if (value === "jueves" || value === "jue") return "JUE";
+    if (value === "viernes" || value === "vie") return "VIE";
+    if (value === "sabado" || value === "sábado" || value === "sab") return "SAB";
+    return "";
+  }
+
+  function getCalendarIdFromDbGroup(grupo) {
+    const semestre = Number(grupo.semestre || 1);
+    const rawAnio = Number(grupo.anio || 1);
+    const anio = rawAnio >= 1 && rawAnio <= 3 ? rawAnio : 1;
+
+    if (anio === 1 && semestre === 1) return "s1y1";
+    if (anio === 1 && semestre === 2) return "s2y1";
+    if (anio === 2 && semestre === 1) return "s1y2";
+    if (anio === 2 && semestre === 2) return "s2y2";
+    return "s3";
+  }
+
+  function mapDbGroupToClasses(grupo) {
+    const horarios = Array.isArray(grupo.horarios) ? grupo.horarios : [];
+    const title = grupo.nombreMateria || `Materia ${grupo.idMateria}`;
+
+    return horarios
+      .map((h) => {
+        const modulo = Number(h.modulo);
+        const block = TIME_BLOCKS[modulo - 1];
+        const day = normalizeDayToUi(h.dia);
+        if (!block || !day) return null;
+
+        return {
+          title,
+          group: grupo.codigo ? `Grupo ${grupo.codigo}` : "Grupo sin codigo",
+          detail: `Cupo: ${grupo.cupo ?? "-"} | HS: ${grupo.horasSemestrales ?? "-"}`,
+          day,
+          start: block.start,
+          end: block.end,
+          type: "practice"
+        };
+      })
+      .filter(Boolean);
+  }
+
+  React.useEffect(() => {
+    let isCancelled = false;
+
+    async function loadGroupsFromDb() {
+      try {
+        if (!window.api?.grupos?.listar) return;
+
+        const response = await window.api.grupos.listar();
+        if (!response?.success || !Array.isArray(response.data)) return;
+
+        const classesByCalendar = new Map();
+        for (const grupo of response.data) {
+          const calendarId = getCalendarIdFromDbGroup(grupo);
+          const blocks = mapDbGroupToClasses(grupo);
+          const prev = classesByCalendar.get(calendarId) || [];
+          classesByCalendar.set(calendarId, [...prev, ...blocks]);
+        }
+
+        if (isCancelled) return;
+
+        setData((prev) => ({
+          ...prev,
+          calendars: prev.calendars.map((calendar) => ({
+            ...calendar,
+            classes: classesByCalendar.get(calendar.id) || []
+          }))
+        }));
+      } catch (error) {
+        console.error("No se pudieron cargar grupos desde DB:", error);
+      }
+    }
+
+    loadGroupsFromDb();
+    return () => {
+      isCancelled = true;
+    };
+  }, [TIME_BLOCKS]);
 
   // Devuelve los planes habilitados para las carreras elegidas en el modal.
   const availablePlansForGroup = React.useMemo(() => {
@@ -161,7 +292,9 @@ function App() {
   const subjectGroupsModalHandlers = subjectGroupsModalFns.createSubjectGroupsModalHandlers({
     setIsGroupsListOpen,
     setIsSubjectGroupsModalOpen,
-    setSelectedSubject
+    setSelectedSubject,
+  setData,
+    replaceSubjectGroupsInCalendar
   });
 
   const groupsModalHandlers = groupsModalFns.createGroupsModalHandlers({
@@ -170,32 +303,25 @@ function App() {
     openCreateNewGroupModal: createNewGroupHandlers.openCreateNewGroupModal
   });
 
-  // Compatibilidad con botones existentes de Toolbar/Sidebar.
-  function openCreateGroupModal() {
-    createNewGroupHandlers.openCreateNewGroupModal();
-  }
-
-  // Abre modal para crear carrera.
   function openCreateCareerModal() {
     setCareerForm({ nombre: "" });
     setCareerModalError("");
     setIsCreateCareerOpen(true);
   }
 
-  // Cierra modal de carrera.
+
   function closeCreateCareerModal() {
     setCareerModalError("");
     setIsCreateCareerOpen(false);
   }
 
-  // Actualiza campo del modal de carrera.
+
   function updateCareerForm(field, value) {
     setCareerForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  // Crea carrera solo en frontend (sin backend).
-  function confirmCreateCareer() {
-    createCareerModalFns.confirmCreateCareer({
+  async function confirmCreateCareer() {
+    await createCareerModalFns.confirmCreateCareer({
       careerForm,
       careers,
       setCareerModalError,
@@ -205,25 +331,25 @@ function App() {
     });
   }
 
-  // Abre modal para crear docente.
+
   function openCreateTeacherModal() {
     setTeacherForm({ nombre: "", apellido: "", correo: "" });
     setTeacherModalError("");
     setIsCreateTeacherOpen(true);
   }
 
-  // Cierra modal de docente.
+
   function closeCreateTeacherModal() {
     setTeacherModalError("");
     setIsCreateTeacherOpen(false);
   }
 
-  // Actualiza campo del modal de docente.
+
   function updateTeacherForm(field, value) {
     setTeacherForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  // Confirma creacion de docente (llama IPC a backend y guarda en BD).
+
   async function confirmCreateTeacher() {
     await createTeacherModalFns.confirmCreateTeacher({
       teacherForm,
@@ -234,20 +360,21 @@ function App() {
 
   async function handleExportExcel() {
     try {
+      if (!window.exportSchedulesToExcel) return;
       const result = await window.exportSchedulesToExcel(data);
 
       if (result?.success) {
-        await window.api.mensajes.mostrar("Excel exportado correctamente.", "info");
+        await window.api?.mensajes?.mostrar?.("Excel exportado correctamente.", "info");
       } else {
-        await window.api.mensajes.mostrar("Exportación cancelada.", "warning");
+        await window.api?.mensajes?.mostrar?.("Exportación cancelada.", "warning");
       }
     } catch (error) {
       console.error("Error exportando Excel:", error);
-      await window.api.mensajes.mostrar(error.message || "Error al exportar Excel.", "error");
+      await window.api?.mensajes?.mostrar?.(error.message || "Error al exportar Excel.", "error");
     }
   }
 
-  // Cambia visibilidad de calendario por id.
+
   function toggleCalendarVisible(calendarId, checked) {
     setData((prev) => ({
       ...prev,
@@ -257,158 +384,34 @@ function App() {
     }));
   }
 
-  // Devuelve calendario destino segun anio elegido.
-  function findCalendarForYear(selectedYear, calendars) {
-    const calendarsOfYear = calendars.filter(
-        (calendar) => yearFromCalendarName(calendar.name) === selectedYear
-    );
-
-    if (calendarsOfYear.length === 0) return null;
-
-    // Prioriza uno visible del anio; si no, toma el primero del anio.
-    return calendarsOfYear.find((calendar) => calendar.visible) || calendarsOfYear[0];
-  }
-
-  /*
-    Funcion simple para principiantes:
-    - Recibe el estado actual (prevData)
-    - Busca el calendario del anio elegido
-    - Agrega el nuevo grupo al array "classes" de ese calendario
-    - Devuelve el nuevo estado
-  */
-  function addGroupToCalendar(prevData, selectedYear, newGroups) {
-    const targetCalendar = findCalendarForYear(selectedYear, prevData.calendars);
-
-    // Si no existe calendario para ese anio, no cambia nada.
-    if (!targetCalendar) return prevData;
-
-    return {
-      ...prevData,
-      calendars: prevData.calendars.map((calendar) => {
-        if (calendar.id !== targetCalendar.id) return calendar;
-
-        // Importante: NO reemplaza grupos existentes.
-        // Siempre agrega al final, asi pueden coexistir varios
-        // en el mismo dia y horario.
-        return {
-          ...calendar,
-          classes: [...calendar.classes, ...newGroups]
-        };
-      })
-    };
-  }
-
-
-  function toExportSafeName(value) {
-    return String(value || "")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9-_]/g, "")
-      .slice(0, 40) || "sin-filtro";
-  }
-
-  async function exportInternalExcel() {
-    const exportApi = window.api?.exportaciones;
-    if (!exportApi?.guardarExcel) {
-      window.alert("No se pudo acceder a la API de Electron (preload). Reinicia la app.");
-      await window.api?.mensajes?.mostrar?.(
-        "No esta disponible la API de exportacion para Excel.",
-        "error"
-      );
-      return;
-    }
-
-    const fileName = `calendario-bd-${toExportSafeName(selectedCareer)}-${toExportSafeName(selectedPlan)}.xlsx`;
-    const response = await exportApi.guardarExcel({
-      defaultFileName: fileName,
-      sheetName: "DatosBD",
-      filters: {
-        carrera: selectedCareer
-      }
-    });
-
-    if (response?.success) {
-      await window.api?.mensajes?.mostrar?.(`Excel exportado en:\n${response.data.path}`, "info");
-      return;
-    }
-
-    if (!response?.cancelled) {
-      await window.api?.mensajes?.mostrar?.(
-        `No se pudo exportar Excel: ${response?.error || "error desconocido"}`,
-        "error"
-      );
-    }
-  }
-
-  async function importModulosExcel() {
-    const exportApi = window.api?.exportaciones;
-    if (!exportApi?.importarExcelModulos) {
-      window.alert("No se pudo acceder a la API de importacion.");
-      return;
-    }
-
-    const response = await exportApi.importarExcelModulos({
-      carreraNombre: selectedCareer
-    });
-
-    if (response?.success) {
-      const summary = response.data || {};
-      const ins = summary.inserted || {};
-      const linked = summary.linked || {};
-      const skipped = summary.skipped || {};
-      const message = [
-        "Importacion finalizada.",
-        `Filas procesadas: ${summary.totalRows || 0}`,
-        `Insertados -> carreras:${ins.carreras || 0}, materias:${ins.materias || 0}, grupos:${ins.grupos || 0}, profesores:${ins.profesores || 0}, requerimientos:${ins.requerimientos || 0}, horarios:${ins.horarios || 0}`,
-        `Vinculos -> materia_carrera:${linked.materiaCarrera || 0}, profesor_grupo:${linked.profesorGrupo || 0}, grupo_req:${linked.grupoReq || 0}, grupo_horario:${linked.grupoHorario || 0}`,
-        `Omitidos -> sin ID clase:${skipped.rowsWithoutClassId || 0}, sin horario encontrado:${skipped.horariosNotFound || 0}, sin docente:${skipped.docentesSinNombre || 0}`
-      ].join("\n");
-
-      await window.api?.mensajes?.mostrar?.(message, "info");
-      await loadCareersFromDb();
-      return;
-    }
-
-    if (!response?.cancelled) {
-      await window.api?.mensajes?.mostrar?.(
-        `No se pudo importar Excel: ${response?.error || "error desconocido"}`,
-        "error"
-      );
-    }
-  }
-
   return (
-    <>
-      <HeaderBar />
-
-      <main className="page">
-        <Toolbar
-          careers={careers}
-          plans={data.plans}
-          selectedCareer={selectedCareer}
-          selectedPlan={selectedPlan}
-          onCareerChange={setSelectedCareer}
-          onPlanChange={setSelectedPlan}
-          onOpenCreateCareer={openCreateCareerModal}
-          onOpenCreateGroup={openCreateGroupModal}
-          onExportExcel={exportInternalExcel}
+      <>
+        <HeaderBar
+            careers={careers}
+            plans={data.plans}
+            selectedCareer={selectedCareer}
+            selectedPlan={selectedPlan}
+            currentLectiveTerm={currentLectiveTerm}
+            onCareerChange={setSelectedCareer}
+            onPlanChange={setSelectedPlan}
+            onOpenCreateSemester={openCreateSemesterModal}
+            onOpenCreateCareer={openCreateCareerModal}
+            onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
         />
 
-        <section className="layout">
-          <Sidebar
-            calendars={data.calendars}
-            onToggleCalendarVisible={toggleCalendarVisible}
-            onOpenCreateGroup={openCreateGroupModal}
-            onOpenCreateTeacher={openCreateTeacherModal}
-            alerts={visibleAlerts}
-            onExportExcel={handleExportExcel}
-            onExportExcelDatos={exportInternalExcel}
-            onImportExcel={importModulosExcel}
-          />
+        <main className="page">
+          <section className="layout">
+            <Sidebar
+                calendars={data.calendars}
+                onToggleCalendarVisible={toggleCalendarVisible}
+                onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
+                onOpenCreateCareer={openCreateCareerModal}
+                onOpenCreateTeacher={openCreateTeacherModal}
+                onExportExcel={handleExportExcel}
+                alerts={visibleAlerts}
+            />
 
             <section className="main-column">
-
               <div className="schedules-root">
                 {visibleCalendars.length === 0 && (
                     <section className="card schedule-card">
@@ -446,8 +449,10 @@ function App() {
             subject={selectedSubject}
             careers={careers}
             days={DAYS}
+            existingClasses={existingSubjectClasses}
             onBack={subjectGroupsModalHandlers.backToGroupsList}
             onClose={subjectGroupsModalHandlers.closeSubjectGroupsModal}
+            onSaveGroups={subjectGroupsModalHandlers.saveGroupsToCalendar}
         />
 
         <CreateNewGroupModal
@@ -482,6 +487,16 @@ function App() {
             onClose={closeCreateTeacherModal}
             onChange={updateTeacherForm}
             onSubmit={confirmCreateTeacher}
+        />
+
+        <CreateSemesterModal
+            isOpen={isCreateSemesterOpen}
+            form={semesterForm}
+            availableSemesters={availableSemesters}
+            errorMessage={semesterModalError}
+            onClose={closeCreateSemesterModal}
+            onChange={updateSemesterForm}
+            onSubmit={confirmCreateSemester}
         />
       </>
   );
