@@ -148,8 +148,7 @@ function App() {
   function mapDbGroupToClasses(grupo) {
     const horarios = Array.isArray(grupo.horarios) ? grupo.horarios : [];
     const title = grupo.nombreMateria || `Materia ${grupo.idMateria}`;
-    const groupCareers = Array.isArray(grupo.carreras) ? grupo.carreras : [];
-    const careersLabel = groupCareers.length > 0 ? groupCareers.join(", ") : "-";
+    const teachers = Array.isArray(grupo.docentes) ? grupo.docentes : [];
 
     return horarios
       .map((h) => {
@@ -160,8 +159,10 @@ function App() {
 
         return {
           title,
-          group: grupo.codigo ? `Grupo ${grupo.codigo}` : "Grupo sin codigo",
-          detail: `Carreras: ${careersLabel} | Cupo: ${grupo.cupo ?? "-"} | HS: ${grupo.horasSemestrales ?? "-"}`,
+          groupCode: `G-${grupo.id}`,
+          classNumber: grupo.codigo || "",
+          credits: Number(grupo.creditosMateria || 0),
+          teachers,
           day,
           start: block.start,
           end: block.end,

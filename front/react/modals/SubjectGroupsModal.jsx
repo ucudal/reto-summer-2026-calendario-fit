@@ -289,7 +289,7 @@ function SubjectGroupsModal(props) {
         return;
       }
 
-      const codigo = `GRP-${Date.now()}`;
+      const codigo = groupName.trim();
       const createResp = await window.api.grupos.crear({
         codigo,
         idMateria: materia.id,
