@@ -125,8 +125,7 @@ function App() {
       id: 1, 
       nombre: "Programación 1", 
       tipo: "A", 
-      creditos: 8, 
-      tieneContrasemestre: false,
+      creditos: 8,
       carreras: ["Ingeniería en Sistemas"],
       carrerasSemestre: { "Ingeniería en Sistemas": "1er s 1er año" },
       requerimientosSalon: "Laboratorio con 30 computadoras"
@@ -135,8 +134,7 @@ function App() {
       id: 2, 
       nombre: "Matemática Discreta", 
       tipo: "B", 
-      creditos: 6, 
-      tieneContrasemestre: true,
+      creditos: 6,
       carreras: ["Ingeniería en Sistemas", "Ingeniería en Electrónica"],
       carrerasSemestre: { 
         "Ingeniería en Sistemas": "1er s 1er año",
@@ -161,7 +159,6 @@ function App() {
     nombre: "",
     tipo: "",
     creditos: "",
-    tieneContrasemestre: false,
     carreras: [],
     carrerasSemestre: {},
     requerimientosSalon: ""

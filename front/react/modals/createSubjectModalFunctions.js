@@ -17,7 +17,6 @@ function confirmCreateSubject(params) {
   const nombre = String(subjectForm.nombre || "").trim();
   const tipo = String(subjectForm.tipo || "").trim();
   const creditos = parseInt(subjectForm.creditos);
-  const tieneContrasemestre = Boolean(subjectForm.tieneContrasemestre);
   const carreras = subjectForm.carreras || [];
   const carrerasSemestre = subjectForm.carrerasSemestre || {};
   const requerimientosSalon = String(subjectForm.requerimientosSalon || "").trim();
@@ -64,7 +63,6 @@ function confirmCreateSubject(params) {
     nombre,
     tipo,
     creditos,
-    tieneContrasemestre,
     carreras: [...carreras],
     carrerasSemestre: { ...carrerasSemestre },
     requerimientosSalon
@@ -92,7 +90,6 @@ function confirmEditSubject(params) {
   const nombre = String(subjectForm.nombre || "").trim();
   const tipo = String(subjectForm.tipo || "").trim();
   const creditos = parseInt(subjectForm.creditos);
-  const tieneContrasemestre = Boolean(subjectForm.tieneContrasemestre);
   const carreras = subjectForm.carreras || [];
   const carrerasSemestre = subjectForm.carrerasSemestre || {};
   const requerimientosSalon = String(subjectForm.requerimientosSalon || "").trim();
@@ -139,7 +136,7 @@ function confirmEditSubject(params) {
   // Actualizar materia
   const updatedSubjects = subjects.map(s => 
     s.id === originalSubject.id 
-      ? { ...s, nombre, tipo, creditos, tieneContrasemestre, carreras: [...carreras], carrerasSemestre: { ...carrerasSemestre }, requerimientosSalon }
+      ? { ...s, nombre, tipo, creditos, carreras: [...carreras], carrerasSemestre: { ...carrerasSemestre }, requerimientosSalon }
       : s
   );
 

@@ -63,55 +63,48 @@ function CreateSubjectModal(props) {
             onSubmit();
           }}
         >
-          <label className="form-label">
-            Nombre de la asignatura
-            <input
-              className="form-input"
-              type="text"
-              value={form.nombre}
-              onChange={(event) => onChange("nombre", event.target.value)}
-              placeholder="Ej: Programación 1"
-              required
-            />
-          </label>
-
-          <div className="form-row">
-            <label className="form-label form-label-compact">
-              Tipo
-              <select
-                className="form-input"
-                value={form.tipo}
-                onChange={(event) => onChange("tipo", event.target.value)}
-                required
-              >
-                <option value="">Seleccione un tipo</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-              </select>
-            </label>
-
-            <label className="form-label form-label-compact">
-              Créditos
+          <div className="form-row" style={{ justifyContent: 'space-between' }}>
+            <label className="form-label" style={{ flex: 1, marginRight: '16px', maxWidth: '450px' }}>
+              Nombre de la asignatura
               <input
                 className="form-input"
-                type="number"
-                min="1"
-                value={form.creditos}
-                onChange={(event) => onChange("creditos", event.target.value)}
-                placeholder="Ej: 8"
+                type="text"
+                value={form.nombre}
+                onChange={(event) => onChange("nombre", event.target.value)}
+                placeholder="Ej: Programación 1"
                 required
               />
             </label>
 
-            <label className="checkbox-row checkbox-main">
-              <input
-                type="checkbox"
-                checked={form.tieneContrasemestre}
-                onChange={(event) => onChange("tieneContrasemestre", event.target.checked)}
-              />
-              Es contrasemestre
-            </label>
+            <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+              <label className="form-label" style={{ width: '65px' }}>
+                Tipo
+                <select
+                  className="form-input"
+                  value={form.tipo}
+                  onChange={(event) => onChange("tipo", event.target.value)}
+                  required
+                >
+                  <option value="">-</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                </select>
+              </label>
+
+              <label className="form-label" style={{ width: '75px' }}>
+                Créditos
+                <input
+                  className="form-input"
+                  type="number"
+                  min="1"
+                  value={form.creditos}
+                  onChange={(event) => onChange("creditos", event.target.value)}
+                  placeholder="8"
+                  required
+                />
+              </label>
+            </div>
           </div>
 
           <label className="form-label">
