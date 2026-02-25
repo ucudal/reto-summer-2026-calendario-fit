@@ -16,7 +16,8 @@ function Toolbar(props) {
     onCareerChange,
     onPlanChange,
     onOpenCreateCareer,
-    onOpenCreateGroup
+    onOpenCreateGroup,
+    onExportExcel
   } = props;
 
   return (
@@ -37,7 +38,7 @@ function Toolbar(props) {
         <button className="pill-btn" type="button">CREAR NUEVO SEMESTRE +</button>
         <button className="pill-btn" type="button" onClick={onOpenCreateCareer}>CREAR CARRERA</button>
         <button className="pill-btn" type="button" onClick={onOpenCreateGroup}>CREAR GRUPO</button>
-        <button className="pill-btn" type="button">EXPORTAR</button>
+        <button className="pill-btn" type="button" onClick={onExportExcel}>EXPORTAR</button>
       </div>
 
       <h1 className="career-title">{selectedCareer}</h1>

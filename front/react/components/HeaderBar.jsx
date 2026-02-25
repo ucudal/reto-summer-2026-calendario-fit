@@ -12,7 +12,11 @@ function HeaderBar(props) {
   const {
     careers = [],
     selectedCareer = "",
+    selectedPlan = "",
+    currentLectiveTerm = "",
     onCareerChange = () => {},
+    onPlanChange = () => {},
+    onOpenCreateSemester = () => {},
     onOpenCreateCareer = () => {},
     onOpenCreateGroup = () => {}
   } = props;
@@ -21,6 +25,9 @@ function HeaderBar(props) {
     <header className="app-header">
       <div className="header-top">
         <div className="header-title">Sistema de gestion de calendarios academicos</div>
+        {currentLectiveTerm && (
+          <div className="header-semester-info">{currentLectiveTerm}</div>
+        )}
         <img src="./react/assets/Logo-Universidad-Catolica.svg" alt="Logo Universidad Catolica del Uruguay" className="header-logo" />
       </div>
 
@@ -32,6 +39,15 @@ function HeaderBar(props) {
         </select>
 
         <button className="header-btn" type="button">Crear nuevo semestre +</button>
+        <select className="header-select" value={selectedPlan} onChange={(event) => onPlanChange(event.target.value)}>
+          {plans.map((plan) => (
+            <option key={plan} value={plan}>{plan}</option>
+          ))}
+        </select>
+
+        <div className="header-semester-wrap">
+          <button className="header-btn" type="button" onClick={onOpenCreateSemester}>Crear nuevo semestre +</button>
+        </div>
         <button className="header-btn hidden-btn" type="button" onClick={onOpenCreateCareer}>CREAR CARRERA</button>
         <button className="header-btn hidden-btn" type="button" onClick={onOpenCreateGroup}>CREAR GRUPO</button>
         <button className="header-btn hidden-btn" type="button">EXPORTAR</button>

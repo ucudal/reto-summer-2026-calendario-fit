@@ -76,6 +76,87 @@ const INITIAL_DATA = {
     "Ingenieria Industrial 2021"
   ],
   calendars: buildCalendars()
+  careers: ["Ingenieria en Sistemas", "Ingenieria Industrial"],
+  plans: ["Plan 2021", "Plan 2024"],
+  // Relacion simple carrera -> planes habilitados.
+  careerPlans: {
+    "Ingenieria en Sistemas": ["Plan 2021", "Plan 2024"],
+    "Ingenieria Industrial": ["Plan 2021"]
+  },
+  calendars: [
+    {
+      id: "s1y1",
+      name: "1er semestre 1er año - Ingenieria en Sistemas",
+      subtitle: "Ingenieria en Sistemas",
+      lectiveTerm: "Primer semestre 2025",
+      visible: true,
+      classes: [],
+      alerts: []
+    },
+    {
+      id: "s2y1",
+      name: "2do semestre 1er año - Ingenieria en Sistemas",
+      subtitle: "Ingenieria en Sistemas",
+      lectiveTerm: "Primer semestre 2025",
+      visible: true,
+      classes: [],
+      alerts: []
+    },
+    {
+      id: "i-s1y1",
+      name: "1er semestre 1er año - Ingenieria Industrial",
+      lectiveTerm: "Primer semestre 2025",
+      subtitle: "Ingenieria Industrial",
+      visible: true,
+      classes: [
+        {
+          title: "Matematica Basica",
+          group: "G1 - Compartida",
+          detail: "Sistemas/Industrial | Aula 200",
+          day: "MIE",
+          start: "08:00",
+          end: "09:20",
+          type: "theory"
+        },
+        {
+          title: "Fisica 1",
+          group: "G1 - Juan Perez",
+          detail: "Industrial | Aula 210",
+          day: "LUN",
+          start: "11:00",
+          end: "12:20",
+          type: "theory"
+        },
+        {
+          title: "Economia 1",
+          group: "G1 - Pedro Mendez",
+          detail: "Industrial | Aula 104",
+          day: "JUE",
+          start: "18:15",
+          end: "19:35",
+          type: "practice"
+        }
+      ],
+      alerts: []
+    },
+    {
+      id: "s1y2",
+      name: "1er semestre 2do año - Ingenieria en Sistemas",
+      lectiveTerm: "Primer semestre 2025",
+      visible: false,
+      classes: [],
+      alerts: []
+    },
+    {
+      id: "s2y2",
+      name: "2do semestre 2do año - Ingenieria en Sistemas",
+      subtitle: "Ingenieria en Sistemas",
+      lectiveTerm: "Primer semestre 2025",
+      visible: false,
+      classes: [],
+      alerts: []
+    }
+  ]
 };
 
 // Devuelve una copia profunda para evitar compartir referencias.
@@ -99,6 +180,12 @@ function yearFromCalendarName(name) {
   const normalized = String(name || "").toLowerCase();
   const match = normalized.match(/([1-5])(er|do|to)\s+a(ñ|n)io/);
   if (match) return match[1];
+  const normalized = name.toLowerCase();
+
+  if (normalized.includes("1er año")) return "1";
+  if (normalized.includes("2do año")) return "2";
+  if (normalized.includes("3er año")) return "3";
+
   return "";
 }
 
