@@ -44,6 +44,7 @@ const COLOR_BY_TYPE = {
 // Datos iniciales en memoria.
 const INITIAL_DATA = {
   careers: ["Ingenieria en Sistemas", "Ingenieria Industrial"],
+  semesters: ["Primer semestre 2025", "Segundo semestre 2025", "Primer semestre 2026", "Segundo semestre 2026"],
   plans: ["Plan 2021", "Plan 2024"],
   // Relacion simple carrera -> planes habilitados.
   careerPlans: {
@@ -172,7 +173,75 @@ const INITIAL_DATA = {
       visible: false,
       classes: [],
       alerts: []
-    }
+    },
+    {
+      id: "s2y1-2025-2",
+      name: "2do semestre 1er año - Ingenieria en Sistemas",
+      subtitle: "Ingenieria en Sistemas",
+      lectiveTerm: "Segundo semestre 2025",
+      visible: true,
+      classes: [
+        {
+          title: "Estructuras de Datos",
+          group: "G1 - Laura Diaz",
+          detail: "Aula 305",
+          day: "MAR",
+          start: "09:30",
+          end: "10:50",
+          type: "theory"
+        },
+        {
+          title: "Estructuras de Datos",
+          group: "G1 - Laura Diaz",
+          detail: "Lab 2",
+          day: "JUE",
+          start: "18:15",
+          end: "19:35",
+          type: "lab"
+        },
+        {
+          title: "Arquitectura de Computadores",
+          group: "G1 - Miguel Torres",
+          detail: "Aula 210",
+          day: "LUN",
+          start: "11:00",
+          end: "12:20",
+          type: "theory"
+        }
+      ],
+      alerts: [
+        "Estructuras de Datos comparte laboratorio con Redes."
+      ]
+    },
+    {
+      id: "s2y2-2025-2",
+      name: "2do semestre 2do año - Ingenieria en Sistemas",
+      subtitle: "Ingenieria en Sistemas",
+      lectiveTerm: "Segundo semestre 2025",
+      visible: true,
+      classes: [
+        {
+          title: "Bases de Datos",
+          group: "G1 - Ana Rodriguez",
+          detail: "Lab 4",
+          day: "MIE",
+          start: "08:00",
+          end: "09:20",
+          type: "lab"
+        },
+        {
+          title: "Sistemas Operativos",
+          group: "G1 - Carlos Vega",
+          detail: "Aula 120",
+          day: "VIE",
+          start: "16:50",
+          end: "18:10",
+          type: "theory"
+        }
+      ],
+      alerts: []
+    },
+
   ]
 };
 

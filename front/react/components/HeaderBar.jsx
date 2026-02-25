@@ -19,16 +19,15 @@ function HeaderBar(props) {
     onPlanChange = () => {},
     onOpenCreateSemester = () => {},
     onOpenCreateCareer = () => {},
-    onOpenCreateGroup = () => {}
+    onOpenCreateGroup = () => {},
+    onLectiveTermChange = () => {},
+    lectiveTerms = []
   } = props;
 
   return (
     <header className="app-header">
       <div className="header-top">
         <div className="header-title">Sistema de gestion de calendarios academicos</div>
-        {currentLectiveTerm && (
-          <div className="header-semester-info">{currentLectiveTerm}</div>
-        )}
         <img src="./react/assets/Logo-Universidad-Catolica.svg" alt="Logo Universidad Catolica del Uruguay" className="header-logo" />
       </div>
 
@@ -42,6 +41,12 @@ function HeaderBar(props) {
         <select className="header-select" value={selectedPlan} onChange={(event) => onPlanChange(event.target.value)}>
           {plans.map((plan) => (
             <option key={plan} value={plan}>{plan}</option>
+          ))}
+        </select>
+
+        <select className="header-select" value={currentLectiveTerm} onChange={(event) => onLectiveTermChange(event.target.value)}>
+          {lectiveTerms.map((term) => (
+            <option key={term} value={term}>{term}</option>
           ))}
         </select>
 

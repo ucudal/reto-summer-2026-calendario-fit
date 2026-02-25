@@ -112,8 +112,20 @@ function App() {
     return TIME_BLOCKS.map((block) => block.end);
   }, [TIME_BLOCKS]);
 
+    // Detectar semestre lectivo actual (del primero visible o del primero en general)
+  const [currentLectiveTerm, setCurrentLectiveTerm] = React.useState(() => {
+    if (data.calendars.length > 0) {
+      return data.semesters[0] || "";
+    }
+    return "";
+  });
+
   // Calendarios visibles para pintar y alertar.
-  const visibleCalendars = data.calendars.filter((calendar) => calendar.visible);
+  const visibleCalendars = data.calendars.filter(
+    (calendar) => 
+      calendar.visible &&
+      calendar.lectiveTerm === currentLectiveTerm
+    );
 
   const existingSubjectClasses = React.useMemo(() => {
     if (!selectedSubject) return [];
@@ -403,16 +415,12 @@ function App() {
     };
   }
 
-  // Detectar semestre lectivo actual (del primero visible o del primero en general)
-  const currentLectiveTerm = React.useMemo(() => {
-    if (visibleCalendars.length > 0) {
-      return visibleCalendars[0].lectiveTerm || "";
-    }
-    if (data.calendars.length > 0) {
-      return data.calendars[0].lectiveTerm || "";
-    }
-    return "";
-  }, [visibleCalendars, data.calendars]);
+
+
+  const lectiveTerms = React.useMemo(() => {
+    const termsSet = new Set(data.calendars.map((calendar) => calendar.lectiveTerm).filter(Boolean));
+    return Array.from(termsSet);
+  }, [data.calendars]);
 
   return (
     <>
@@ -427,6 +435,8 @@ function App() {
         onOpenCreateSemester={openCreateSemesterModal}
         onOpenCreateCareer={openCreateCareerModal}
         onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
+        onLectiveTermChange={setCurrentLectiveTerm}
+        lectiveTerms={data.semesters}
       />
 
       <main className="page">
