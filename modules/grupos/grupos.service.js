@@ -1,7 +1,9 @@
 import {
     crearGrupo,
+    crearSemestre,
     eliminarGrupo,
     obtenerGrupoPorId,
+    obtenerSemestrePorNumeroYAnio,
     modificarGrupo,
     listarGrupos,
     asignarProfesor,
@@ -13,6 +15,7 @@ const MODULOS_VALIDOS = { 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 
 
 export function altaGrupo(data) {
   validarGrupo(data);
+  const idSemestre = resolverIdSemestre(data);
 
   return crearGrupo({
     codigo: data.codigo.trim(),
@@ -20,8 +23,8 @@ export function altaGrupo(data) {
     horasSemestrales: data.horasSemestrales,
     esContrasemestre: data.esContrasemestre,
     cupo: data.cupo,
-    color: data.color,
-    idSemestre: data.idSemestre
+    color: String(data.color || "#A0C4FF"),
+    idSemestre
   });
 };
 
@@ -146,15 +149,37 @@ function validarGrupo(data) {
     throw new Error("Cupo inválido");
   }
 
-  if (!data.idSemestre ) {
-    throw new Error("El semestre es obligatorio");
-  }
-
-  if (data.anio == null || isNaN(Number(data.anio)) || Number(data.anio) <= 0) {
-    throw new Error("Año inválido");
-  }
-
   if (data.esContrasemestre !== undefined && typeof data.esContrasemestre !== 'boolean') {
     throw new Error("esContrasemestre debe ser booleano");
   }
+}
+
+function resolverIdSemestre(data) {
+  if (data.idSemestre && Number(data.idSemestre) > 0) {
+    return Number(data.idSemestre);
+  }
+
+  const numeroSemestre =
+    Number(data.semestreLectivoNumero || data.semestreLectivo || 0);
+  const anioLectivo =
+    Number(data.anioLectivo || 0);
+
+  if (!numeroSemestre || (numeroSemestre !== 1 && numeroSemestre !== 2)) {
+    throw new Error("El semestre es obligatorio");
+  }
+  if (!anioLectivo || anioLectivo < 2026) {
+    throw new Error("Año lectivo inválido");
+  }
+
+  const existente = obtenerSemestrePorNumeroYAnio(numeroSemestre, anioLectivo);
+  if (existente?.id) return Number(existente.id);
+
+  const created = crearSemestre(numeroSemestre, anioLectivo);
+  const newId = Number(created?.lastInsertRowid || 0);
+  if (!newId) {
+    const retry = obtenerSemestrePorNumeroYAnio(numeroSemestre, anioLectivo);
+    if (retry?.id) return Number(retry.id);
+    throw new Error("No se pudo crear el semestre lectivo");
+  }
+  return newId;
 }

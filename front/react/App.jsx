@@ -135,7 +135,9 @@ function App() {
             isOpen={isSubjectGroupsModalOpen}
             subject={selectedSubject}
             careers={careers}
+            calendars={data.calendars}
             days={DAYS}
+            currentLectiveTerm={currentLectiveTerm}
             onBack={subjectGroupsModalHandlers.backToGroupsList}
             onClose={subjectGroupsModalHandlers.closeSubjectGroupsModal}
             onSaveGroups={subjectGroupsModalHandlers.saveGroupsToCalendar}

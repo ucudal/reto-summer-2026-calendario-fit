@@ -46,6 +46,7 @@ function createSubjectGroupsModalHandlers(params) {
             start: schedule.fromTime,
             end: schedule.toTime,
             type: "practice",
+            color: group.color,
             careers: group.assignedCareers,
             teachers: group.teachers
           };

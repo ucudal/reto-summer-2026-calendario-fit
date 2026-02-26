@@ -1,6 +1,6 @@
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "../../db/database.js";
-import { carreras, grupos, horarios, materias, profesores } from "../../db/drizzle/schema/base.js";
+import { carreras, grupos, horarios, materias, profesores, semestres } from "../../db/drizzle/schema/base.js";
 import { grupoHorario, materiaCarrera, profesorGrupo } from "../../db/drizzle/schema/links.js";
 
 export function crearGrupo(grupo) {
@@ -43,12 +43,15 @@ export function listarGrupos() {
       esContrasemestre: grupos.esContrasemestre,
       cupo: grupos.cupo,
       idSemestre: grupos.idSemestre,
-      grupo: grupos.anio,
+      color: grupos.color,
+      semestreLectivo: semestres.numeroSemestre,
+      anioLectivo: semestres.anio,
       dia: horarios.dia,
       modulo: horarios.modulo
     })
     .from(grupos)
     .leftJoin(materias, eq(materias.id, grupos.idMateria))
+    .leftJoin(semestres, eq(semestres.id, grupos.idSemestre))
     .leftJoin(grupoHorario, eq(grupoHorario.idGrupo, grupos.id))
     .leftJoin(horarios, eq(horarios.id, grupoHorario.idHorario))
     .orderBy(asc(grupos.codigo))
@@ -103,6 +106,8 @@ export function listarGrupos() {
         esContrasemestre: row.esContrasemestre,
         cupo: row.cupo,
         idSemestre: row.idSemestre,
+        semestreLectivo: row.semestreLectivo,
+        anioLectivo: row.anioLectivo,
         color: row.color,
         carreras: Array.from(careersByGroup.get(row.id) || []),
         docentes: Array.from(teachersByGroup.get(row.id) || []),
@@ -119,6 +124,24 @@ export function listarGrupos() {
   }
 
   return Array.from(byId.values());
+}
+
+export function obtenerSemestrePorNumeroYAnio(numeroSemestre, anio) {
+  return db
+    .select({ id: semestres.id })
+    .from(semestres)
+    .where(and(eq(semestres.numeroSemestre, Number(numeroSemestre)), eq(semestres.anio, Number(anio))))
+    .get();
+}
+
+export function crearSemestre(numeroSemestre, anio) {
+  return db
+    .insert(semestres)
+    .values({
+      numeroSemestre: Number(numeroSemestre),
+      anio: Number(anio)
+    })
+    .run();
 }
 
 export function asignarProfesor(data) {
@@ -159,4 +182,3 @@ export function insertarHorarios(idGrupo, horariosPayload) {
 
   return inserted;
 }
-

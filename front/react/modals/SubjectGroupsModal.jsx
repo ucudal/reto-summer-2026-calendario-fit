@@ -11,7 +11,9 @@ function SubjectGroupsModal(props) {
     isOpen,
     subject,
     careers = [],
+    calendars = [],
     days = [],
+    currentLectiveTerm = "",
     onClose,
     onBack,
     onSaveGroups,
@@ -26,8 +28,7 @@ function SubjectGroupsModal(props) {
   const [careerOptions, setCareerOptions] = React.useState([]);
   const [selectedCareers, setSelectedCareers] = React.useState([]);
   const [selectedDays, setSelectedDays] = React.useState([]);
-  const [fromTime, setFromTime] = React.useState("08:00");
-  const [toTime, setToTime] = React.useState("09:20");
+  const [dayTimeRanges, setDayTimeRanges] = React.useState({});
   const [error, setError] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
   const careerDropdownRef = React.useRef(null);
@@ -46,6 +47,7 @@ function SubjectGroupsModal(props) {
 
   const startTimes = ["08:00", "09:30", "11:00", "12:25", "16:50", "18:15", "19:45", "21:15"];
   const endTimes = ["09:20", "10:50", "12:20", "13:45", "18:10", "19:35", "21:05", "22:35"];
+  const groupColors = window.AppData?.GROUP_COLORS || ["#A0C4FF"];
 
   React.useEffect(() => {
     if (!isOpen) return;
@@ -58,8 +60,7 @@ function SubjectGroupsModal(props) {
     setCareerOptions([]);
     setSelectedCareers([]);
     setSelectedDays([]);
-    setFromTime("08:00");
-    setToTime("09:20");
+    setDayTimeRanges({});
     setError("");
     setIsSaving(false);
   }, [isOpen, subject, careers]);
@@ -191,9 +192,35 @@ function SubjectGroupsModal(props) {
   });
 
   function toggleDay(day) {
-    setSelectedDays((prev) =>
-      prev.includes(day) ? prev.filter((item) => item !== day) : [...prev, day]
-    );
+    setSelectedDays((prev) => {
+      const isSelected = prev.includes(day);
+
+      if (isSelected) {
+        setDayTimeRanges((prevRanges) => {
+          const next = { ...prevRanges };
+          delete next[day];
+          return next;
+        });
+        return prev.filter((item) => item !== day);
+      }
+
+      setDayTimeRanges((prevRanges) => ({
+        ...prevRanges,
+        [day]: prevRanges[day] || { fromTime: "08:00", toTime: "09:20" }
+      }));
+      return [...prev, day];
+    });
+  }
+
+  function updateDayTime(day, field, value) {
+    setDayTimeRanges((prev) => ({
+      ...prev,
+      [day]: {
+        fromTime: prev[day]?.fromTime || "08:00",
+        toTime: prev[day]?.toTime || "09:20",
+        [field]: value
+      }
+    }));
   }
 
   function toggleCareer(optionKey) {
@@ -221,6 +248,36 @@ function SubjectGroupsModal(props) {
     if (key === "VIE") return "Viernes";
     if (key === "SAB") return "Sabado";
     return "";
+  }
+
+  function parseLectiveTerm(text) {
+    const value = String(text || "").trim().toLowerCase();
+    const match = value.match(/^(1er|2do)\s+semestre\s+(\d{4})$/);
+    if (!match) return null;
+    const semestreLectivoNumero = match[1] === "2do" ? 2 : 1;
+    const anioLectivo = Number(match[2]);
+    return { semestreLectivoNumero, anioLectivo };
+  }
+
+  function pickGroupColorForCalendar(academicSemester, academicYear) {
+    const targetPrefix = `s${Number(academicSemester || 1)}y${Number(academicYear || 1)}`;
+    const byPrefix = (calendars || []).filter((calendar) => String(calendar.id || "").startsWith(targetPrefix));
+    const byLective = byPrefix.filter(
+      (calendar) => !currentLectiveTerm || String(calendar.lectiveTerm || "") === String(currentLectiveTerm)
+    );
+    const targetCalendars = byLective.length > 0 ? byLective : byPrefix;
+
+    const usedColors = new Set();
+    targetCalendars.forEach((calendar) => {
+      (calendar.classes || []).forEach((item) => {
+        const color = String(item?.color || "").trim();
+        if (color) usedColors.add(color);
+      });
+    });
+
+    const firstAvailable = groupColors.find((color) => !usedColors.has(color));
+    if (firstAvailable) return firstAvailable;
+    return groupColors[usedColors.size % groupColors.length] || "#A0C4FF";
   }
 
   async function handleAddGroup() {
@@ -256,11 +313,16 @@ function SubjectGroupsModal(props) {
     const resolvedSemester = Number(selectedMeta[0]?.semestre || 1);
     const resolvedYear = Number(selectedMeta[0]?.anio || 1);
 
-    const startIndex = startTimes.indexOf(fromTime);
-    const endIndex = endTimes.indexOf(toTime);
-    if (startIndex < 0 || endIndex < 0 || endIndex < startIndex) {
-      setError("Rango de horario inválido.");
-      return;
+    let totalModules = 0;
+    for (const day of selectedDays) {
+      const dayRange = dayTimeRanges[day] || { fromTime: "08:00", toTime: "09:20" };
+      const startIndex = startTimes.indexOf(dayRange.fromTime);
+      const endIndex = endTimes.indexOf(dayRange.toTime);
+      if (startIndex < 0 || endIndex < 0 || endIndex < startIndex) {
+        setError(`Rango de horario inválido en ${day}.`);
+        return;
+      }
+      totalModules += endIndex - startIndex + 1;
     }
 
     setError("");
@@ -290,12 +352,17 @@ function SubjectGroupsModal(props) {
       }
 
       const codigo = groupName.trim();
+      const lective = parseLectiveTerm(currentLectiveTerm);
+      const groupColor = pickGroupColorForCalendar(resolvedSemester, resolvedYear);
       const createResp = await window.api.grupos.crear({
         codigo,
         idMateria: materia.id,
-        horasSemestrales: (endIndex - startIndex + 1) * 20,
+        horasSemestrales: totalModules * 20,
         esContrasemestre: false,
         cupo: 30,
+        color: groupColor,
+        semestreLectivoNumero: lective?.semestreLectivoNumero,
+        anioLectivo: lective?.anioLectivo,
         semestre: resolvedSemester,
         anio: resolvedYear
       });
@@ -315,6 +382,9 @@ function SubjectGroupsModal(props) {
 
       const horariosPayload = [];
       for (const day of selectedDays) {
+        const dayRange = dayTimeRanges[day] || { fromTime: "08:00", toTime: "09:20" };
+        const startIndex = startTimes.indexOf(dayRange.fromTime);
+        const endIndex = endTimes.indexOf(dayRange.toTime);
         const dbDay = dayUiToDb(day);
         if (!dbDay) continue;
         for (let idx = startIndex; idx <= endIndex; idx += 1) {
@@ -356,22 +426,24 @@ function SubjectGroupsModal(props) {
         }
       }
 
-    const payloadSchedules = [
-      {
-        id: Date.now(),
-        days: [...selectedDays],
-        fromTime,
-        toTime,
+    const payloadSchedules = selectedDays.map((day, index) => {
+      const dayRange = dayTimeRanges[day] || { fromTime: "08:00", toTime: "09:20" };
+      return {
+        id: Date.now() + index,
+        days: [day],
+        fromTime: dayRange.fromTime,
+        toTime: dayRange.toTime,
         groups: [
           {
-            id: Date.now() + 1,
+            id: Date.now() + 1 + index,
             name: groupName.trim(),
             teachers: [...selectedTeachers],
-            assignedCareers: [...finalSelectedCareers]
+            assignedCareers: [...finalSelectedCareers],
+            color: groupColor
           }
         ]
-      }
-    ];
+      };
+    });
 
       if (onSaveGroups) {
         onSaveGroups(payloadSchedules, subject, String(resolvedYear));
@@ -512,25 +584,40 @@ function SubjectGroupsModal(props) {
             ))}
           </div>
 
-          <div className="second-step-time-row">
-            <label className="second-step-time-label">
-              Desde
-              <select className="second-step-time-select" value={fromTime} onChange={(event) => setFromTime(event.target.value)}>
-                {startTimes.map((time) => (
-                  <option key={time} value={time}>{time}</option>
-                ))}
-              </select>
-            </label>
+          {selectedDays.map((day) => {
+            const range = dayTimeRanges[day] || { fromTime: "08:00", toTime: "09:20" };
+            return (
+              <div key={day} className="second-step-time-row">
+                <label className="second-step-time-label">{day}</label>
 
-            <label className="second-step-time-label">
-              Hasta
-              <select className="second-step-time-select" value={toTime} onChange={(event) => setToTime(event.target.value)}>
-                {endTimes.map((time) => (
-                  <option key={time} value={time}>{time}</option>
-                ))}
-              </select>
-            </label>
-          </div>
+                <label className="second-step-time-label">
+                  Desde
+                  <select
+                    className="second-step-time-select"
+                    value={range.fromTime}
+                    onChange={(event) => updateDayTime(day, "fromTime", event.target.value)}
+                  >
+                    {startTimes.map((time) => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="second-step-time-label">
+                  Hasta
+                  <select
+                    className="second-step-time-select"
+                    value={range.toTime}
+                    onChange={(event) => updateDayTime(day, "toTime", event.target.value)}
+                  >
+                    {endTimes.map((time) => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            );
+          })}
 
           {error && <div className="modal-error">{error}</div>}
 

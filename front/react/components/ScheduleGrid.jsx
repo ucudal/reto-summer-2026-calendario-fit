@@ -159,7 +159,7 @@ function ScheduleGrid(props) {
       width: `calc(${columnWidthExpr} - 8px)`,
       top: `${top}px`,
       height: `${height}px`,
-      background: colorByType[classItem.type] || "#8ca5ad"
+      background: classItem.color || colorByType[classItem.type] || "#8ca5ad"
     };
   }
 

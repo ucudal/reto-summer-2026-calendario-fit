@@ -48,6 +48,7 @@
                         classNumber: String(grupo.codigo || ""),
                         credits: Number(grupo.creditosMateria || 0),
                         teachers,
+                        color: grupo.color || "",
                         day,
                         start: block.start,
                         end: block.end,
