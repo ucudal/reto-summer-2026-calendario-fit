@@ -1,4 +1,4 @@
-function App() {
+﻿function App() {
   const {
     data,
     selectedCareer,
@@ -28,6 +28,26 @@ function App() {
     closeCreateTeacherModal,
     updateTeacherForm,
     confirmCreateTeacher,
+
+    // Subject
+    subjects,
+    isSubjectsListOpen,
+    isCreateSubjectOpen,
+    subjectModalError,
+    subjectForm,
+    subjectEditMode,
+    subjectOpenedFromList,
+    openSubjectsListModal,
+    closeSubjectsListModal,
+    openCreateSubjectFromList,
+    closeCreateSubjectModal,
+    backToSubjectsListFromModal,
+    updateSubjectForm,
+    toggleSubjectCareer,
+    changeSubjectCareerSemester,
+    selectSubjectToManage,
+    confirmCreateSubject,
+    deleteSubject,
 
     // Semester
     isCreateSemesterOpen,
@@ -87,6 +107,7 @@ function App() {
             <Sidebar
                 calendars={data.calendars}
                 onToggleCalendarVisible={toggleCalendarVisible}
+                onOpenSubjects={openSubjectsListModal}
                 onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
                 onOpenCreateCareer={openCreateCareerModal}
                 onOpenCreateTeacher={openCreateTeacherModal}
@@ -171,6 +192,30 @@ function App() {
             onClose={closeCreateTeacherModal}
             onChange={updateTeacherForm}
             onSubmit={confirmCreateTeacher}
+        />
+
+        {/* SUBJECT MODALS */}
+        <SubjectsListModal
+            isOpen={isSubjectsListOpen}
+            subjects={subjects}
+            onClose={closeSubjectsListModal}
+            onSelectSubject={selectSubjectToManage}
+            onCreateNew={openCreateSubjectFromList}
+        />
+
+        <CreateSubjectModal
+            isOpen={isCreateSubjectOpen}
+            form={subjectForm}
+            errorMessage={subjectModalError}
+            onClose={closeCreateSubjectModal}
+            onBack={subjectOpenedFromList ? backToSubjectsListFromModal : null}
+            onChange={updateSubjectForm}
+            onCareerToggle={toggleSubjectCareer}
+            onCareerSemesterChange={changeSubjectCareerSemester}
+            onSubmit={confirmCreateSubject}
+            onDelete={subjectEditMode ? deleteSubject : null}
+            isEditMode={Boolean(subjectEditMode)}
+            availableCareers={careers}
         />
 
         {/* SEMESTER MODAL */}
