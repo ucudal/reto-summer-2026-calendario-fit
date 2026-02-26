@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
     function useTeacherManagement() {
         const createTeacherModalFns = window.CreateTeacherModalFunctions;
 
@@ -26,6 +26,8 @@
         function openCreateTeacherModal() {
             setTeacherForm({ nombre: "", apellido: "", correo: "" });
             setTeacherModalError("");
+            setTeacherEditMode(null);
+            setTeacherOpenedFromList(false);
             setIsCreateTeacherOpen(true);
         }
 

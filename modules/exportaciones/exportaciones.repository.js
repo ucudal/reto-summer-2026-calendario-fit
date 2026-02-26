@@ -20,8 +20,8 @@ export function listarFilasExportacionDesdeDb(filters = {}) {
     SELECT
       g.id AS grupo_id,
       g.codigo AS grupo_codigo,
-      g.anio AS grupo_anio,
-      g.semestre AS grupo_semestre,
+      g.color AS grupo_color,
+      g.id_semestre AS grupo_idSemestre,
       g.cupo AS grupo_cupo,
       g.horas_anuales AS grupo_horas_semestrales,
       g.es_contrasemestre AS grupo_es_contrasemestre,
@@ -30,14 +30,15 @@ export function listarFilasExportacionDesdeDb(filters = {}) {
       m.tipo AS materia_tipo,
       m.creditos AS materia_creditos,
       m.tiene_correlativa AS materia_tiene_contrasemestre,
+      m.requerimientosSalon AS requerimientos,
       c.id AS carrera_id,
       c.nombre AS carrera_nombre,
       mc.plan AS plan_nombre,
       mc.anio AS plan_anio,
       mc.semestre AS plan_semestre,
-      COALESCE(GROUP_CONCAT(DISTINCT h.dia || ' M' || h.modulo), '') AS horarios,
-      COALESCE(GROUP_CONCAT(DISTINCT (p.nombre || ' ' || p.apellido)), '') AS docentes,
-      COALESCE(GROUP_CONCAT(DISTINCT (s.nombre || ' (' || s.edificio || ')')), '') AS salones
+      GROUP_CONCAT(DISTINCT h.dia || ' M' || h.modulo) AS horarios,
+      GROUP_CONCAT(DISTINCT (p.nombre || ' ' || p.apellido)) AS docentes,
+      GROUP_CONCAT(DISTINCT (s.nombre || ' (' || s.edificio || ')')) AS salones
     FROM grupos g
     INNER JOIN materias m ON m.id = g.id_materia
     LEFT JOIN materia_carrera mc ON mc.id_materia = m.id
@@ -50,10 +51,10 @@ export function listarFilasExportacionDesdeDb(filters = {}) {
     LEFT JOIN salones s ON s.id = sg.id_salon
     ${whereClause}
     GROUP BY
-      g.id, g.codigo, g.anio, g.semestre, g.cupo, g.horas_anuales, g.es_contrasemestre,
+      g.id, g.codigo, g.color, g.id_semestre, g.cupo, g.horas_anuales, g.es_contrasemestre,
       m.id, m.nombre, m.tipo, m.creditos, m.tiene_correlativa,
       c.id, c.nombre, mc.plan, mc.anio, mc.semestre
-    ORDER BY g.anio ASC, g.semestre ASC, g.codigo ASC
+    ORDER BY g.codigo ASC
   `;
 
   return sqlite.prepare(query).all(...params);

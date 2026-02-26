@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
     function useCareerManagement({ careers, setCareers, setSelectedCareer }) {
         const createCareerModalFns = window.CreateCareerModalFunctions;
 
@@ -20,6 +20,8 @@
         function openCreateCareerModal() {
             setCareerForm({ nombre: "" });
             setCareerModalError("");
+            setCareerEditMode(null);
+            setCareerOpenedFromList(false);
             setIsCreateCareerOpen(true);
         }
 

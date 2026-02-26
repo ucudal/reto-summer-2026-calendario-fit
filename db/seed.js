@@ -2,7 +2,7 @@ import { db } from "./database.js";
 import { carreras, profesores, materias, salones, horarios, grupos, semestres } from "./drizzle/schema/base.js";
 
 export async function seedDatabase() {
-    console.log("🌱 Seeding database...");
+  console.log("🌱 Seeding database...");
 
     // Insert 5 carreras (nombres únicos)
     await db.insert(carreras).values([
@@ -29,11 +29,11 @@ export async function seedDatabase() {
 
     // Insert 5 profesores (correos únicos)
     await db.insert(profesores).values([
-        { nombre: "Juan", apellido: "Pérez", correo: "juan.perez@ucu.edu.com" },
-        { nombre: "Ana", apellido: "Gómez", correo: "ana.gomez@ucu.edu.com" },
-        { nombre: "María", apellido: "López", correo: "maria.lopez@ucu.edu.com" },
-        { nombre: "Luis", apellido: "Martínez", correo: "luis.martinez@ucu.edu.com" },
-        { nombre: "Sofía", apellido: "Rodríguez", correo: "sofia.rodriguez@ucu.edu.com" }
+        { nombre: "Juan", apellido: "Pérez", correo: "juan.perez@ucu.edu.uy" },
+        { nombre: "Ana", apellido: "Gómez", correo: "ana.gomez@ucu.edu.uy" },
+        { nombre: "María", apellido: "López", correo: "maria.lopez@ucu.edu.uy" },
+        { nombre: "Luis", apellido: "Martínez", correo: "luis.martinez@ucu.edu.uy" },
+        { nombre: "Sofía", apellido: "Rodríguez", correo: "sofia.rodriguez@ucu.edu.uy" }
     ]);
 
     // Insert 5 salones
