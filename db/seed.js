@@ -58,7 +58,7 @@ export async function seedDatabase() {
     await db.insert(semestres).values([
         { numeroSemestre: 1, anio: 2026 },
         { numeroSemestre: 2, anio: 2026 }
-    ])
+    ]);
 
     // Insert 5 requerimientos de salón
 /*     await db.insert(requerimientosSalon).values([
@@ -95,6 +95,4 @@ export async function seedDatabase() {
 
         await db.insert(grupos).values(gruposToInsert);
     }
-  });
-  await db.insert(grupoRequerimientoSalon).values(grupoReqRows).run();
 }
