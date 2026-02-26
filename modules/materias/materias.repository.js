@@ -1,5 +1,6 @@
 import { db } from '../../db/database.js';
-import { materias }  from "../../db/drizzle/schema/base.js";
+import { carreras, materias }  from "../../db/drizzle/schema/base.js";
+import { materiaCarrera } from "../../db/drizzle/schema/links.js";
 import { asc, eq } from "drizzle-orm";
 
 /**
@@ -72,4 +73,22 @@ export function eliminarMateria(id) {
   return db.delete(materias)
     .where(eq(materias.id, id))
     .run();
+}
+
+/**
+ * Lista combinaciones carrera-plan para una materia (por nombre).
+ */
+export function listarCarrerasPlanesPorMateriaNombre(nombreMateria) {
+  return db.select({
+    carreraNombre: carreras.nombre,
+    plan: materiaCarrera.plan,
+    semestre: materiaCarrera.semestre,
+    anio: materiaCarrera.anio
+  })
+    .from(materiaCarrera)
+    .innerJoin(materias, eq(materias.id, materiaCarrera.idMateria))
+    .innerJoin(carreras, eq(carreras.id, materiaCarrera.idCarrera))
+    .where(eq(materias.nombre, nombreMateria))
+    .orderBy(asc(carreras.nombre), asc(materiaCarrera.plan))
+    .all();
 }

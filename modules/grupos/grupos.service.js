@@ -150,7 +150,7 @@ function validarGrupo(data) {
     throw new Error("El semestre es obligatorio");
   }
 
-  if (data.anio == null || isNaN(Number(data.anio)) || Number(data.anio) < 1900) {
+  if (data.anio == null || isNaN(Number(data.anio)) || Number(data.anio) <= 0) {
     throw new Error("Año inválido");
   }
 

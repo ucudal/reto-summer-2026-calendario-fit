@@ -1,5 +1,3 @@
-// src/db/seed.js
-
 import { db } from "./database.js";
 import { carreras, profesores, materias, salones, horarios, grupos, semestres } from "./drizzle/schema/base.js";
 
@@ -97,4 +95,6 @@ export async function seedDatabase() {
 
         await db.insert(grupos).values(gruposToInsert);
     }
+  });
+  await db.insert(grupoRequerimientoSalon).values(grupoReqRows).run();
 }

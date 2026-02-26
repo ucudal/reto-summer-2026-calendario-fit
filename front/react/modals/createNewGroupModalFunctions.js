@@ -9,9 +9,7 @@ function createInitialGroupForm(params) {
   const {
     DAYS,
     TIME_BLOCKS,
-    selectedCareer,
-    selectedPlan,
-    plansByCareer
+    selectedCareer
   } = params;
 
   return {
@@ -20,8 +18,7 @@ function createInitialGroupForm(params) {
     year: "1",
     fromTime: TIME_BLOCKS[0].start,
     toTime: TIME_BLOCKS[0].end,
-    careers: [selectedCareer],
-    plans: (plansByCareer[selectedCareer] || [selectedPlan]).slice(0, 1)
+    careers: [selectedCareer]
   };
 }
 
@@ -30,15 +27,12 @@ function createNewGroupModalHandlers(params) {
     DAYS,
     TIME_BLOCKS,
     selectedCareer,
-    selectedPlan,
-    plansByCareer,
     setGroupForm,
     setModalError,
     setIsCreateNewGroupOpen,
     createGroupModalFns,
     groupForm,
     data,
-    availablePlansForGroup,
     hourOptionsFrom,
     hourOptionsTo,
     timeToMinutes,
@@ -53,9 +47,7 @@ function createNewGroupModalHandlers(params) {
       createInitialGroupForm({
         DAYS,
         TIME_BLOCKS,
-        selectedCareer,
-        selectedPlan,
-        plansByCareer
+        selectedCareer
       })
     );
     setModalError("");
@@ -82,13 +74,6 @@ function createNewGroupModalHandlers(params) {
         ? [...new Set([...current, value])]
         : current.filter((item) => item !== value);
 
-      if (field === "careers") {
-        const validPlans = [...new Set(next.flatMap((career) => plansByCareer[career] || []))];
-        const filteredPlans = (prev.plans || []).filter((plan) => validPlans.includes(plan));
-        const plansToKeep = filteredPlans.length > 0 ? filteredPlans : validPlans.slice(0, 1);
-        return { ...prev, careers: next, plans: plansToKeep };
-      }
-
       return { ...prev, [field]: next };
     });
   }
@@ -97,7 +82,6 @@ function createNewGroupModalHandlers(params) {
     createGroupModalFns.confirmCreateGroup({
       groupForm,
       data,
-      availablePlansForGroup,
       hourOptionsFrom,
       hourOptionsTo,
       timeToMinutes,

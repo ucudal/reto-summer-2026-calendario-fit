@@ -22,7 +22,6 @@ function confirmCreateGroup(params) {
   const {
     groupForm,
     data,
-    availablePlansForGroup,
     hourOptionsFrom,
     hourOptionsTo,
     timeToMinutes,
@@ -40,7 +39,6 @@ function confirmCreateGroup(params) {
   const fromTime = groupForm.fromTime;
   const toTime = groupForm.toTime;
   const selectedCareers = groupForm.careers || [];
-  const selectedPlans = (groupForm.plans || []).filter((plan) => availablePlansForGroup.includes(plan));
 
   if (!subject) {
     setModalError("La materia es obligatoria.");
@@ -52,10 +50,6 @@ function confirmCreateGroup(params) {
   }
   if (selectedCareers.length === 0) {
     setModalError("Selecciona al menos una carrera.");
-    return;
-  }
-  if (selectedPlans.length === 0) {
-    setModalError("Selecciona al menos un plan de las carreras elegidas.");
     return;
   }
 
@@ -73,20 +67,19 @@ function confirmCreateGroup(params) {
 
   const target = findCalendarForYear(year, data.calendars);
   if (!target) {
-    setModalError(`No existe un calendario para ${yearLabel(year)} anio.`);
+    setModalError(`No existe un calendario para ${yearLabel(year)} año.`);
     return;
   }
 
   const newClasses = selectedDays.map((day) => ({
     title: subject,
     group: "Grupo creado manualmente",
-    detail: `Carreras: ${selectedCareers.join(", ")} | Planes: ${selectedPlans.join(", ")}`,
+    detail: `Carreras: ${selectedCareers.join(", ")}`,
     day,
     start: fromTime,
     end: toTime,
     type: "practice",
-    careers: selectedCareers,
-    plans: selectedPlans
+    careers: selectedCareers
   }));
 
   // @todo falta todo lo base, ACA BD NO OLVIDAR BD

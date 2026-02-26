@@ -5,7 +5,9 @@ import{
     actualizarGrupo,
     bajaGrupo,
     obtenerGrupo,
-    listarGruposService
+    listarGruposService,
+    asignarProfesorGrupo,
+    agregarHorarioGrupo
 } from './grupos.service.js';
 
 export function registerGruposHandlers() {
@@ -14,7 +16,14 @@ export function registerGruposHandlers() {
     ipcMain.handle('grupos:crear', async (event, data) => {
         try {
             const result = altaGrupo(data);
-            return { success: true, data: result };
+            const id = Number(result?.lastInsertRowid || 0);
+            return {
+                success: true,
+                data: {
+                    id,
+                    changes: Number(result?.changes || 0)
+                }
+            };
         } catch (error) {
             console.error("Error en grupos:crear →", error);
             return { success: false, error: error.message };
@@ -56,6 +65,26 @@ export function registerGruposHandlers() {
         try {
             const grupos = await listarGruposService();
             return { success: true, data: grupos };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    });
+
+    // Asignar docente a grupo
+    ipcMain.handle('grupos:asignarProfesor', async (event, data) => {
+        try {
+            const result = await asignarProfesorGrupo(data);
+            return { success: true, data: result };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    });
+
+    // Agregar horarios a grupo
+    ipcMain.handle('grupos:agregarHorarios', async (event, { idGrupo, horarios }) => {
+        try {
+            const result = await agregarHorarioGrupo(idGrupo, horarios);
+            return { success: true, data: result };
         } catch (error) {
             return { success: false, error: error.message };
         }

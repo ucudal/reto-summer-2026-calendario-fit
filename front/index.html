@@ -8,20 +8,34 @@
 </head>
 <body>
 
-<!-- React mounts here -->
 <div id="root"></div>
 
-<!-- React Core -->
+<!-- ========================= -->
+<!-- React Core                -->
+<!-- ========================= -->
 <script src="../node_modules/react/umd/react.development.js"></script>
 <script src="../node_modules/react-dom/umd/react-dom.development.js"></script>
 
-<!-- Babel Standalone (JSX runtime compilation) -->
+<!-- Babel Standalone -->
 <script src="../node_modules/@babel/standalone/babel.min.js"></script>
 
 <!-- ========================= -->
-<!-- Global App Data / Utils   -->
+<!-- Global App Data           -->
 <!-- ========================= -->
 <script type="text/babel" data-presets="env,react" src="./react/data.js"></script>
+
+<!-- ========================= -->
+<!-- HOOKS (ALL OF THEM)       -->
+<!-- MUST LOAD BEFORE App.jsx  -->
+<!-- ========================= -->
+<script type="text/babel" data-presets="env,react" src="./react/hooks/useDatabaseSync.js"></script>
+<script type="text/babel" data-presets="env,react" src="./react/hooks/useCalendarVisibility.js"></script>
+<script type="text/babel" data-presets="env,react" src="./react/hooks/useCareerManagement.js"></script>
+<script type="text/babel" data-presets="env,react" src="./react/hooks/useTeacherManagement.js"></script>
+<script type="text/babel" data-presets="env,react" src="./react/hooks/useSemesterManagement.js"></script>
+<script type="text/babel" data-presets="env,react" src="./react/hooks/useGroupManagement.js"></script>
+<script type="text/babel" data-presets="env,react" src="./react/hooks/useExcelActions.js"></script>
+<script type="text/babel" data-presets="env,react" src="./react/hooks/useSchedulesApp.js"></script>
 
 <!-- ========================= -->
 <!-- UI Components             -->
@@ -40,8 +54,11 @@
 <script type="text/babel" data-presets="env,react" src="./react/modals/CreateNewGroupModal.jsx"></script>
 <script type="text/babel" data-presets="env,react" src="./react/modals/CreateCareerModal.jsx"></script>
 <script type="text/babel" data-presets="env,react" src="./react/modals/CreateTeacherModal.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="./react/modals/CreateSemesterModal.jsx"></script>
 
-<!-- Modal Logic Files -->
+<!-- ========================= -->
+<!-- Modal Logic Factories     -->
+<!-- ========================= -->
 <script type="text/babel" data-presets="env,react" src="./react/modals/createGroupModalFunctions.js"></script>
 <script type="text/babel" data-presets="env,react" src="./react/modals/createCareerModalFunctions.js"></script>
 <script type="text/babel" data-presets="env,react" src="./react/modals/createTeacherModalFunctions.js"></script>
@@ -50,17 +67,21 @@
 <script type="text/babel" data-presets="env,react" src="./react/modals/createNewGroupModalFunctions.js"></script>
 
 <!-- ========================= -->
-<!-- Main App Component        -->
+<!-- Main App                  -->
 <!-- ========================= -->
 <script type="text/babel" data-presets="env,react" src="./react/App.jsx"></script>
 
-<!-- ExcelJS Library (ADD THIS) -->
+<!-- ========================= -->
+<!-- ExcelJS                   -->
+<!-- ========================= -->
 <script src="../node_modules/exceljs/dist/exceljs.min.js"></script>
 
 <!-- Excel Service -->
 <script type="text/babel" data-presets="env,react" src="./react/services/excelService.js"></script>
 
-<!-- React Entry Point -->
+<!-- ========================= -->
+<!-- Entry                     -->
+<!-- ========================= -->
 <script type="text/babel" data-presets="env,react" src="./react/main.jsx"></script>
 
 </body>
