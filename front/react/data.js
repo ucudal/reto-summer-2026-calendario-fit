@@ -39,13 +39,27 @@ function ordinalYearLabel(year) {
 function buildCalendars() {
   const calendars = [];
 
+  const anio = 2025; // Año fijo para prueba
+  let idCounter = 1;
+
   for (let year = 1; year <= 5; year += 1) {
     for (let semester = 1; semester <= 2; semester += 1) {
+
+      const idSemestre = semester; 
+      // Para prueba usamos 1 y 2
+      // En backend real vendrá con su propio ID
+
       calendars.push({
         id: `s${semester}y${year}`,
         name: `${semester === 1 ? "1er" : "2do"} semestre ${ordinalYearLabel(year)} año`,
         subtitle: "Ingenieria en Sistemas 2021",
-        lectiveTerm: "Semestre lectivo actual",
+
+        lectiveTerm: {
+          idSemestre: idSemestre,
+          numeroSem: semester,
+          anio: anio
+        },
+
         visible: year === 1,
         classes: [],
         alerts: []
@@ -96,6 +110,16 @@ function yearLabel(year) {
   return "5to";
 }
 
+function formatLectiveTerm(lectiveTerm) {
+  if (!lectiveTerm) return "";
+
+  const { numeroSem, anio } = lectiveTerm;
+
+  return Number(numeroSem) === 1
+    ? `Primer Semestre ${anio}`
+    : `Segundo Semestre ${anio}`;
+}
+
 window.AppData = {
   DAYS,
   TIME_BLOCKS,
@@ -108,5 +132,6 @@ window.AppData = {
   cloneInitialData,
   timeToMinutes,
   yearFromCalendarName,
-  yearLabel
+  yearLabel,
+  formatLectiveTerm
 };

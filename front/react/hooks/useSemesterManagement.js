@@ -67,6 +67,38 @@
             closeCreateSemesterModal();
         }
 
+        const [selectedLectiveTerm, setSelectedLectiveTerm] = React.useState("");
+
+        const availableLectiveTerms = React.useMemo(() => {
+            const seen = new Set();
+            const unique = [];
+
+            data.calendars.forEach(c => {
+                if (!c.lectiveTerm) return;
+
+                const { idSemestre, numeroSem, anio } = c.lectiveTerm;
+
+                if (!seen.has(idSemestre)) {
+                    seen.add(idSemestre);
+                    unique.push({
+                        idSemestre,
+                        numeroSem,
+                        anio
+                    });
+                }
+            });
+
+            return unique;
+        }, [data.calendars]);
+
+        const filteredCalendarsBySemester = React.useMemo(() => {
+            if (!selectedLectiveTerm) return null;
+
+            return data.calendars.filter(
+                c => c.lectiveTerm?.idSemestre === selectedLectiveTerm
+            );
+        }, [data.calendars, selectedLectiveTerm]);
+
         return {
             isCreateSemesterOpen,
             semesterModalError,
@@ -74,7 +106,10 @@
             openCreateSemesterModal,
             closeCreateSemesterModal,
             updateSemesterForm,
-            confirmCreateSemester
+            confirmCreateSemester,
+            selectedLectiveTerm,
+            setSelectedLectiveTerm,
+            availableLectiveTerms
         };
     }
 

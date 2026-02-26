@@ -74,6 +74,9 @@
     closeCreateSemesterModal,
     updateSemesterForm,
     confirmCreateSemester,
+    selectedLectiveTerm,
+    setSelectedLectiveTerm,
+    availableLectiveTerms,
 
     // Groups
     isGroupsListOpen,
@@ -99,13 +102,13 @@
     ROW_HEIGHT,
     HEADER_HEIGHT,
     TIME_COL_WIDTH,
-    COLOR_BY_TYPE
+    COLOR_BY_TYPE,
+    formatLectiveTerm
   } = window.AppData;
 
-  const currentLectiveTerm =
-      visibleCalendars[0]?.lectiveTerm ||
-      data.calendars[0]?.lectiveTerm ||
-      "";
+  const currentLectiveTerm = formatLectiveTerm(
+    visibleCalendars[0]?.lectiveTerm
+  );
 
   return (
       <>
@@ -117,6 +120,9 @@
             onOpenCreateSemester={openCreateSemesterModal}
             onOpenCreateCareer={openCreateCareerModal}
             onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
+            availableLectiveTerms={availableLectiveTerms}
+            selectedLectiveTerm={selectedLectiveTerm}
+            onLectiveTermChange={setSelectedLectiveTerm}
         />
 
         <main className="page">
