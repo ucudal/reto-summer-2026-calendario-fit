@@ -1,4 +1,4 @@
-function App() {
+﻿function App() {
   const {
     data,
     selectedCareer,
@@ -12,22 +12,59 @@ function App() {
     toggleCalendarVisible,
 
     // Career
+    isCareersListOpen,
     isCreateCareerOpen,
     careerForm,
     careerModalError,
+    careerEditMode,
+    careerOpenedFromList,
+    openCareersListModal,
+    closeCareersListModal,
     openCreateCareerModal,
+    openCreateCareerFromList,
     closeCreateCareerModal,
+    backToCareersListFromModal,
+    selectCareerToManage,
     updateCareerForm,
     confirmCreateCareer,
 
     // Teacher
+    teachers,
+    isTeachersListOpen,
     isCreateTeacherOpen,
     teacherForm,
     teacherModalError,
+    teacherEditMode,
+    teacherOpenedFromList,
+    openTeachersListModal,
+    closeTeachersListModal,
     openCreateTeacherModal,
+    openCreateTeacherFromList,
     closeCreateTeacherModal,
+    backToTeachersListFromModal,
+    selectTeacherToManage,
     updateTeacherForm,
     confirmCreateTeacher,
+
+    // Subject
+    subjects,
+    isSubjectsListOpen,
+    isCreateSubjectOpen,
+    subjectModalError,
+    subjectForm,
+    subjectEditMode,
+    subjectOpenedFromList,
+    openSubjectsListModal,
+    closeSubjectsListModal,
+    openCreateSubjectFromList,
+    closeCreateSubjectModal,
+    backToSubjectsListFromModal,
+    updateSubjectForm,
+    toggleSubjectCareer,
+    changeSubjectCareerSemester,
+    selectSubjectToManage,
+    confirmCreateSubject,
+    deleteSubject,
 
     // Semester
     isCreateSemesterOpen,
@@ -87,9 +124,10 @@ function App() {
             <Sidebar
                 calendars={data.calendars}
                 onToggleCalendarVisible={toggleCalendarVisible}
+                onOpenSubjects={openSubjectsListModal}
                 onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
-                onOpenCreateCareer={openCreateCareerModal}
-                onOpenCreateTeacher={openCreateTeacherModal}
+                onOpenCreateCareer={openCareersListModal}
+                onOpenCreateTeacher={openTeachersListModal}
                 onExportExcel={handleExportExcel}
                 onExportExcelDatos={handleExportExcelDatos}
                 onImportExcel={handleImportExcel}
@@ -155,24 +193,68 @@ function App() {
             errorMessage={modalError}
         />
 
-        {/* CAREER MODAL */}
+        {/* CAREER MODALS */}
+        <CareersListModal
+            isOpen={isCareersListOpen}
+            careers={careers}
+            onClose={closeCareersListModal}
+            onSelectCareer={selectCareerToManage}
+            onCreateNew={openCreateCareerFromList}
+        />
+
         <CreateCareerModal
             isOpen={isCreateCareerOpen}
             form={careerForm}
             errorMessage={careerModalError}
             onClose={closeCreateCareerModal}
+            onBack={careerOpenedFromList ? backToCareersListFromModal : null}
             onChange={updateCareerForm}
             onSubmit={confirmCreateCareer}
+            isEditMode={Boolean(careerEditMode)}
         />
 
-        {/* TEACHER MODAL */}
+        {/* TEACHER MODALS */}
+        <TeachersListModal
+            isOpen={isTeachersListOpen}
+            teachers={teachers}
+            onClose={closeTeachersListModal}
+            onSelectTeacher={selectTeacherToManage}
+            onCreateNew={openCreateTeacherFromList}
+        />
+
         <CreateTeacherModal
             isOpen={isCreateTeacherOpen}
             form={teacherForm}
             errorMessage={teacherModalError}
             onClose={closeCreateTeacherModal}
+            onBack={teacherOpenedFromList ? backToTeachersListFromModal : null}
             onChange={updateTeacherForm}
             onSubmit={confirmCreateTeacher}
+            isEditMode={Boolean(teacherEditMode)}
+        />
+
+        {/* SUBJECT MODALS */}
+        <SubjectsListModal
+            isOpen={isSubjectsListOpen}
+            subjects={subjects}
+            onClose={closeSubjectsListModal}
+            onSelectSubject={selectSubjectToManage}
+            onCreateNew={openCreateSubjectFromList}
+        />
+
+        <CreateSubjectModal
+            isOpen={isCreateSubjectOpen}
+            form={subjectForm}
+            errorMessage={subjectModalError}
+            onClose={closeCreateSubjectModal}
+            onBack={subjectOpenedFromList ? backToSubjectsListFromModal : null}
+            onChange={updateSubjectForm}
+            onCareerToggle={toggleSubjectCareer}
+            onCareerSemesterChange={changeSubjectCareerSemester}
+            onSubmit={confirmCreateSubject}
+            onDelete={subjectEditMode ? deleteSubject : null}
+            isEditMode={Boolean(subjectEditMode)}
+            availableCareers={careers}
         />
 
         {/* SEMESTER MODAL */}
