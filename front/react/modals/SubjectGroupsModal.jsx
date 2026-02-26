@@ -361,6 +361,7 @@ function SubjectGroupsModal(props) {
         esContrasemestre: false,
         cupo: 30,
         color: groupColor,
+        carreras: finalSelectedCareers,
         semestreLectivoNumero: lective?.semestreLectivoNumero,
         anioLectivo: lective?.anioLectivo,
         semestre: resolvedSemester,

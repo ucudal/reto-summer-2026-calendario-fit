@@ -144,6 +144,26 @@ export const salonGrupo = sqliteTable(
 );
 
 // ------------------------------
+// Tabla puente: grupo_carrera
+// ------------------------------
+export const grupoCarrera = sqliteTable(
+  "grupo_carrera",
+  {
+    idGrupo: integer("id_grupo").notNull().references(() => grupos.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade"
+    }),
+    idCarrera: integer("id_carrera").notNull().references(() => carreras.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade"
+    })
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.idGrupo, table.idCarrera] })
+  })
+);
+
+// ------------------------------
 // Tabla puente: salon_requerimiento_salon
 // ------------------------------
 /* export const salonRequerimientoSalon = sqliteTable(

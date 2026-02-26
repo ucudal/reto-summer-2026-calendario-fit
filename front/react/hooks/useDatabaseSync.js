@@ -93,7 +93,7 @@
             const filteredGroups = dbGroups.filter((grupo) => {
                 const groupCareers = Array.isArray(grupo.carreras) ? grupo.carreras : [];
                 if (!selectedCareer) return true;
-                if (groupCareers.length === 0) return true;
+                if (groupCareers.length === 0) return false;
                 return groupCareers.some(
                     (name) => normalizeText(name) === selectedCareerNormalized
                 );

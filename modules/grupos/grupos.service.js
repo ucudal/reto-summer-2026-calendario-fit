@@ -1,4 +1,5 @@
 import {
+    asignarCarrerasAGrupo,
     crearGrupo,
     crearSemestre,
     eliminarGrupo,
@@ -17,7 +18,7 @@ export function altaGrupo(data) {
   validarGrupo(data);
   const idSemestre = resolverIdSemestre(data);
 
-  return crearGrupo({
+  const result = crearGrupo({
     codigo: data.codigo.trim(),
     idMateria: data.idMateria,
     horasSemestrales: data.horasSemestrales,
@@ -26,6 +27,13 @@ export function altaGrupo(data) {
     color: String(data.color || "#A0C4FF"),
     idSemestre
   });
+
+  const idGrupo = Number(result?.lastInsertRowid || 0);
+  if (idGrupo > 0) {
+    asignarCarrerasAGrupo(idGrupo, data.carreras || []);
+  }
+
+  return result;
 };
 
 export function actualizarGrupo(data) {
