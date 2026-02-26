@@ -103,7 +103,7 @@ export function listarGrupos() {
         esContrasemestre: row.esContrasemestre,
         cupo: row.cupo,
         idSemestre: row.idSemestre,
-        anio: row.anio,
+        color: row.color,
         carreras: Array.from(careersByGroup.get(row.id) || []),
         docentes: Array.from(teachersByGroup.get(row.id) || []),
         horarios: []
