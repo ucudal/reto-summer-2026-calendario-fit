@@ -1,7 +1,7 @@
 // src/db/seed.js
 
 import { db } from "./database.js";
-import { carreras, profesores, materias, salones, horarios, requerimientosSalon, grupos } from "./drizzle/schema/base.js";
+import { carreras, profesores, materias, salones, horarios, grupos, semestres } from "./drizzle/schema/base.js";
 
 export async function seedDatabase() {
     console.log("🌱 Seeding database...");
@@ -22,11 +22,11 @@ export async function seedDatabase() {
 
     // Insert 5 materias (nombres únicos)
     await db.insert(materias).values([
-        { tipo: "Obligatoria", creditos: 6, nombre: "Programación I", tieneContrasemestre: 0 },
-        { tipo: "Obligatoria", creditos: 4, nombre: "Álgebra Lineal", tieneContrasemestre: 0 },
-        { tipo: "Optativa", creditos: 3, nombre: "Introducción a la IA", tieneContrasemestre: 0 },
+        { tipo: "Obligatoria", creditos: 6, nombre: "Programación I", tieneContrasemestre: 0, requerimientosSalon: "5 pizarrones, 4 proyectores", },
+        { tipo: "Obligatoria", creditos: 4, nombre: "Álgebra Lineal", tieneContrasemestre: 0, requerimientosSalon: "4 pizarrones,2 proyectores" },
+        { tipo: "Optativa", creditos: 3, nombre: "Introducción a la IA", tieneContrasemestre: 0, requerimientosSalon: "3 pizarrones, 3 proyectores" },
         { tipo: "Obligatoria", creditos: 5, nombre: "Algoritmos y Estructuras de Datos", tieneContrasemestre: 1 },
-        { tipo: "Obligatoria", creditos: 2, nombre: "Bases de Datos", tieneContrasemestre: 1 }
+        { tipo: "Obligatoria", creditos: 2, nombre: "Bases de Datos", tieneContrasemestre: 1, requerimientosSalon: "1 pizarron" }
     ]);
 
     // Insert 5 profesores (correos únicos)
@@ -56,14 +56,20 @@ export async function seedDatabase() {
         { modulo: 5, dia: "Viernes" }
     ]);
 
+    //agrego primer semestre del primer año
+    await db.insert(semestres).values([
+        { numeroSemestre: 1, anio: 2026 },
+        { numeroSemestre: 2, anio: 2026 }
+    ])
+
     // Insert 5 requerimientos de salón
-    await db.insert(requerimientosSalon).values([
+/*     await db.insert(requerimientosSalon).values([
         { caracteristicas: "Proyector" },
         { caracteristicas: "Pizarra blanca" },
         { caracteristicas: "Laboratorio de computación" },
         { caracteristicas: "Acceso para discapacitados" },
         { caracteristicas: "Conexión a red de alta velocidad" }
-    ]);
+    ]); */
 
     // Crear 5 grupos referenciando materias insertadas arriba.
     // Recuperamos los ids de materias para mantener integridad referencial.
@@ -83,8 +89,9 @@ export async function seedDatabase() {
                 horasSemestrales: `${30 + i * 5}`, // texto (según esquema actual)
                 esContrasemestre: 0,
                 cupo: 30 + i * 5,
-                semestre: (i % 2) + 1,
-                anio: 2026
+                //
+                idSemestre: "1",
+                color: "2026"
             });
         }
 
