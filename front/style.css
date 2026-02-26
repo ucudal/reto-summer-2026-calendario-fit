@@ -1559,3 +1559,141 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================
+   Estilos para modales de listado (Carreras, Docentes, Asignaturas)
+   ============================================ */
+
+.modal-header-with-button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.modal-header-btn {
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Montserrat', sans-serif;
+  white-space: nowrap;
+}
+
+.modal-header-btn:hover {
+  background: #185555;
+  transform: scale(1.05);
+}
+
+.modal-header-with-back {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-right: 36px;
+}
+
+/* Ajuste del botón cerrar cuando hay header-with-back */
+.group-modal:has(.modal-header-with-back) .modal-close-btn {
+  top: 18px;
+}
+
+.modal-back-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  font-family: 'Montserrat', sans-serif;
+  flex-shrink: 0;
+}
+
+.modal-back-btn:hover {
+  background: rgba(0, 97, 181, 0.1);
+}
+
+.modal-header-with-back .modal-title {
+  margin: 0;
+}
+
+/* Estilos adicionales para formularios en modales */
+.form-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.form-label-compact {
+  flex: 1;
+  min-width: 0;
+}
+
+.form-row .checkbox-row {
+  margin: 0;
+  padding-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.form-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+textarea.form-input {
+  height: auto;
+  padding: 10px;
+  resize: none;
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.groups-list-modal .form-label {
+  color: #ffffff;
+}
+
+.groups-list-modal .form-input {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: #ffffff;
+  color: #25343a;
+}
+
+.groups-list-modal .modal-confirm-btn {
+  background: #1f6b6b;
+  border: none;
+}
+
+.groups-list-modal .modal-confirm-btn:hover {
+  background: #185555;
+}
+
+.groups-list-modal .subject-meta {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.groups-list-modal .subject-requirements {
+  color: #9ca3af;
+  font-size: 11px;
+  font-weight: 400;
+  font-style: italic;
+  margin-top: 2px;
+}
+
+.checkbox-main {
+  color: #ffffff;
+}
+
+.form-legend {
+  background: #fbfaf7;
+}

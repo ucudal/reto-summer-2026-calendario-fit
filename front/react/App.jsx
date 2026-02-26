@@ -12,20 +12,37 @@
     toggleCalendarVisible,
 
     // Career
+    isCareersListOpen,
     isCreateCareerOpen,
     careerForm,
     careerModalError,
+    careerEditMode,
+    careerOpenedFromList,
+    openCareersListModal,
+    closeCareersListModal,
     openCreateCareerModal,
+    openCreateCareerFromList,
     closeCreateCareerModal,
+    backToCareersListFromModal,
+    selectCareerToManage,
     updateCareerForm,
     confirmCreateCareer,
 
     // Teacher
+    teachers,
+    isTeachersListOpen,
     isCreateTeacherOpen,
     teacherForm,
     teacherModalError,
+    teacherEditMode,
+    teacherOpenedFromList,
+    openTeachersListModal,
+    closeTeachersListModal,
     openCreateTeacherModal,
+    openCreateTeacherFromList,
     closeCreateTeacherModal,
+    backToTeachersListFromModal,
+    selectTeacherToManage,
     updateTeacherForm,
     confirmCreateTeacher,
 
@@ -109,8 +126,8 @@
                 onToggleCalendarVisible={toggleCalendarVisible}
                 onOpenSubjects={openSubjectsListModal}
                 onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
-                onOpenCreateCareer={openCreateCareerModal}
-                onOpenCreateTeacher={openCreateTeacherModal}
+                onOpenCreateCareer={openCareersListModal}
+                onOpenCreateTeacher={openTeachersListModal}
                 onExportExcel={handleExportExcel}
                 onExportExcelDatos={handleExportExcelDatos}
                 onImportExcel={handleImportExcel}
@@ -174,24 +191,44 @@
             errorMessage={modalError}
         />
 
-        {/* CAREER MODAL */}
+        {/* CAREER MODALS */}
+        <CareersListModal
+            isOpen={isCareersListOpen}
+            careers={careers}
+            onClose={closeCareersListModal}
+            onSelectCareer={selectCareerToManage}
+            onCreateNew={openCreateCareerFromList}
+        />
+
         <CreateCareerModal
             isOpen={isCreateCareerOpen}
             form={careerForm}
             errorMessage={careerModalError}
             onClose={closeCreateCareerModal}
+            onBack={careerOpenedFromList ? backToCareersListFromModal : null}
             onChange={updateCareerForm}
             onSubmit={confirmCreateCareer}
+            isEditMode={Boolean(careerEditMode)}
         />
 
-        {/* TEACHER MODAL */}
+        {/* TEACHER MODALS */}
+        <TeachersListModal
+            isOpen={isTeachersListOpen}
+            teachers={teachers}
+            onClose={closeTeachersListModal}
+            onSelectTeacher={selectTeacherToManage}
+            onCreateNew={openCreateTeacherFromList}
+        />
+
         <CreateTeacherModal
             isOpen={isCreateTeacherOpen}
             form={teacherForm}
             errorMessage={teacherModalError}
             onClose={closeCreateTeacherModal}
+            onBack={teacherOpenedFromList ? backToTeachersListFromModal : null}
             onChange={updateTeacherForm}
             onSubmit={confirmCreateTeacher}
+            isEditMode={Boolean(teacherEditMode)}
         />
 
         {/* SUBJECT MODALS */}
