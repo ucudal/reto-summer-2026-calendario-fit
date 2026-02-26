@@ -11,23 +11,32 @@ function CreateCareerModal(props) {
     form,
     errorMessage,
     onClose,
+    onBack,
     onChange,
-    onSubmit
+    onSubmit,
+    isEditMode = false
   } = props;
 
   if (!isOpen) return null;
 
   return (
     <div
-      className="modal-backdrop"
+      className="modal-backdrop groups-list-backdrop"
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <section className="group-modal" role="dialog" aria-modal="true" aria-labelledby="careerModalTitle">
+      <section className="group-modal groups-list-modal" role="dialog" aria-modal="true" aria-labelledby="careerModalTitle">
         <button type="button" className="modal-close-btn" aria-label="Cerrar" onClick={onClose}>X</button>
 
-        <h2 id="careerModalTitle" className="modal-title">Crear carrera</h2>
+        {onBack ? (
+          <div className="modal-header-with-back">
+            <button type="button" className="modal-back-btn" onClick={onBack}>← Volver</button>
+            <h2 id="careerModalTitle" className="modal-title">{isEditMode ? 'Editar carrera' : 'Crear carrera'}</h2>
+          </div>
+        ) : (
+          <h2 id="careerModalTitle" className="modal-title">{isEditMode ? 'Editar carrera' : 'Crear carrera'}</h2>
+        )}
 
         <form
           className="group-form"
