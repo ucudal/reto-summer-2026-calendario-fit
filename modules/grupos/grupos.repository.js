@@ -1,7 +1,7 @@
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "../../db/database.js";
 import { carreras, grupos, horarios, materias, profesores } from "../../db/drizzle/schema/base.js";
-import { grupoHorario, grupoRequerimientoSalon, materiaCarrera, profesorGrupo } from "../../db/drizzle/schema/links.js";
+import { grupoHorario, materiaCarrera, profesorGrupo } from "../../db/drizzle/schema/links.js";
 
 export function crearGrupo(grupo) {
   return db
@@ -12,8 +12,8 @@ export function crearGrupo(grupo) {
       horasSemestrales: grupo.horasSemestrales,
       esContrasemestre: grupo.esContrasemestre,
       cupo: grupo.cupo,
-      semestre: grupo.semestre,
-      anio: grupo.anio
+      idSemestre: grupo.idSemestre,
+      color: grupo.color
     })
     .run();
 }
@@ -42,8 +42,8 @@ export function listarGrupos() {
       horasSemestrales: grupos.horasSemestrales,
       esContrasemestre: grupos.esContrasemestre,
       cupo: grupos.cupo,
-      semestre: grupos.semestre,
-      anio: grupos.anio,
+      idSemestre: grupos.idSemestre,
+      grupo: grupos.anio,
       dia: horarios.dia,
       modulo: horarios.modulo
     })
@@ -102,8 +102,8 @@ export function listarGrupos() {
         horasSemestrales: row.horasSemestrales,
         esContrasemestre: row.esContrasemestre,
         cupo: row.cupo,
-        semestre: row.semestre,
-        anio: row.anio,
+        idSemestre: row.idSemestre,
+        color: row.color,
         carreras: Array.from(careersByGroup.get(row.id) || []),
         docentes: Array.from(teachersByGroup.get(row.id) || []),
         horarios: []
@@ -160,14 +160,3 @@ export function insertarHorarios(idGrupo, horariosPayload) {
   return inserted;
 }
 
-export function insertarRequerimientos(idGrupo, requerimientos) {
-  return requerimientos.map((r) =>
-    db
-      .insert(grupoRequerimientoSalon)
-      .values({
-        idGrupo,
-        idRequerimientoSalon: r
-      })
-      .run()
-  );
-}
