@@ -76,11 +76,11 @@ const totalCounts = {
   profesor_grupo: db.prepare("SELECT COUNT(*) c FROM profesor_grupo").get().c,
   horarios: db.prepare("SELECT COUNT(*) c FROM horarios").get().c,
   grupo_horario: db.prepare("SELECT COUNT(*) c FROM grupo_horario").get().c,
-  requerimientos_salon: db.prepare("SELECT COUNT(*) c FROM requerimientos_salon").get().c,
-  grupo_requerimiento_salon: db.prepare("SELECT COUNT(*) c FROM grupo_requerimiento_salon").get().c,
+  //requerimientos_salon: db.prepare("SELECT COUNT(*) c FROM requerimientos_salon").get().c,
+  //grupo_requerimiento_salon: db.prepare("SELECT COUNT(*) c FROM grupo_requerimiento_salon").get().c,
   salones: db.prepare("SELECT COUNT(*) c FROM salones").get().c,
   salon_grupo: db.prepare("SELECT COUNT(*) c FROM salon_grupo").get().c,
-  salon_requerimiento_salon: db.prepare("SELECT COUNT(*) c FROM salon_requerimiento_salon").get().c
+  //salon_requerimiento_salon: db.prepare("SELECT COUNT(*) c FROM salon_requerimiento_salon").get().c
 };
 
 console.log(

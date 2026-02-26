@@ -1,6 +1,7 @@
 import {
     crearMateria,
     listarMaterias,
+    listarCarrerasPlanesPorMateriaNombre as repoListarCarrerasPlanesPorMateriaNombre,
     obtenerMateriaPorId as repoObtenerMateriaPorId,
     actualizarMateria as repoActualizarMateria,
     eliminarMateria
@@ -19,6 +20,14 @@ export async function altaMateria(data) {
 
 export async function obtenerMaterias() {
     return await listarMaterias();
+}
+
+export async function obtenerCarrerasPlanesPorMateriaNombre(nombreMateria) {
+  const nombre = String(nombreMateria || "").trim();
+  if (!nombre) {
+    throw new Error("El nombre de la materia es obligatorio");
+  }
+  return await repoListarCarrerasPlanesPorMateriaNombre(nombre);
 }
 
 export async function obtenerMateriaPorId(id) {

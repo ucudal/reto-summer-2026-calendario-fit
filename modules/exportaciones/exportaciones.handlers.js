@@ -1,12 +1,23 @@
 import { writeFile } from "node:fs/promises";
-import XLSX from "xlsx";
 import { listarFilasExportacionDesdeDb } from "./exportaciones.repository.js";
 import { ipcMain, dialog } from "electron";
 import { importarModulosDesdeExcel } from "./importaciones.service.js";
 
+let xlsxModulePromise = null;
+
+async function getXlsxModule() {
+  if (!xlsxModulePromise) {
+    xlsxModulePromise = import("xlsx");
+  }
+  const mod = await xlsxModulePromise;
+  return mod.default || mod;
+}
+
 export function registerExportacionesHandlers() {
   ipcMain.handle("exportaciones:guardarExcel", async (event, payload = {}) => {
     try {
+      const XLSX = await getXlsxModule();
+
       const {
         defaultFileName = "calendario-bd.xlsx",
         sheetName = "Datos",
@@ -40,8 +51,8 @@ export function registerExportacionesHandlers() {
         "fecha_exportacion",
         "grupo_id",
         "grupo_codigo",
-        "grupo_anio",
-        "grupo_semestre",
+        "grupo_color",
+        "grupo_idSemestre",
         "grupo_cupo",
         "grupo_horas_semestrales",
         "grupo_es_contrasemestre",
@@ -65,8 +76,8 @@ export function registerExportacionesHandlers() {
         fecha_exportacion: exportedAt,
         grupo_id: row.grupo_id,
         grupo_codigo: row.grupo_codigo,
-        grupo_anio: row.grupo_anio,
-        grupo_semestre: row.grupo_semestre,
+        grupo_color: row.grupo_color,
+        grupo_idSemestre: row.grupo_idSemestre,
         grupo_cupo: row.grupo_cupo,
         grupo_horas_semestrales: row.grupo_horas_semestrales,
         grupo_es_contrasemestre: row.grupo_es_contrasemestre,
@@ -94,7 +105,7 @@ export function registerExportacionesHandlers() {
         { columna: "horarios", fuente_bd: "tablas grupo_horario + horarios (GROUP_CONCAT)" },
         { columna: "docentes", fuente_bd: "tablas profesor_grupo + profesores (GROUP_CONCAT)" },
         { columna: "salones", fuente_bd: "tablas salon_grupo + salones (GROUP_CONCAT)" },
-        { columna: "requerimientos", fuente_bd: "tablas grupo_requerimiento_salon + requerimientos_salon (GROUP_CONCAT)" },
+        { columna: "requerimientos", fuente_bd: "tabla materias" },
         { columna: "fecha_exportacion", fuente_bd: "timestamp generado al exportar" },
         { columna: "filtros_aplicados", fuente_bd: JSON.stringify(filtrosAplicados) }
       ];

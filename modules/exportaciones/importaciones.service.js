@@ -249,7 +249,7 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
     horas: headerIndex(headers, ["Horas"]),
     idClase: headerIndex(headers, ["ID Clase", "Id Clase", "IDClase"]),
     cupo: headerIndex(headers, ["Cupo"]),
-    requerimiento: headerIndex(headers, [
+    /* requerimiento: headerIndex(headers, [
       "Requerim. salón",
       "Requerim. salon",
       "Requerimiento salón",
@@ -257,7 +257,7 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
       "Requerimientos",
       "Req salón",
       "Req salon"
-    ]),
+    ]), */
     salon: headerIndex(headers, ["Salón", "Salon", "Salones", "Aula", "Aulas"]),
     creditos: headerIndex(headers, ["Créditos", "Creditos"]),
     prof1: headerIndex(headers, ["Prof 1", "Profesor 1"]),
@@ -283,10 +283,10 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
   );
   const getGrupo = sqlite.prepare("SELECT id FROM grupos WHERE codigo = ?");
   const insertGrupo = sqlite.prepare(
-    "INSERT INTO grupos (codigo, id_materia, horas_anuales, es_contrasemestre, cupo, semestre, anio) VALUES (?, ?, ?, 0, ?, ?, ?)"
+    "INSERT INTO grupos (codigo, id_materia, horas_anuales, es_contrasemestre, cupo, id_semestre, color) VALUES (?, ?, ?, 0, ?, ?, ?)"
   );
   const updateGrupo = sqlite.prepare(
-    "UPDATE grupos SET id_materia = ?, horas_anuales = ?, cupo = ?, semestre = ?, anio = ? WHERE id = ?"
+    "UPDATE grupos SET id_materia = ?, horas_anuales = ?, cupo = ?, id_semestre = ?, color = ? WHERE id = ?"
   );
   const linkMateriaCarrera = sqlite.prepare(
     "INSERT OR IGNORE INTO materia_carrera (id_materia, id_carrera, plan, semestre, anio) VALUES (?, ?, ?, ?, ?)"
@@ -304,11 +304,11 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
   const linkProfesorGrupo = sqlite.prepare(
     "INSERT OR IGNORE INTO profesor_grupo (id_profesor, id_grupo, carga, confirmado, es_principal) VALUES (?, ?, ?, 1, ?)"
   );
-  const getReq = sqlite.prepare("SELECT id FROM requerimientos_salon WHERE caracteristicas = ?");
+  /* const getReq = sqlite.prepare("SELECT id FROM requerimientos_salon WHERE caracteristicas = ?");
   const insertReq = sqlite.prepare("INSERT INTO requerimientos_salon (caracteristicas) VALUES (?)");
   const linkGrupoReq = sqlite.prepare(
     "INSERT OR IGNORE INTO grupo_requerimiento_salon (id_grupo, id_requerimiento_salon) VALUES (?, ?)"
-  );
+  ); */
   const getSalonByNombreEdificio = sqlite.prepare(
     "SELECT id FROM salones WHERE nombre = ? AND edificio = ?"
   );
@@ -319,9 +319,9 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
   const linkSalonGrupo = sqlite.prepare(
     "INSERT OR IGNORE INTO salon_grupo (id_salon, id_grupo) VALUES (?, ?)"
   );
-  const linkSalonReq = sqlite.prepare(
+  /* const linkSalonReq = sqlite.prepare(
     "INSERT OR IGNORE INTO salon_requerimiento_salon (id_salon, id_requerimiento_salon) VALUES (?, ?)"
-  );
+  ); */
   const getHorario = sqlite.prepare("SELECT id FROM horarios WHERE dia = ? AND modulo = ?");
   const insertHorario = sqlite.prepare("INSERT INTO horarios (dia, modulo) VALUES (?, ?)");
   const linkGrupoHorario = sqlite.prepare(
@@ -337,7 +337,7 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
       materias: 0,
       grupos: 0,
       profesores: 0,
-      requerimientos: 0,
+      //requerimientos: 0,
       horarios: 0,
       salones: 0
     },
@@ -347,7 +347,7 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
       grupoReq: 0,
       grupoHorario: 0,
       grupoSalon: 0,
-      salonReq: 0
+      //salonReq: 0
     },
     skipped: {
       rowsWithoutClassId: 0,
@@ -358,9 +358,9 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
   };
 
   const run = sqlite.transaction(() => {
-    if (idx.requerimiento < 0) {
+    /* if (idx.requerimiento < 0) {
       summary.warnings.push("No se encontro columna de requerimientos de salon en la hoja Modulos.");
-    }
+    } */
     if (idx.salon < 0) {
       summary.warnings.push("No se encontro columna de salon/aula en la hoja Modulos.");
     }
@@ -474,7 +474,7 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
         if (linkResult.changes > 0) summary.linked.profesorGrupo += 1;
       });
 
-      const reqIds = [];
+      /* const reqIds = [];
       const reqTexts = splitCellValues(row[idx.requerimiento]);
       for (const reqText of reqTexts) {
         let req = getReq.get(reqText);
@@ -486,7 +486,7 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
         const linkReqResult = linkGrupoReq.run(grupo.id, req.id);
         if (linkReqResult.changes > 0) summary.linked.grupoReq += 1;
         reqIds.push(req.id);
-      }
+      } */
 
       const salones = parseSalonCell(row[idx.salon]);
       for (const salonData of salones) {
@@ -502,10 +502,10 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
         const linkSalonResult = linkSalonGrupo.run(salon.id, grupo.id);
         if (linkSalonResult.changes > 0) summary.linked.grupoSalon += 1;
 
-        for (const reqId of reqIds) {
+        /* for (const reqId of reqIds) {
           const salonReqResult = linkSalonReq.run(salon.id, reqId);
           if (salonReqResult.changes > 0) summary.linked.salonReq += 1;
-        }
+        } */
       }
 
       const horarios = horarioMap.get(idClase) || new Set();

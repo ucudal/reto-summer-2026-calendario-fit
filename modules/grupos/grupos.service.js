@@ -5,8 +5,7 @@ import {
     modificarGrupo,
     listarGrupos,
     asignarProfesor,
-    insertarHorarios,
-    insertarRequerimientos
+    insertarHorarios
 } from './grupos.repository.js';
 
 const DIAS_VALIDOS = ["lunes", "martes", "miercoles", "miércoles", "jueves", "viernes", "sabado", "sábado"];
@@ -21,8 +20,8 @@ export function altaGrupo(data) {
     horasSemestrales: data.horasSemestrales,
     esContrasemestre: data.esContrasemestre,
     cupo: data.cupo,
-    semestre: data.semestre,
-    anio: data.anio
+    color: data.color,
+    idSemestre: data.idSemestre
   });
 };
 
@@ -44,8 +43,8 @@ export function actualizarGrupo(data) {
     horasSemestrales: data.horasSemestrales,
     esContrasemestre: data.esContrasemestre,
     cupo: data.cupo,
-    semestre: data.semestre,
-    anio: data.anio
+    color: data.color,
+    idSemestre: data.idSemestre
   });
 };
 
@@ -113,7 +112,7 @@ export async function agregarHorarioGrupo(idGrupo, horarios) {
   return await insertarHorarios(idGrupo, horarios);
 }
 
-export async function agregarRequerimientosGrupo(idGrupo, requerimientos) {
+/* export async function agregarRequerimientosGrupo(idGrupo, requerimientos) {
 
   if (!idGrupo) {
     throw new Error("ID de grupo requerido");
@@ -124,7 +123,7 @@ export async function agregarRequerimientosGrupo(idGrupo, requerimientos) {
   }
 
   return await insertarRequerimientos(idGrupo, requerimientos);
-}
+} */
 
 function validarGrupo(data) {
   if (!data) {
@@ -147,11 +146,11 @@ function validarGrupo(data) {
     throw new Error("Cupo inválido");
   }
 
-  if (data.semestre == null || isNaN(Number(data.semestre)) || !Number.isInteger(Number(data.semestre)) || Number(data.semestre) <= 0) {
-    throw new Error("Semestre inválido");
+  if (!data.idSemestre ) {
+    throw new Error("El semestre es obligatorio");
   }
 
-  if (data.anio == null || isNaN(Number(data.anio)) || Number(data.anio) < 1900) {
+  if (data.anio == null || isNaN(Number(data.anio)) || Number(data.anio) <= 0) {
     throw new Error("Año inválido");
   }
 

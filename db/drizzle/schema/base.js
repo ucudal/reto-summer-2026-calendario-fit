@@ -40,7 +40,9 @@ export const materias = sqliteTable(
         tipo: text("tipo").notNull(),
         creditos: integer("creditos").notNull(),
         nombre: text("nombre").notNull(),
-        tieneContrasemestre: integer("tiene_correlativa", {mode: "boolean"}).notNull().default(false) //@todo esto quedaba al final?
+        tieneContrasemestre: integer("tiene_correlativa", {mode: "boolean"}).notNull().default(false), //@todo esto quedaba al final?
+        requerimientosSalon: text("requerimientosSalon")
+    
     },
     (table) => ({
         nombreUnicoIdx: uniqueIndex("materias_nombre_unico_idx").on(table.nombre)
@@ -81,7 +83,8 @@ export const salones = sqliteTable("salones", {
     id: integer("id").primaryKey({autoIncrement: true}),
     nombre: text("nombre").notNull(),
     edificio: text("edificio").notNull(),
-    aforo: integer("aforo").notNull()
+    aforo: integer("aforo").notNull(),
+    caracteristicas: text("caracteristicas")
 });
 
 // ------------------------------
@@ -104,10 +107,11 @@ export const horarios = sqliteTable("horarios", {
 // ------------------------------
 // - id
 // - caracteristicas
-export const requerimientosSalon = sqliteTable("requerimientos_salon", {
+//requerimiento del salon pasa a ser un atributo de la materia
+/* export const requerimientosSalon = sqliteTable("requerimientos_salon", {
     id: integer("id").primaryKey({autoIncrement: true}),
     caracteristicas: text("caracteristicas").notNull()
-});
+}); */
 
 // ------------------------------
 // Tabla: grupos
@@ -129,11 +133,26 @@ export const grupos = sqliteTable(
         horasSemestrales: text("horas_anuales"), //@todo es text o integer o bool?
         esContrasemestre: integer("es_contrasemestre", {mode: "boolean"}).notNull().default(false), //aporta para decir que se esta dictando contrasemestre
         cupo: integer("cupo"),
-        semestre: integer("semestre").notNull(),
-        anio: integer("anio").notNull()
+        idSemestre: integer("id_semestre").notNull().references(() => semestres.id),
+        color: text("color").notNull()
     },
     (table) => ({
         codigoUnicoIdx: uniqueIndex("grupos_codigo_unico_idx").on(table.codigo)
     })
 );
 
+// ------------------------------
+// Tabla: Semestre
+// ------------------------------
+// - id
+// - numeroSemestre
+// - anio
+
+export const semestres = sqliteTable(
+    "semestres",
+    {
+        id:integer("id").primaryKey({autoIncrement: true}),
+        numeroSemestre: integer("numero_semestre").notNull(),
+        anio: integer("anio").notNull()
+    }
+)

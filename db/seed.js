@@ -1,140 +1,98 @@
-import path from "path";
-import { fileURLToPath, pathToFileURL } from "url";
-import { createClient } from "@libsql/client";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const dbPath = path.join(__dirname, "local-dev.sqlite");
+import { db } from "./database.js";
+import { carreras, profesores, materias, salones, horarios, grupos, semestres } from "./drizzle/schema/base.js";
 
 export async function seedDatabase() {
   const client = createClient({ url: `file:${dbPath}` });
 
-  try {
-    const carrerasData = [
-      "Ingenier\u00eda Agron\u00f3mica",
-      "Ingenier\u00eda Alimentos",
-      "Ingenier\u00eda Ambiental",
-      "Ingenier\u00eda Biom\u00e9dica",
-      "Ingenier\u00eda Civil",
-      "Ingenier\u00eda El\u00e9ctrica, Telecom y Potencia",
-      "Ingenier\u00eda Inform\u00e1tica",
-      "Ingenier\u00eda Industrial",
-      "Ingenier\u00eda Inteligencia Artificial",
-      "Ingenier\u00eda Mec\u00e1nica"
-    ];
+    // Insert 5 carreras (nombres únicos)
+    await db.insert(carreras).values([
+        { nombre: "Ingeniería Agronomica" },
+        { nombre: "Ingeniería Alimentos" },
+        { nombre: "Ingeniería Ambiental" },
+        { nombre: "Ingeniería Biomedica" },
+        { nombre: "Ingeniería Civil" },
+        { nombre: "Ingeniería Electrica, Telecom y Potencia" },
+        { nombre: "Ingeniería Informatica" },
+        { nombre: "Ingeniería Industrial" },
+        { nombre: "Ingeniería Inteligencia Artificial" },
+        { nombre: "Ingeniería Mecanica" }
+    ]);
 
-    for (const nombre of carrerasData) {
-      await client.execute({
-        sql: "INSERT OR IGNORE INTO carreras (nombre) VALUES (?)",
-        args: [nombre]
-      });
+    // Insert 5 materias (nombres únicos)
+    await db.insert(materias).values([
+        { tipo: "Obligatoria", creditos: 6, nombre: "Programación I", tieneContrasemestre: 0, requerimientosSalon: "5 pizarrones, 4 proyectores", },
+        { tipo: "Obligatoria", creditos: 4, nombre: "Álgebra Lineal", tieneContrasemestre: 0, requerimientosSalon: "4 pizarrones,2 proyectores" },
+        { tipo: "Optativa", creditos: 3, nombre: "Introducción a la IA", tieneContrasemestre: 0, requerimientosSalon: "3 pizarrones, 3 proyectores" },
+        { tipo: "Obligatoria", creditos: 5, nombre: "Algoritmos y Estructuras de Datos", tieneContrasemestre: 1 },
+        { tipo: "Obligatoria", creditos: 2, nombre: "Bases de Datos", tieneContrasemestre: 1, requerimientosSalon: "1 pizarron" }
+    ]);
+
+    // Insert 5 profesores (correos únicos)
+    await db.insert(profesores).values([
+        { nombre: "Juan", apellido: "Pérez", correo: "juan.perez@ucu.edu.uy" },
+        { nombre: "Ana", apellido: "Gómez", correo: "ana.gomez@ucu.edu.com" },
+        { nombre: "María", apellido: "López", correo: "maria.lopez@ucu.edu.com" },
+        { nombre: "Luis", apellido: "Martínez", correo: "luis.martinez@ucu.edu.com" },
+        { nombre: "Sofía", apellido: "Rodríguez", correo: "sofia.rodriguez@ucu.edu.com" }
+    ]);
+
+    // Insert 5 salones
+    await db.insert(salones).values([
+        { nombre: "A101", edificio: "Central", aforo: 40 },
+        { nombre: "B202", edificio: "Mullin", aforo: 30 },
+        { nombre: "C303", edificio: "Central", aforo: 50 },
+        { nombre: "D404", edificio: "San Jose", aforo: 25 },
+        { nombre: "E505", edificio: "San Ignacio", aforo: 35 }
+    ]);
+
+    // Insert 5 horarios (modulo, dia)
+    await db.insert(horarios).values([
+        { modulo: 1, dia: "Lunes" },
+        { modulo: 2, dia: "Martes" },
+        { modulo: 3, dia: "Miércoles" },
+        { modulo: 4, dia: "Jueves" },
+        { modulo: 5, dia: "Viernes" }
+    ]);
+
+    //agrego primer semestre del primer año
+    await db.insert(semestres).values([
+        { numeroSemestre: 1, anio: 2026 },
+        { numeroSemestre: 2, anio: 2026 }
+    ]);
+
+    // Insert 5 requerimientos de salón
+/*     await db.insert(requerimientosSalon).values([
+        { caracteristicas: "Proyector" },
+        { caracteristicas: "Pizarra blanca" },
+        { caracteristicas: "Laboratorio de computación" },
+        { caracteristicas: "Acceso para discapacitados" },
+        { caracteristicas: "Conexión a red de alta velocidad" }
+    ]); */
+
+    // Crear 5 grupos referenciando materias insertadas arriba.
+    // Recuperamos los ids de materias para mantener integridad referencial.
+    const materiasRows = await db.select().from(materias);
+    const materiaIds = materiasRows.map((m) => m.id);
+
+    // Si por alguna razón no hay materias, evitamos insertar grupos inválidos.
+    if (materiaIds.length === 0) {
+        console.warn("No se encontraron materias para crear grupos. Se omite la creación de grupos.");
+    } else {
+        const gruposToInsert = [];
+        for (let i = 0; i < 5; i++) {
+            const materiaId = materiaIds[i % materiaIds.length];
+            gruposToInsert.push({
+                codigo: `G-${100 + i}`,
+                idMateria: materiaId,
+                horasSemestrales: `${30 + i * 5}`, // texto (según esquema actual)
+                esContrasemestre: 0,
+                cupo: 30 + i * 5,
+                //
+                idSemestre: "1",
+                color: "2026"
+            });
+        }
+
+        await db.insert(grupos).values(gruposToInsert);
     }
-
-    const materiasData = [
-      ["Obligatoria", 6, "Programaci\u00f3n I", 0],
-      ["Obligatoria", 4, "\u00c1lgebra Lineal", 0],
-      ["Optativa", 3, "Introducci\u00f3n a la IA", 0],
-      ["Obligatoria", 5, "Algoritmos y Estructuras de Datos", 1],
-      ["Obligatoria", 2, "Bases de Datos", 1]
-    ];
-
-    for (const [tipo, creditos, nombre, tieneCorrelativa] of materiasData) {
-      await client.execute({
-        sql: "INSERT OR IGNORE INTO materias (tipo, creditos, nombre, tiene_correlativa) VALUES (?, ?, ?, ?)",
-        args: [tipo, creditos, nombre, tieneCorrelativa]
-      });
-    }
-
-    const profesoresData = [
-      ["Juan", "P\u00e9rez", "juan.perez@ucu.edu.com"],
-      ["Ana", "G\u00f3mez", "ana.gomez@ucu.edu.com"],
-      ["Mar\u00eda", "L\u00f3pez", "maria.lopez@ucu.edu.com"],
-      ["Luis", "Mart\u00ednez", "luis.martinez@ucu.edu.com"],
-      ["Sof\u00eda", "Rodr\u00edguez", "sofia.rodriguez@ucu.edu.com"]
-    ];
-
-    for (const [nombre, apellido, correo] of profesoresData) {
-      await client.execute({
-        sql: "INSERT OR IGNORE INTO profesores (nombre, apellido, correo) VALUES (?, ?, ?)",
-        args: [nombre, apellido, correo]
-      });
-    }
-
-    const salonesData = [
-      ["A101", "Central", 40],
-      ["B202", "Mullin", 30],
-      ["C303", "Central", 50],
-      ["D404", "San Jose", 25],
-      ["E505", "San Ignacio", 35]
-    ];
-
-    for (const [nombre, edificio, aforo] of salonesData) {
-      await client.execute({
-        sql: "INSERT OR IGNORE INTO salones (nombre, edificio, aforo) VALUES (?, ?, ?)",
-        args: [nombre, edificio, aforo]
-      });
-    }
-
-    const horariosData = [
-      [1, "Lunes"],
-      [2, "Martes"],
-      [3, "Mi\u00e9rcoles"],
-      [4, "Jueves"],
-      [5, "Viernes"]
-    ];
-
-    for (const [modulo, dia] of horariosData) {
-      await client.execute({
-        sql: "INSERT OR IGNORE INTO horarios (modulo, dia) VALUES (?, ?)",
-        args: [modulo, dia]
-      });
-    }
-
-    const reqData = [
-      "Proyector",
-      "Pizarra blanca",
-      "Laboratorio de computaci\u00f3n",
-      "Acceso para discapacitados",
-      "Conexi\u00f3n a red de alta velocidad"
-    ];
-
-    for (const caracteristicas of reqData) {
-      await client.execute({
-        sql: "INSERT OR IGNORE INTO requerimientos_salon (caracteristicas) VALUES (?)",
-        args: [caracteristicas]
-      });
-    }
-
-    const materiasRows = await client.execute("SELECT id FROM materias ORDER BY id");
-    if (!materiasRows.rows.length) {
-      console.warn("No se encontraron materias para crear grupos. Se omite la creacion de grupos.");
-      return;
-    }
-
-    for (let i = 0; i < 5; i++) {
-      const materiaId = Number(materiasRows.rows[i % materiasRows.rows.length].id);
-      await client.execute({
-        sql: `
-          INSERT OR IGNORE INTO grupos
-          (codigo, id_materia, horas_anuales, es_contrasemestre, cupo, semestre, anio)
-          VALUES (?, ?, ?, 0, ?, ?, ?)
-        `,
-        args: [`G-${100 + i}`, materiaId, `${30 + i * 5}`, 30 + i * 5, (i % 2) + 1, 2026]
-      });
-    }
-  } finally {
-    await client.close();
-  }
-}
-
-const isDirectExecution =
-  process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
-
-if (isDirectExecution) {
-  seedDatabase()
-    .then(() => console.log("Seed completado."))
-    .catch((error) => {
-      console.error("Error ejecutando seed:", error);
-      process.exit(1);
-    });
 }
