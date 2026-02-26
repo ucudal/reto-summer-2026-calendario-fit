@@ -11,7 +11,8 @@ export function crearMateria(asignatura) {
     tipo: asignatura.tipo,
     creditos: asignatura.creditos,
     nombre: asignatura.nombre,
-    tieneContrasemestre: asignatura.tieneContrasemestre
+    tieneContrasemestre: asignatura.tieneContrasemestre,
+    requerimientosSalon: asignatura.requerimientosSalon
   }).run();
 }
 
@@ -24,7 +25,8 @@ export function listarMaterias() {
     tipo: materias.tipo,
     creditos: materias.creditos,
     nombre: materias.nombre,
-    tieneContrasemestre: materias.tieneContrasemestre
+    tieneContrasemestre: materias.tieneContrasemestre,
+    requerimientosSalon: materias.requerimientosSalon
   })
   .from(materias)
   .orderBy(asc(materias.nombre))
@@ -40,7 +42,8 @@ export function obtenerMateriaPorId(id) {
     tipo: materias.tipo,
     creditos: materias.creditos,
     nombre: materias.nombre,
-    tieneContrasemestre: materias.tieneContrasemestre
+    tieneContrasemestre: materias.tieneContrasemestre,
+    requerimientosSalon: materias.requerimientosSalon
   })
   .from(materias)
   .where(eq(materias.id, id))
@@ -56,7 +59,8 @@ export function actualizarMateria(id, datos) {
       tipo: datos.tipo,
       creditos: datos.creditos,
       nombre: datos.nombre,
-      tieneContrasemestre: datos.tieneContrasemestre
+      tieneContrasemestre: datos.tieneContrasemestre,
+      requerimientosSalon: materias.requerimientosSalon
     })
     .where(eq(materias.id, id))
     .run();
