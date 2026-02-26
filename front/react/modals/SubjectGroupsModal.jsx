@@ -28,9 +28,15 @@ function SubjectGroupsModal(props) {
   const [selectedDays, setSelectedDays] = React.useState([]);
   const [fromTime, setFromTime] = React.useState("08:00");
   const [toTime, setToTime] = React.useState("09:20");
+  const [selectedLectiveSemester, setSelectedLectiveSemester] = React.useState("1");
+  const [selectedLectiveYear, setSelectedLectiveYear] = React.useState(String(new Date().getFullYear()));
   const [error, setError] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
   const careerDropdownRef = React.useRef(null);
+  const lectiveYearOptions = React.useMemo(() => {
+    const current = new Date().getFullYear();
+    return Array.from({ length: 10 }, (_, idx) => String(current + idx));
+  }, []);
 
   // Fallback por si no hay backend de docentes disponible.
   const fallbackTeachers = [
@@ -60,6 +66,8 @@ function SubjectGroupsModal(props) {
     setSelectedDays([]);
     setFromTime("08:00");
     setToTime("09:20");
+    setSelectedLectiveSemester("1");
+    setSelectedLectiveYear(String(new Date().getFullYear()));
     setError("");
     setIsSaving(false);
   }, [isOpen, subject, careers]);
@@ -153,6 +161,7 @@ function SubjectGroupsModal(props) {
 
         setCareerOptions(unique);
         setSelectedCareers(unique.map((item) => item.key));
+        if (unique.length > 0) setSelectedLectiveSemester(String(unique[0]?.semestre || 1));
       } catch (e) {
         if (!isCancelled) {
           setCareerOptions([]);
@@ -223,6 +232,17 @@ function SubjectGroupsModal(props) {
     return "";
   }
 
+  function buildStoredGroupCode(groupNameValue, lectiveYearValue, lectiveSemesterValue) {
+    const cleanName = String(groupNameValue || "").trim();
+    const year = String(lectiveYearValue || "").trim();
+    const semester = String(lectiveSemesterValue || "").trim();
+    if (!year) return cleanName;
+    if (semester !== "1" && semester !== "2") return `${cleanName}__LY${year}`;
+    // Sufijo tecnico para poder reconstruir el semestre lectivo al leer desde DB.
+    // En UI lo ocultamos al mostrar "N° de clase".
+    return `${cleanName}__LY${year}S${semester}`;
+  }
+
   async function handleAddGroup() {
     if (isSaving) return;
 
@@ -251,10 +271,8 @@ function SubjectGroupsModal(props) {
     }
 
     const selectedMeta = careerOptions.filter((option) => finalSelectedCareers.includes(option.key));
-    // Si hay diferencias entre carreras, usamos el primer año/semestre disponible.
-    // (segun tu criterio actual, esto no debe bloquear la creación del grupo)
-    const resolvedSemester = Number(selectedMeta[0]?.semestre || 1);
-    const resolvedYear = Number(selectedMeta[0]?.anio || 1);
+    const resolvedAcademicSemester = Number(selectedMeta[0]?.semestre || 1);
+    const resolvedAcademicYear = Number(selectedMeta[0]?.anio || 1);
 
     const startIndex = startTimes.indexOf(fromTime);
     const endIndex = endTimes.indexOf(toTime);
@@ -289,15 +307,15 @@ function SubjectGroupsModal(props) {
         return;
       }
 
-      const codigo = groupName.trim();
+      const codigo = buildStoredGroupCode(groupName.trim(), selectedLectiveYear, selectedLectiveSemester);
       const createResp = await window.api.grupos.crear({
         codigo,
         idMateria: materia.id,
         horasSemestrales: (endIndex - startIndex + 1) * 20,
         esContrasemestre: false,
         cupo: 30,
-        semestre: resolvedSemester,
-        anio: resolvedYear
+        semestre: resolvedAcademicSemester,
+        anio: resolvedAcademicYear
       });
 
       if (!createResp?.success) {
@@ -374,7 +392,14 @@ function SubjectGroupsModal(props) {
     ];
 
       if (onSaveGroups) {
-        onSaveGroups(payloadSchedules, subject, String(resolvedYear));
+        onSaveGroups(
+          payloadSchedules,
+          subject,
+          String(resolvedAcademicYear),
+          String(resolvedAcademicSemester),
+          String(selectedLectiveSemester),
+          String(selectedLectiveYear)
+        );
       }
 
       if (onGroupCreated) {
@@ -527,6 +552,31 @@ function SubjectGroupsModal(props) {
               <select className="second-step-time-select" value={toTime} onChange={(event) => setToTime(event.target.value)}>
                 {endTimes.map((time) => (
                   <option key={time} value={time}>{time}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="second-step-time-label">
+              Semestre lectivo
+              <select
+                className="second-step-time-select"
+                value={selectedLectiveSemester}
+                onChange={(event) => setSelectedLectiveSemester(event.target.value)}
+              >
+                <option value="1">1er</option>
+                <option value="2">2do</option>
+              </select>
+            </label>
+
+            <label className="second-step-time-label">
+              Año
+              <select
+                className="second-step-time-select"
+                value={selectedLectiveYear}
+                onChange={(event) => setSelectedLectiveYear(event.target.value)}
+              >
+                {lectiveYearOptions.map((yearValue) => (
+                  <option key={yearValue} value={yearValue}>{yearValue}</option>
                 ))}
               </select>
             </label>

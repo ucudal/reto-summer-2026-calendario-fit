@@ -30,7 +30,14 @@ function createSubjectGroupsModalHandlers(params) {
     setIsGroupsListOpen(true);
   }
 
-  function saveGroupsToCalendar(schedules, subject, selectedYear) {
+  function saveGroupsToCalendar(
+    schedules,
+    subject,
+    selectedYear,
+    selectedSemester,
+    selectedLectiveSemester,
+    selectedLectiveYear
+  ) {
     // Convierte todos los schedules y grupos al formato de calendar classes
     const allClasses = [];
 
@@ -57,7 +64,15 @@ function createSubjectGroupsModalHandlers(params) {
     // Sincroniza clases de la asignatura en el calendario del año seleccionado
     // (reemplaza grupos previos de práctica de la misma asignatura).
     setData((prev) =>
-      replaceSubjectGroupsInCalendar(prev, selectedYear, subject, allClasses)
+      replaceSubjectGroupsInCalendar(
+        prev,
+        selectedYear,
+        selectedSemester,
+        selectedLectiveSemester,
+        selectedLectiveYear,
+        subject,
+        allClasses
+      )
     );
   }
 
