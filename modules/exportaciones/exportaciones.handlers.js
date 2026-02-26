@@ -13,16 +13,6 @@ async function getXlsxModule() {
   return mod.default || mod;
 }
 
-let xlsxModulePromise = null;
-
-async function getXlsxModule() {
-  if (!xlsxModulePromise) {
-    xlsxModulePromise = import("xlsx");
-  }
-  const mod = await xlsxModulePromise;
-  return mod.default || mod;
-}
-
 export function registerExportacionesHandlers() {
   ipcMain.handle("exportaciones:guardarExcel", async (event, payload = {}) => {
     try {
