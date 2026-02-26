@@ -1,7 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { listarFilasExportacionDesdeDb } from "./exportaciones.repository.js";
 import { ipcMain, dialog } from "electron";
-import { importarModulosDesdeExcel } from "./importaciones.service.js";
+import { importarDatosUnicosDesdeExcel, importarModulosDesdeExcel } from "./importaciones.service.js";
 
 let xlsxModulePromise = null;
 
@@ -150,6 +150,34 @@ export function registerExportacionesHandlers() {
 
       const summary = importarModulosDesdeExcel(filePath, {
         carreraNombre: payload.carreraNombre
+      });
+
+      return { success: true, data: summary };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle("exportaciones:importarExcelEntidad", async (event, payload = {}) => {
+    try {
+      const win = event.sender.getOwnerBrowserWindow();
+      let filePath = payload.filePath;
+      if (!filePath) {
+        const picker = await dialog.showOpenDialog(win, {
+          title: "Seleccionar Excel de modulos",
+          properties: ["openFile"],
+          filters: [{ name: "Excel", extensions: ["xlsx"] }]
+        });
+        if (picker.canceled || !picker.filePaths || picker.filePaths.length === 0) {
+          return { success: false, cancelled: true };
+        }
+        filePath = picker.filePaths[0];
+      }
+
+      const summary = importarDatosUnicosDesdeExcel(filePath, {
+        entity: payload.entity,
+        carreraNombre: payload.carreraNombre,
+        color: payload.color
       });
 
       return { success: true, data: summary };

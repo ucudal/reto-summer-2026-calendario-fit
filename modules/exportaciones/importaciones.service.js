@@ -105,7 +105,7 @@ function slugify(input) {
 function extractClassId(cellValue) {
   const text = normalizeText(cellValue);
   if (!text) return "";
-  const match = text.match(/n[°º]\s*de\s*clase\s*([a-z0-9-]+)/i);
+  const match = text.match(/n(?:[^a-z0-9\s])?\s*de\s*clase\s*([a-z0-9-]+)/i);
   return match ? match[1].toUpperCase() : "";
 }
 
@@ -228,9 +228,32 @@ function parseSalonCell(value) {
     .filter((s) => s.nombre);
 }
 
+function getModuloSheet(workbook) {
+  if (!workbook?.Sheets) return null;
+  if (workbook.Sheets["Módulos"]) return workbook.Sheets["Módulos"];
+  if (workbook.Sheets["Modulos"]) return workbook.Sheets["Modulos"];
+  const key = Object.keys(workbook.Sheets).find(
+    (name) =>
+      normalizeText(name)
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") === "modulos"
+  );
+  return key ? workbook.Sheets[key] : null;
+}
+
+function normalizeEmail(value) {
+  return normalizeText(value).toLowerCase();
+}
+
+function isValidEmail(value) {
+  const email = normalizeEmail(value);
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 export function importarModulosDesdeExcel(filePath, options = {}) {
   const workbook = XLSX.readFile(filePath, { cellDates: true });
-  const moduloSheet = workbook.Sheets["Módulos"];
+  const moduloSheet = getModuloSheet(workbook);
   if (!moduloSheet) {
     throw new Error("No se encontro la hoja 'Módulos' en el Excel");
   }
@@ -243,6 +266,7 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
     .filter((row) => normalizeText(row[headerIndex(headers, "Curso")]) !== "");
 
   const idx = {
+    carrera: headerIndex(headers, ["Carrera", "Nombre carrera"]),
     cx: headerIndex(headers, ["cx", "cx "]),
     curso: headerIndex(headers, ["Curso"]),
     tipo: headerIndex(headers, ["Tipo"]),
@@ -263,7 +287,12 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
     prof1: headerIndex(headers, ["Prof 1", "Profesor 1"]),
     prof2: headerIndex(headers, ["Prof 2", "Profesor 2"]),
     prof3: headerIndex(headers, ["Prof 3", "Profesor 3"]),
-    asis1: headerIndex(headers, ["Asis 1", "Asistente 1"])
+    asis1: headerIndex(headers, ["Asis 1", "Asistente 1"]),
+    correo: headerIndex(headers, ["Correo", "Email", "Mail"]),
+    correo1: headerIndex(headers, ["Correo 1", "Email 1", "Correo Prof 1", "Mail Prof 1"]),
+    correo2: headerIndex(headers, ["Correo 2", "Email 2", "Correo Prof 2", "Mail Prof 2"]),
+    correo3: headerIndex(headers, ["Correo 3", "Email 3", "Correo Prof 3", "Mail Prof 3"]),
+    correoAsis1: headerIndex(headers, ["Correo Asis 1", "Email Asis 1", "Correo Asistente 1"])
   };
 
   if (idx.curso < 0 || idx.idClase < 0) {
@@ -277,6 +306,12 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
 
   const getCarrera = sqlite.prepare("SELECT id FROM carreras WHERE nombre = ?");
   const insertCarrera = sqlite.prepare("INSERT INTO carreras (nombre) VALUES (?)");
+  const getSemestre = sqlite.prepare(
+    "SELECT id FROM semestres WHERE numero_semestre = ? AND anio = ?"
+  );
+  const insertSemestre = sqlite.prepare(
+    "INSERT INTO semestres (numero_semestre, anio) VALUES (?, ?)"
+  );
   const getMateria = sqlite.prepare("SELECT id FROM materias WHERE nombre = ?");
   const insertMateria = sqlite.prepare(
     "INSERT INTO materias (tipo, creditos, nombre, tiene_correlativa) VALUES (?, ?, ?, 0)"
@@ -334,6 +369,7 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
     totalRows: dataRows.length,
     inserted: {
       carreras: 0,
+      semestres: 0,
       materias: 0,
       grupos: 0,
       profesores: 0,
@@ -389,6 +425,12 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
       }
 
       const planData = parsePlanAndSemestreFromCx(cx);
+      let semestre = getSemestre.get(planData.semestre, anioLectivo);
+      if (!semestre) {
+        const semResult = insertSemestre.run(planData.semestre, anioLectivo);
+        semestre = { id: Number(semResult.lastInsertRowid) };
+        summary.inserted.semestres += 1;
+      }
 
       let materia = getMateria.get(curso);
       if (!materia) {
@@ -423,8 +465,8 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
           materia.id,
           String(horas),
           cupo || null,
-          planData.semestre,
-          anioLectivo
+          semestre.id,
+          normalizeText(options.color) || "#2563EB"
         );
         grupo = { id: Number(grupoResult.lastInsertRowid) };
         summary.inserted.grupos += 1;
@@ -433,31 +475,56 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
           materia.id,
           String(horas),
           cupo || null,
-          planData.semestre,
-          anioLectivo,
+          semestre.id,
+          normalizeText(options.color) || "#2563EB",
           grupo.id
         );
       }
 
-      const docentes = [row[idx.prof1], row[idx.prof2], row[idx.prof3], row[idx.asis1]]
-        .map((v) => normalizeText(v))
-        .filter((v) => v !== "" && v.toUpperCase() !== "TBD");
+      const docentes = [
+        {
+          nombreCompleto: normalizeText(row[idx.prof1]),
+          correoPreferido: normalizeText(row[idx.correo1 >= 0 ? idx.correo1 : idx.correo])
+        },
+        {
+          nombreCompleto: normalizeText(row[idx.prof2]),
+          correoPreferido: normalizeText(row[idx.correo2 >= 0 ? idx.correo2 : -1])
+        },
+        {
+          nombreCompleto: normalizeText(row[idx.prof3]),
+          correoPreferido: normalizeText(row[idx.correo3 >= 0 ? idx.correo3 : -1])
+        },
+        {
+          nombreCompleto: normalizeText(row[idx.asis1]),
+          correoPreferido: normalizeText(row[idx.correoAsis1 >= 0 ? idx.correoAsis1 : -1])
+        }
+      ].filter((d) => d.nombreCompleto !== "" && d.nombreCompleto.toUpperCase() !== "TBD");
 
       if (docentes.length === 0) {
         summary.skipped.docentesSinNombre += 1;
       }
 
-      docentes.forEach((docenteRaw, docIndex) => {
-        const { nombre, apellido } = splitName(docenteRaw);
+      docentes.forEach((docenteData, docIndex) => {
+        const { nombre, apellido } = splitName(docenteData.nombreCompleto);
         if (!nombre || !apellido) return;
         let profesor = getProfesorByFullName.get(`${nombre} ${apellido}`);
         if (!profesor) {
-          const base = slugify(`${nombre}.${apellido}`) || "docente.import";
-          let candidate = `${base}@import.local`;
-          let suffix = 1;
-          while (usedEmails.has(candidate) || getProfesorByCorreo.get(candidate)) {
-            suffix += 1;
-            candidate = `${base}.${suffix}@import.local`;
+          let candidate = "";
+          const preferredEmail = normalizeEmail(docenteData.correoPreferido);
+          if (
+            isValidEmail(preferredEmail) &&
+            !usedEmails.has(preferredEmail) &&
+            !getProfesorByCorreo.get(preferredEmail)
+          ) {
+            candidate = preferredEmail;
+          } else {
+            const base = slugify(`${nombre}.${apellido}`) || "docente.import";
+            candidate = `${base}@import.local`;
+            let suffix = 1;
+            while (usedEmails.has(candidate) || getProfesorByCorreo.get(candidate)) {
+              suffix += 1;
+              candidate = `${base}.${suffix}@import.local`;
+            }
           }
           usedEmails.add(candidate);
           const profResult = insertProfesor.run(nombre, apellido, candidate);
@@ -531,3 +598,337 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
   run();
   return summary;
 }
+
+export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
+  const workbook = XLSX.readFile(filePath, { cellDates: true });
+  const moduloSheet = getModuloSheet(workbook);
+  if (!moduloSheet) {
+    throw new Error("No se encontro la hoja 'Módulos' en el Excel");
+  }
+
+  const entity = normalizeText(options.entity).toLowerCase();
+  const validEntities = new Set([
+    "carreras",
+    "materias",
+    "grupos",
+    "profesores",
+    "salones",
+    "semestres",
+    "horarios"
+  ]);
+  if (!validEntities.has(entity)) {
+    throw new Error("Entidad invalida para importacion parcial");
+  }
+
+  const rows = XLSX.utils.sheet_to_json(moduloSheet, { header: 1, defval: null, raw: false });
+  const headers = rows[0] || [];
+  const dataRows = rows
+    .slice(1)
+    .filter((row) => row.some((cell) => normalizeText(cell) !== ""));
+
+  const idx = {
+    cx: headerIndex(headers, ["cx", "cx "]),
+    curso: headerIndex(headers, ["Curso"]),
+    tipo: headerIndex(headers, ["Tipo"]),
+    horas: headerIndex(headers, ["Horas"]),
+    idClase: headerIndex(headers, ["ID Clase", "Id Clase", "IDClase"]),
+    cupo: headerIndex(headers, ["Cupo"]),
+    requerimiento: headerIndex(headers, [
+      "Requerim. salÃ³n",
+      "Requerim. salon",
+      "Requerimiento salÃ³n",
+      "Requerimiento salon",
+      "Requerimientos",
+      "Req salÃ³n",
+      "Req salon"
+    ]),
+    salon: headerIndex(headers, ["SalÃ³n", "Salon", "Salones", "Aula", "Aulas"]),
+    creditos: headerIndex(headers, ["CrÃ©ditos", "Creditos"]),
+    profesor: headerIndex(headers, ["Profesor", "Docente", "Nombre completo"]),
+    prof1: headerIndex(headers, ["Prof 1", "Profesor 1"]),
+    prof2: headerIndex(headers, ["Prof 2", "Profesor 2"]),
+    prof3: headerIndex(headers, ["Prof 3", "Profesor 3"]),
+    asis1: headerIndex(headers, ["Asis 1", "Asistente 1"]),
+    correo: headerIndex(headers, ["Correo", "Email", "Mail"]),
+    correo1: headerIndex(headers, ["Correo 1", "Email 1", "Correo Prof 1", "Mail Prof 1"]),
+    correo2: headerIndex(headers, ["Correo 2", "Email 2", "Correo Prof 2", "Mail Prof 2"]),
+    correo3: headerIndex(headers, ["Correo 3", "Email 3", "Correo Prof 3", "Mail Prof 3"]),
+    correoAsis1: headerIndex(headers, ["Correo Asis 1", "Email Asis 1", "Correo Asistente 1"])
+  };
+
+  const inferredCareer = inferCarreraFromFilePath(filePath);
+  const carreraNombre = options.carreraNombre || inferredCareer || "IngenierÃ­a InformÃ¡tica";
+  const anioLectivo = parseYearFromFileName(filePath);
+  const horarioMap = entity === "horarios" ? buildHorarioMap(workbook) : null;
+
+  const getCarrera = sqlite.prepare("SELECT id FROM carreras WHERE nombre = ?");
+  const insertCarrera = sqlite.prepare("INSERT INTO carreras (nombre) VALUES (?)");
+
+  const getSemestre = sqlite.prepare(
+    "SELECT id FROM semestres WHERE numero_semestre = ? AND anio = ?"
+  );
+  const insertSemestre = sqlite.prepare(
+    "INSERT INTO semestres (numero_semestre, anio) VALUES (?, ?)"
+  );
+
+  const getMateria = sqlite.prepare("SELECT id, requerimientosSalon FROM materias WHERE nombre = ?");
+  const insertMateria = sqlite.prepare(
+    "INSERT INTO materias (tipo, creditos, nombre, tiene_correlativa, requerimientosSalon) VALUES (?, ?, ?, 0, ?)"
+  );
+  const updateMateria = sqlite.prepare(
+    "UPDATE materias SET tipo = ?, creditos = ?, requerimientosSalon = ? WHERE id = ?"
+  );
+
+  const getGrupo = sqlite.prepare("SELECT id FROM grupos WHERE codigo = ?");
+  const insertGrupo = sqlite.prepare(
+    "INSERT INTO grupos (codigo, id_materia, horas_anuales, es_contrasemestre, cupo, id_semestre, color) VALUES (?, ?, ?, 0, ?, ?, ?)"
+  );
+  const updateGrupo = sqlite.prepare(
+    "UPDATE grupos SET id_materia = ?, horas_anuales = ?, cupo = ?, id_semestre = ?, color = ? WHERE id = ?"
+  );
+
+  const getProfesorByFullName = sqlite.prepare(
+    "SELECT id FROM profesores WHERE trim(nombre || ' ' || apellido) = ?"
+  );
+  const getProfesorByCorreo = sqlite.prepare("SELECT id FROM profesores WHERE correo = ?");
+  const insertProfesor = sqlite.prepare(
+    "INSERT INTO profesores (nombre, apellido, correo) VALUES (?, ?, ?)"
+  );
+
+  const getSalonByNombreEdificio = sqlite.prepare(
+    "SELECT id FROM salones WHERE nombre = ? AND edificio = ?"
+  );
+  const getSalonByNombre = sqlite.prepare("SELECT id FROM salones WHERE nombre = ?");
+  const insertSalon = sqlite.prepare(
+    "INSERT INTO salones (nombre, edificio, aforo) VALUES (?, ?, ?)"
+  );
+
+  const getHorario = sqlite.prepare("SELECT id FROM horarios WHERE dia = ? AND modulo = ?");
+  const insertHorario = sqlite.prepare("INSERT INTO horarios (dia, modulo) VALUES (?, ?)");
+
+  const summary = {
+    filePath,
+    entity,
+    carreraUsada: carreraNombre,
+    totalRows: dataRows.length,
+    inserted: {
+      carreras: 0,
+      semestres: 0,
+      materias: 0,
+      grupos: 0,
+      profesores: 0,
+      salones: 0,
+      horarios: 0
+    },
+    updated: {
+      materias: 0,
+      grupos: 0
+    },
+    skipped: {
+      rowsWithoutCourse: 0,
+      rowsWithoutClassId: 0,
+      rowsWithoutSemestre: 0
+    },
+    warnings: []
+  };
+
+  const run = sqlite.transaction(() => {
+    if (entity === "carreras") {
+      const seen = new Set();
+      for (const row of dataRows) {
+        const fromRow = normalizeText(row[idx.carrera >= 0 ? idx.carrera : -1]);
+        const fromCurso = normalizeText(row[idx.curso >= 0 ? idx.curso : -1]);
+        const candidate = fromRow || fromCurso || carreraNombre;
+        if (!candidate || seen.has(candidate.toLowerCase())) continue;
+        seen.add(candidate.toLowerCase());
+        if (!getCarrera.get(candidate)) {
+          insertCarrera.run(candidate);
+          summary.inserted.carreras += 1;
+        }
+      }
+      return;
+    }
+
+    const usedEmails = new Set();
+
+    for (const row of dataRows) {
+      const curso = normalizeText(row[idx.curso]);
+      const idClase = normalizeText(row[idx.idClase]).toUpperCase();
+      const horas = parseFloatSafe(row[idx.horas], 0);
+      const cupo = parseIntSafe(row[idx.cupo], 0);
+      const tipo = parseTipo(row[idx.tipo]);
+      const creditos = parseIntSafe(row[idx.creditos], 0);
+      const cx = normalizeText(row[idx.cx]);
+      const req = idx.requerimiento >= 0 ? normalizeText(row[idx.requerimiento]) : "";
+
+      if ((entity === "materias" || entity === "grupos") && !curso) {
+        summary.skipped.rowsWithoutCourse += 1;
+        continue;
+      }
+
+      if ((entity === "grupos" || entity === "horarios") && !idClase) {
+        summary.skipped.rowsWithoutClassId += 1;
+        continue;
+      }
+
+      let planData = null;
+      if (entity === "semestres" || entity === "grupos") {
+        planData = parsePlanAndSemestreFromCx(cx);
+        if (!planData?.semestre) {
+          summary.skipped.rowsWithoutSemestre += 1;
+          continue;
+        }
+      }
+
+      if (entity === "semestres") {
+        if (!getSemestre.get(planData.semestre, anioLectivo)) {
+          insertSemestre.run(planData.semestre, anioLectivo);
+          summary.inserted.semestres += 1;
+        }
+        continue;
+      }
+
+      if (entity === "materias") {
+        let materia = getMateria.get(curso);
+        if (!materia) {
+          insertMateria.run(tipo || "Semestral", creditos || 0, curso, req || null);
+          summary.inserted.materias += 1;
+        } else {
+          updateMateria.run(
+            tipo || "Semestral",
+            creditos || 0,
+            req || materia.requerimientosSalon || null,
+            materia.id
+          );
+          summary.updated.materias += 1;
+        }
+        continue;
+      }
+
+      if (entity === "grupos") {
+        let materia = getMateria.get(curso);
+        if (!materia) {
+          const materiaResult = insertMateria.run(tipo || "Semestral", creditos || 0, curso, req || null);
+          materia = { id: Number(materiaResult.lastInsertRowid) };
+          summary.inserted.materias += 1;
+        }
+
+        let semestre = getSemestre.get(planData.semestre, anioLectivo);
+        if (!semestre) {
+          const semResult = insertSemestre.run(planData.semestre, anioLectivo);
+          semestre = { id: Number(semResult.lastInsertRowid) };
+          summary.inserted.semestres += 1;
+        }
+
+        const color = normalizeText(options.color) || "#2563EB";
+        const grupo = getGrupo.get(idClase);
+        if (!grupo) {
+          insertGrupo.run(
+            idClase,
+            materia.id,
+            String(horas),
+            cupo || null,
+            semestre.id,
+            color
+          );
+          summary.inserted.grupos += 1;
+        } else {
+          updateGrupo.run(
+            materia.id,
+            String(horas),
+            cupo || null,
+            semestre.id,
+            color,
+            grupo.id
+          );
+          summary.updated.grupos += 1;
+        }
+        continue;
+      }
+
+      if (entity === "profesores") {
+        const docentes = [
+          {
+            nombreCompleto: normalizeText(row[idx.profesor]),
+            correoPreferido: normalizeText(row[idx.correo])
+          },
+          {
+            nombreCompleto: normalizeText(row[idx.prof1]),
+            correoPreferido: normalizeText(row[idx.correo1 >= 0 ? idx.correo1 : idx.correo])
+          },
+          {
+            nombreCompleto: normalizeText(row[idx.prof2]),
+            correoPreferido: normalizeText(row[idx.correo2 >= 0 ? idx.correo2 : -1])
+          },
+          {
+            nombreCompleto: normalizeText(row[idx.prof3]),
+            correoPreferido: normalizeText(row[idx.correo3 >= 0 ? idx.correo3 : -1])
+          },
+          {
+            nombreCompleto: normalizeText(row[idx.asis1]),
+            correoPreferido: normalizeText(row[idx.correoAsis1 >= 0 ? idx.correoAsis1 : -1])
+          }
+        ].filter((d) => d.nombreCompleto !== "" && d.nombreCompleto.toUpperCase() !== "TBD");
+
+        docentes.forEach((docenteData) => {
+          const { nombre, apellido } = splitName(docenteData.nombreCompleto);
+          if (!nombre || !apellido) return;
+          let profesor = getProfesorByFullName.get(`${nombre} ${apellido}`);
+          if (!profesor) {
+            let candidate = "";
+            const preferredEmail = normalizeEmail(docenteData.correoPreferido);
+            if (
+              isValidEmail(preferredEmail) &&
+              !usedEmails.has(preferredEmail) &&
+              !getProfesorByCorreo.get(preferredEmail)
+            ) {
+              candidate = preferredEmail;
+            } else {
+              const base = slugify(`${nombre}.${apellido}`) || "docente.import";
+              candidate = `${base}@import.local`;
+              let suffix = 1;
+              while (usedEmails.has(candidate) || getProfesorByCorreo.get(candidate)) {
+                suffix += 1;
+                candidate = `${base}.${suffix}@import.local`;
+              }
+            }
+            usedEmails.add(candidate);
+            insertProfesor.run(nombre, apellido, candidate);
+            summary.inserted.profesores += 1;
+          }
+        });
+        continue;
+      }
+
+      if (entity === "salones") {
+        const salones = parseSalonCell(row[idx.salon]);
+        for (const salonData of salones) {
+          const salon =
+            getSalonByNombreEdificio.get(salonData.nombre, salonData.edificio) ||
+            getSalonByNombre.get(salonData.nombre);
+          if (!salon) {
+            insertSalon.run(salonData.nombre, salonData.edificio, 0);
+            summary.inserted.salones += 1;
+          }
+        }
+        continue;
+      }
+
+      if (entity === "horarios") {
+        const horarios = horarioMap?.get(idClase) || new Set();
+        for (const item of horarios) {
+          const [dia, moduloStr] = item.split("|");
+          const modulo = Number(moduloStr);
+          if (!getHorario.get(dia, modulo)) {
+            insertHorario.run(dia, modulo);
+            summary.inserted.horarios += 1;
+          }
+        }
+      }
+    }
+  });
+
+  run();
+  return summary;
+}
+

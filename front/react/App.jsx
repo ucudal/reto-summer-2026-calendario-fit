@@ -51,8 +51,9 @@ function App() {
 
     // Excel
     handleExportExcel,
-    exportInternalExcel,
-    importModulosExcel
+    handleExportExcelDatos,
+    handleImportExcel,
+    importUniqueExcelData
 
   } = window.useSchedulesApp();
 
@@ -91,8 +92,9 @@ function App() {
                 onOpenCreateCareer={openCreateCareerModal}
                 onOpenCreateTeacher={openCreateTeacherModal}
                 onExportExcel={handleExportExcel}
-                onExportExcelDatos={exportInternalExcel}
-                onImportExcel={importModulosExcel}
+                onExportExcelDatos={handleExportExcelDatos}
+                onImportExcel={handleImportExcel}
+                onImportExcelUnique={importUniqueExcelData}
                 alerts={visibleAlerts}
             />
 
