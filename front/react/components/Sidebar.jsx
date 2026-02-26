@@ -1,12 +1,13 @@
 /*
   Sidebar izquierda.
-  Acciones rápidas + filtro de calendarios visibles.
+  Acciones rapidas + filtro de calendarios visibles.
 */
 
 function Sidebar(props) {
   const {
     calendars = [],
     onToggleCalendarVisible = () => {},
+    onOpenSubjects = () => {},
     onOpenCreateGroup = () => {},
     onOpenCreateCareer = () => {},
     onOpenCreateTeacher = () => {},
@@ -25,6 +26,7 @@ function Sidebar(props) {
       <div className="card side-card">
         <button className="action-btn" type="button" onClick={onOpenCreateCareer}>CARRERAS</button>
         <button className="action-btn" type="button" onClick={onOpenCreateTeacher}>DOCENTES</button>
+        <button className="action-btn" type="button" onClick={onOpenSubjects}>ASIGNATURAS</button>
         <button className="action-btn" type="button" onClick={onOpenCreateGroup}>GRUPOS</button>
       </div>
 
@@ -69,7 +71,7 @@ function Sidebar(props) {
           <ul className="alerts-list">
             {alerts.map((message, index) => (
               <li key={`${message}-${index}`} className="alert-item">
-                <span className="alert-icon">❗</span>
+                <span className="alert-icon">?</span>
                 <div className="alert-text">{message}</div>
               </li>
             ))}

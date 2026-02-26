@@ -1,8 +1,9 @@
-﻿(function () {
+(function () {
     function useGroupManagement({
                                     data,
                                     setData,
                                     selectedCareer,
+                                    subjects = []
                                 }) {
         const {
             DAYS,
@@ -109,7 +110,8 @@
                 setIsSubjectGroupsModalOpen,
                 setSelectedSubject,
                 setData,
-                replaceSubjectGroupsInCalendar
+                replaceSubjectGroupsInCalendar,
+                subjects
             });
 
         const groupsModalHandlers =
