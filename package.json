@@ -4,11 +4,12 @@
   "type": "module",
   "main": "./electron/main.js",
   "scripts": {
-    "start": "node ./scripts/run-electron.cjs .",
+    "start": "electron .",
     "postinstall": "electron-rebuild -f -w better-sqlite3",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "node db/seedAll.js"
+    "db:seed": "node db/seedAll.js",
+    "templates:import": "node scripts/generate_import_templates.js"
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.3",

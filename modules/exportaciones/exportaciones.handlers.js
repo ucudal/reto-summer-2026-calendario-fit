@@ -1,7 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { listarFilasExportacionDesdeDb } from "./exportaciones.repository.js";
 import { ipcMain, dialog } from "electron";
-import { importarModulosDesdeExcel } from "./importaciones.service.js";
+import { importarDatosUnicosDesdeExcel, importarModulosDesdeExcel } from "./importaciones.service.js";
 
 let xlsxModulePromise = null;
 
@@ -51,8 +51,8 @@ export function registerExportacionesHandlers() {
         "fecha_exportacion",
         "grupo_id",
         "grupo_codigo",
-        "grupo_anio",
-        "grupo_semestre",
+        "grupo_color",
+        "grupo_idSemestre",
         "grupo_cupo",
         "grupo_horas_semestrales",
         "grupo_es_contrasemestre",
@@ -68,15 +68,16 @@ export function registerExportacionesHandlers() {
         "plan_semestre",
         "horarios",
         "docentes",
-        "salones"
+        "salones",
+        "requerimientos"
       ];
 
       const rows = dbRows.map((row) => ({
         fecha_exportacion: exportedAt,
         grupo_id: row.grupo_id,
         grupo_codigo: row.grupo_codigo,
-        grupo_anio: row.grupo_anio,
-        grupo_semestre: row.grupo_semestre,
+        grupo_color: row.grupo_color,
+        grupo_idSemestre: row.grupo_idSemestre,
         grupo_cupo: row.grupo_cupo,
         grupo_horas_semestrales: row.grupo_horas_semestrales,
         grupo_es_contrasemestre: row.grupo_es_contrasemestre,
@@ -90,9 +91,10 @@ export function registerExportacionesHandlers() {
         plan_nombre: row.plan_nombre,
         plan_anio: row.plan_anio,
         plan_semestre: row.plan_semestre,
-        horarios: row.horarios,
-        docentes: row.docentes,
-        salones: row.salones
+        horarios: row.horarios || null,
+        docentes: row.docentes || null,
+        salones: row.salones || null,
+        requerimientos: row.requerimientos || null
       }));
 
       const fuentes = [
@@ -103,6 +105,7 @@ export function registerExportacionesHandlers() {
         { columna: "horarios", fuente_bd: "tablas grupo_horario + horarios (GROUP_CONCAT)" },
         { columna: "docentes", fuente_bd: "tablas profesor_grupo + profesores (GROUP_CONCAT)" },
         { columna: "salones", fuente_bd: "tablas salon_grupo + salones (GROUP_CONCAT)" },
+        { columna: "requerimientos", fuente_bd: "tabla materias" },
         { columna: "fecha_exportacion", fuente_bd: "timestamp generado al exportar" },
         { columna: "filtros_aplicados", fuente_bd: JSON.stringify(filtrosAplicados) }
       ];
@@ -147,6 +150,34 @@ export function registerExportacionesHandlers() {
 
       const summary = importarModulosDesdeExcel(filePath, {
         carreraNombre: payload.carreraNombre
+      });
+
+      return { success: true, data: summary };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle("exportaciones:importarExcelEntidad", async (event, payload = {}) => {
+    try {
+      const win = event.sender.getOwnerBrowserWindow();
+      let filePath = payload.filePath;
+      if (!filePath) {
+        const picker = await dialog.showOpenDialog(win, {
+          title: "Seleccionar Excel de modulos",
+          properties: ["openFile"],
+          filters: [{ name: "Excel", extensions: ["xlsx"] }]
+        });
+        if (picker.canceled || !picker.filePaths || picker.filePaths.length === 0) {
+          return { success: false, cancelled: true };
+        }
+        filePath = picker.filePaths[0];
+      }
+
+      const summary = importarDatosUnicosDesdeExcel(filePath, {
+        entity: payload.entity,
+        carreraNombre: payload.carreraNombre,
+        color: payload.color
       });
 
       return { success: true, data: summary };
