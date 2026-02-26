@@ -15,7 +15,6 @@ function CreateNewGroupModal(props) {
     hourOptionsFrom,
     hourOptionsTo,
     careerOptions,
-    planOptions,
     onClose,
     onChange,
     onToggleList,
@@ -122,28 +121,6 @@ function CreateNewGroupModal(props) {
                       onChange={(event) => onToggleList("careers", career, event.target.checked)}
                     />
                     <span>{career}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </fieldset>
-
-          <fieldset className="form-label form-fieldset">
-            <legend className="form-legend">Planes (segun carreras elegidas)</legend>
-            <div className="checkbox-list">
-              {planOptions.length === 0 && (
-                <div className="checkbox-empty">Primero selecciona una carrera con planes.</div>
-              )}
-              {planOptions.map((plan) => {
-                const checked = (form.plans || []).includes(plan);
-                return (
-                  <label key={plan} className="checkbox-row">
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={(event) => onToggleList("plans", plan, event.target.checked)}
-                    />
-                    <span>{plan}</span>
                   </label>
                 );
               })}

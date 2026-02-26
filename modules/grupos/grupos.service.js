@@ -9,6 +9,9 @@ import {
     insertarRequerimientos
 } from './grupos.repository.js';
 
+const DIAS_VALIDOS = ["lunes", "martes", "miercoles", "miércoles", "jueves", "viernes", "sabado", "sábado"];
+const MODULOS_VALIDOS = { 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true, 8: true };
+
 export function altaGrupo(data) {
   validarGrupo(data);
 
@@ -148,7 +151,7 @@ function validarGrupo(data) {
     throw new Error("Semestre inválido");
   }
 
-  if (data.anio == null || isNaN(Number(data.anio)) || Number(data.anio) < 1900) {
+  if (data.anio == null || isNaN(Number(data.anio)) || Number(data.anio) <= 0) {
     throw new Error("Año inválido");
   }
 
@@ -156,4 +159,3 @@ function validarGrupo(data) {
     throw new Error("esContrasemestre debe ser booleano");
   }
 }
-
