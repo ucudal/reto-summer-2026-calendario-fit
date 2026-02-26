@@ -2,14 +2,37 @@
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import { createRequire } from "module";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Base en la carpeta del proyecto
-const dbPath = path.join(__dirname, "", "local-dev.sqlite");
+/**
+ * Determina la ruta de la base de datos.
+ * - En un ejecutable empaquetado: usa app.getPath('userData')
+ *   (ej: C:\Users\<user>\AppData\Roaming\calendariofit\)
+ *   para que la DB sea persistente y escribible.
+ * - En desarrollo: usa la carpeta del proyecto (db/).
+ */
+function getDbPath() {
+  if (process.versions.electron) {
+    try {
+      const req = createRequire(import.meta.url);
+      const { app } = req("electron");
+      if (app.isPackaged) {
+        const userDataPath = app.getPath("userData");
+        return path.join(userDataPath, "local-dev.sqlite");
+      }
+    } catch (_) {
+      // No estamos en el proceso principal de Electron (ej: script CLI)
+    }
+  }
+  return path.join(__dirname, "local-dev.sqlite");
+}
+
+const dbPath = getDbPath();
 console.log("DB PATH:", dbPath);
 
 // Añadir timeout para evitar bloqueos largos; 5000 ms es razonable

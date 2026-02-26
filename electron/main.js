@@ -23,7 +23,10 @@ function createWindow() {
     }
   });
 
-  win.webContents.openDevTools(); // 👈 ADD THIS
+  // Solo abrir DevTools en desarrollo
+  if (!app.isPackaged) {
+    win.webContents.openDevTools();
+  }
 
   const filePath = path.join(__dirname, "..", "front", "index.html");
 
