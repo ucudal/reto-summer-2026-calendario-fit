@@ -126,6 +126,10 @@ export async function agregarRequerimientosGrupo(idGrupo, requerimientos) {
   return await insertarRequerimientos(idGrupo, requerimientos);
 }
 
+export function listarGruposPorSemestreService(numeroSem, anio) {
+    return listarGruposPorSemestre(numeroSem, anio);
+}
+
 function validarGrupo(data) {
   if (!data) {
     throw new Error("Datos de grupo requeridos");

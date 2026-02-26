@@ -132,3 +132,26 @@ export function insertarRequerimientos(idGrupo, requerimientos) {
       .run()
   );
 }
+
+export function listarGruposPorSemestre(numeroSem, anio) {
+  return db.select({
+      id: grupos.id,
+      codigo: grupos.codigo,
+      idMateria: grupos.idMateria,
+      horasSemestrales: grupos.horasSemestrales,
+      esContrasemestre: grupos.esContrasemestre,
+      cupo: grupos.cupo,
+      numeroSem: semestre.numeroSem,
+      anio: semestre.anio
+    })
+    .from(grupos)
+    .innerJoin(semestre, eq(grupos.idSemestre, semestre.id))
+    .where(
+      and(
+        eq(semestre.numeroSem, numeroSem),
+        eq(semestre.anio, anio)
+      )
+    )
+    .orderBy(asc(grupos.codigo))
+    .all();
+}
