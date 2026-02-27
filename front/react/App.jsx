@@ -1,4 +1,4 @@
-function App() {
+﻿function App() {
   const {
     data,
     selectedCareer,
@@ -74,6 +74,10 @@ function App() {
     closeCreateSemesterModal,
     updateSemesterForm,
     confirmCreateSemester,
+    selectedLectiveTerm,
+    setSelectedLectiveTerm,
+    availableLectiveTerms,
+    currentLectiveTerm,
 
     // Groups
     isGroupsListOpen,
@@ -100,25 +104,23 @@ function App() {
     ROW_HEIGHT,
     HEADER_HEIGHT,
     TIME_COL_WIDTH,
-    COLOR_BY_TYPE
+    COLOR_BY_TYPE,
   } = window.AppData;
 
-  const currentLectiveTerm =
-    visibleCalendars[0]?.lectiveTerm ||
-    data.calendars[0]?.lectiveTerm ||
-    "";
-
   return (
-    <>
-      <HeaderBar
-        careers={careers}
-        selectedCareer={selectedCareer}
-        currentLectiveTerm={currentLectiveTerm}
-        onCareerChange={setSelectedCareer}
-        onOpenCreateSemester={openCreateSemesterModal}
-        onOpenCreateCareer={openCreateCareerModal}
-        onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
-      />
+      <>
+        <HeaderBar
+            careers={careers}
+            selectedCareer={selectedCareer}
+            currentLectiveTerm={currentLectiveTerm}
+            onCareerChange={setSelectedCareer}
+            onOpenCreateSemester={openCreateSemesterModal}
+            onOpenCreateCareer={openCreateCareerModal}
+            onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
+            availableLectiveTerms={availableLectiveTerms}
+            selectedLectiveTerm={selectedLectiveTerm}
+            onLectiveTermChange={setSelectedLectiveTerm}
+        />
 
       <main className="page">
         <section className="layout">
@@ -263,7 +265,7 @@ function App() {
       <CreateSemesterModal
         isOpen={isCreateSemesterOpen}
         form={semesterForm}
-        availableSemesters={data.calendars}
+        availableSemesters={availableLectiveTerms}
         errorMessage={semesterModalError}
         onClose={closeCreateSemesterModal}
         onChange={updateSemesterForm}

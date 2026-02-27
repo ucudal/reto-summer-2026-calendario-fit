@@ -297,10 +297,10 @@ function SubjectGroupsModal(props) {
       selectedCareers.length > 0
         ? [...selectedCareers]
         : careerOptions.length > 0
-        ? careerOptions.map((option) => option.key)
-        : careers.length > 0
-        ? [careers[0]]
-        : [];
+          ? careerOptions.map((option) => option.key)
+          : careers.length > 0
+            ? [careers[0]]
+            : [];
 
     if (finalSelectedCareers.length === 0) {
       setError("No hay carreras disponibles para crear el grupo.");
@@ -352,7 +352,12 @@ function SubjectGroupsModal(props) {
       }
 
       const codigo = groupName.trim();
-      const lective = parseLectiveTerm(currentLectiveTerm);
+      const activeCalendar = (calendars || []).find(
+        c => c.visible && c.lectiveTerm
+      );
+
+      const lective = activeCalendar?.lectiveTerm || null;
+
       const groupColor = pickGroupColorForCalendar(resolvedSemester, resolvedYear);
       const createResp = await window.api.grupos.crear({
         codigo,
@@ -362,8 +367,8 @@ function SubjectGroupsModal(props) {
         cupo: 30,
         color: groupColor,
         carreras: finalSelectedCareers,
-        semestreLectivoNumero: lective?.semestreLectivoNumero,
-        anioLectivo: lective?.anioLectivo,
+        semestreLectivoNumero: lective?.numeroSem,
+        anioLectivo: lective?.anio,
         semestre: resolvedSemester,
         anio: resolvedYear
       });
@@ -427,24 +432,24 @@ function SubjectGroupsModal(props) {
         }
       }
 
-    const payloadSchedules = selectedDays.map((day, index) => {
-      const dayRange = dayTimeRanges[day] || { fromTime: "08:00", toTime: "09:20" };
-      return {
-        id: Date.now() + index,
-        days: [day],
-        fromTime: dayRange.fromTime,
-        toTime: dayRange.toTime,
-        groups: [
-          {
-            id: Date.now() + 1 + index,
-            name: groupName.trim(),
-            teachers: [...selectedTeachers],
-            assignedCareers: [...finalSelectedCareers],
-            color: groupColor
-          }
-        ]
-      };
-    });
+      const payloadSchedules = selectedDays.map((day, index) => {
+        const dayRange = dayTimeRanges[day] || { fromTime: "08:00", toTime: "09:20" };
+        return {
+          id: Date.now() + index,
+          days: [day],
+          fromTime: dayRange.fromTime,
+          toTime: dayRange.toTime,
+          groups: [
+            {
+              id: Date.now() + 1 + index,
+              name: groupName.trim(),
+              teachers: [...selectedTeachers],
+              assignedCareers: [...finalSelectedCareers],
+              color: groupColor
+            }
+          ]
+        };
+      });
 
       if (onSaveGroups) {
         onSaveGroups(payloadSchedules, subject, String(resolvedYear));
@@ -547,8 +552,8 @@ function SubjectGroupsModal(props) {
                 {careerOptions.length === 0
                   ? "Sin carreras para esta materia"
                   : selectedCareers.length === careerOptions.length
-                  ? "Todas las carreras posibles"
-                  : `${selectedCareers.length} seleccionadas`}
+                    ? "Todas las carreras posibles"
+                    : `${selectedCareers.length} seleccionadas`}
               </button>
 
               {isCareerDropdownOpen && (

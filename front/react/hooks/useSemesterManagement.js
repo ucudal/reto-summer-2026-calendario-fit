@@ -104,10 +104,19 @@
             }
 
             const now = Date.now();
+
+            const numeroSem = selectedSemester.startsWith("1") ? 1 : 2;
+            const anioNumerico = Number(selectedYear);
+
+            const newLectiveObject = {
+                idSemestre: null,
+                numeroSem,
+                anio: anioNumerico
+            };
             const copies = calendarsToCopy.map((calendar, index) => ({
                 ...calendar,
                 id: `${calendar.id}-copy-${now}-${index}`,
-                lectiveTerm: newName,
+                lectiveTerm: newLectiveObject,
                 visible: true,
                 classes: isBlankSemester ? [] : (calendar.classes || []).map(item => ({ ...item })),
                 alerts: []
@@ -115,6 +124,7 @@
 
             setData(prev => ({
                 ...prev,
+
                 calendars: prev.calendars
                     .map((c) => {
                         if (isBlankSemester) return { ...c, visible: false };
@@ -126,6 +136,63 @@
             closeCreateSemesterModal();
         }
 
+        const [selectedLectiveTerm, setSelectedLectiveTerm] = React.useState("");
+
+        React.useEffect(() => {
+
+            if (!selectedLectiveTerm) return;
+
+            setData(prev => ({
+                ...prev,
+                calendars: prev.calendars.map(calendar => ({
+                    ...calendar,
+                    visible: calendar.lectiveTerm?.idSemestre === Number(selectedLectiveTerm)
+                }))
+            }));
+        }, [selectedLectiveTerm, setData]);
+
+        const availableLectiveTerms = React.useMemo(() => {
+            const seen = new Set();
+            const unique = [];
+
+            data.calendars.forEach(c => {
+                if (!c.lectiveTerm) return;
+
+                const { idSemestre, numeroSem, anio } = c.lectiveTerm;
+
+                if (!seen.has(idSemestre)) {
+                    seen.add(idSemestre);
+                    unique.push({
+                        idSemestre,
+                        numeroSem,
+                        anio
+                    });
+                }
+            });
+
+            return unique;
+        }, [data.calendars]);
+
+        const filteredCalendarsBySemester = React.useMemo(() => {
+            if (!selectedLectiveTerm) return null;
+
+            return data.calendars.filter(
+                c => c.lectiveTerm?.idSemestre === Number(selectedLectiveTerm)
+            );
+        }, [data.calendars, selectedLectiveTerm]);
+
+        const currentLectiveTerm = React.useMemo(() => {
+            if (!filteredCalendarsBySemester || filteredCalendarsBySemester.length === 0) {
+                return "";
+            }
+
+            const { formatLectiveTerm } = window.AppData;
+
+            return formatLectiveTerm(
+                filteredCalendarsBySemester[0].lectiveTerm
+            );
+        }, [filteredCalendarsBySemester]);
+
         return {
             isCreateSemesterOpen,
             semesterModalError,
@@ -133,7 +200,11 @@
             openCreateSemesterModal,
             closeCreateSemesterModal,
             updateSemesterForm,
-            confirmCreateSemester
+            confirmCreateSemester,
+            selectedLectiveTerm,
+            setSelectedLectiveTerm,
+            availableLectiveTerms,
+            currentLectiveTerm
         };
     }
 
