@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
     function useSchedulesApp() {
         const { cloneInitialData } = window.AppData;
 

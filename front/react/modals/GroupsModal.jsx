@@ -19,6 +19,7 @@ function GroupsModal(props) {
   // Estado del buscador
   const [searchTerm, setSearchTerm] = React.useState("");
   const [dbSubjects, setDbSubjects] = React.useState([]);
+  const [groupCountBySubject, setGroupCountBySubject] = React.useState({});
   const [isLoadingSubjects, setIsLoadingSubjects] = React.useState(false);
 
   React.useEffect(() => {
@@ -54,8 +55,49 @@ function GroupsModal(props) {
           .filter(Boolean);
 
         setDbSubjects([...new Set(names)]);
+
+        if (window.api?.grupos?.listar) {
+          const groupsResponse = await window.api.grupos.listar();
+          if (!isMounted) return;
+
+          if (groupsResponse?.success && Array.isArray(groupsResponse.data)) {
+            const normalize = (value) =>
+              String(value || "")
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .trim();
+
+            const selectedCareerNormalized = normalize(selectedCareer);
+            const counts = {};
+
+            groupsResponse.data.forEach((groupItem) => {
+              const subjectName = String(groupItem?.nombreMateria || "").trim();
+              if (!subjectName) return;
+
+              const groupCareers = Array.isArray(groupItem?.carreras) ? groupItem.carreras : [];
+              if (selectedCareerNormalized) {
+                const matchesCareer = groupCareers.some(
+                  (careerName) => normalize(careerName) === selectedCareerNormalized
+                );
+                if (!matchesCareer) return;
+              }
+
+              counts[subjectName] = (counts[subjectName] || 0) + 1;
+            });
+
+            setGroupCountBySubject(counts);
+          } else {
+            setGroupCountBySubject({});
+          }
+        } else {
+          setGroupCountBySubject({});
+        }
       } catch (error) {
-        if (isMounted) setDbSubjects([]);
+        if (isMounted) {
+          setDbSubjects([]);
+          setGroupCountBySubject({});
+        }
       } finally {
         if (!isMounted) return;
         setIsLoadingSubjects(false);
@@ -67,35 +109,22 @@ function GroupsModal(props) {
     return () => {
       isMounted = false;
     };
-  }, [isOpen, subjectsList]);
+  }, [isOpen, subjectsList, selectedCareer]);
 
   // Si no esta abierto, no renderiza nada.
   if (!isOpen) return null;
 
   // Extrae todas las asignaturas únicas con conteo de grupos
   function getSubjectsWithGroupCount() {
-    // Mapear asignaturas a grupos existentes
-    const subjectMap = new Map();
-    calendars.forEach((calendar) => {
-      calendar.classes.forEach((classItem) => {
-        const title = classItem.title;
-        if (!subjectMap.has(title)) {
-          subjectMap.set(title, []);
-        }
-        subjectMap.get(title).push(classItem);
-      });
-    });
-
     // Usar subjectsList para mostrar todas, protegiendo null/undefined
     const hasRealSubjects = Array.isArray(subjectsList) && subjectsList.length > 0;
     const safeSubjects = hasRealSubjects ? subjectsList : dbSubjects;
     return safeSubjects
       .map((name) => {
-        const groups = subjectMap.get(name) || [];
+        const groups = Number(groupCountBySubject[name] || 0);
         return {
           name,
-          groupCount: groups.length,
-          groups
+          groupCount: groups
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }))

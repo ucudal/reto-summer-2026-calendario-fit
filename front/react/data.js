@@ -28,6 +28,44 @@ const COLOR_BY_TYPE = {
   lab: "#cb6345"
 };
 
+const GROUP_COLORS = [
+  "#FFADAD",
+  "#FFD6A5",
+  "#FDFFB6",
+  "#CAFFBF",
+  "#9BF6FF",
+  "#A0C4FF",
+  "#BDB2FF",
+  "#FFC6FF",
+  "#FDE2E4",
+  "#E2F0CB",
+  "#CDE7F0",
+  "#E4C1F9",
+  "#F1C0E8",
+  "#FEC5BB",
+  "#FCD5CE",
+  "#FFF1E6",
+  "#E8F8F5",
+  "#D0F4DE",
+  "#B8F2E6",
+  "#ADE8F4",
+  "#CAF0F8",
+  "#C3BEF0",
+  "#D5B6E8",
+  "#F7D6E0",
+  "#F9E2AE",
+  "#E6F2A2",
+  "#C1FBA4",
+  "#A9DEF9",
+  "#C3F0CA",
+  "#E0BBE4",
+  "#FEC8D8",
+  "#FFDFD3",
+  "#D6EADF",
+  "#F4F1DE",
+  "#D8E2DC"
+];
+
 function ordinalYearLabel(year) {
   if (year === 1) return "1er";
   if (year === 2) return "2do";
@@ -38,6 +76,7 @@ function ordinalYearLabel(year) {
 
 function buildCalendars() {
   const calendars = [];
+  const defaultLectiveTerm = "1er semestre 2026";
 
   const anio = 2025; // Año fijo para prueba
   let idCounter = 1;
@@ -129,6 +168,7 @@ window.AppData = {
   HEADER_HEIGHT,
   TIME_COL_WIDTH,
   COLOR_BY_TYPE,
+  GROUP_COLORS,
   cloneInitialData,
   timeToMinutes,
   yearFromCalendarName,
