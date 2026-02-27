@@ -99,6 +99,18 @@
             );
         }, [data.calendars, selectedLectiveTerm]);
 
+        const currentLectiveTerm = React.useMemo(() => {
+            if (!filteredCalendarsBySemester || filteredCalendarsBySemester.length === 0) {
+                return "";
+            }
+
+            const { formatLectiveTerm } = window.AppData;
+
+            return formatLectiveTerm(
+                filteredCalendarsBySemester[0].lectiveTerm
+            );
+        }, [filteredCalendarsBySemester]);
+
         return {
             isCreateSemesterOpen,
             semesterModalError,
@@ -109,7 +121,8 @@
             confirmCreateSemester,
             selectedLectiveTerm,
             setSelectedLectiveTerm,
-            availableLectiveTerms
+            availableLectiveTerms,
+            currentLectiveTerm
         };
     }
 

@@ -77,6 +77,7 @@
     selectedLectiveTerm,
     setSelectedLectiveTerm,
     availableLectiveTerms,
+    currentLectiveTerm,
 
     // Groups
     isGroupsListOpen,
@@ -103,12 +104,7 @@
     HEADER_HEIGHT,
     TIME_COL_WIDTH,
     COLOR_BY_TYPE,
-    formatLectiveTerm
   } = window.AppData;
-
-  const currentLectiveTerm = formatLectiveTerm(
-    visibleCalendars[0]?.lectiveTerm
-  );
 
   return (
       <>
