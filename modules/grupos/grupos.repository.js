@@ -217,13 +217,37 @@ export function insertarHorarios(idGrupo, horariosPayload) {
   const inserted = [];
 
   for (const h of horariosPayload) {
-    const horarioRow = db
+    let horarioRow = db
       .select({ id: horarios.id })
       .from(horarios)
       .where(and(eq(horarios.modulo, h.modulo), eq(horarios.dia, h.dia)))
       .get();
 
-    if (!horarioRow) continue;
+    // Si la base esta "nueva" y no tiene filas en horarios,
+    // las creamos en el momento para no perder el bloque del grupo.
+    if (!horarioRow) {
+      const createHorario = db
+        .insert(horarios)
+        .values({
+          modulo: Number(h.modulo),
+          dia: String(h.dia)
+        })
+        .run();
+
+      const newHorarioId = Number(createHorario?.lastInsertRowid || 0);
+      if (newHorarioId > 0) {
+        horarioRow = { id: newHorarioId };
+      } else {
+        // Fallback: si no devolvio id, reintentamos lookup.
+        horarioRow = db
+          .select({ id: horarios.id })
+          .from(horarios)
+          .where(and(eq(horarios.modulo, h.modulo), eq(horarios.dia, h.dia)))
+          .get();
+      }
+    }
+
+    if (!horarioRow?.id) continue;
 
     inserted.push(
       db
