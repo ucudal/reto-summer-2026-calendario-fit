@@ -105,10 +105,13 @@
 
             const now = Date.now();
 
+            const numeroSem = selectedSemester.startsWith("1") ? 1 : 2;
+            const anioNumerico = Number(selectedYear);
+
             const newLectiveObject = {
-                idSemestre: `sem-${Date.now()}`,
-                numeroSem: 1,
-                anio: newName
+                idSemestre: null,
+                numeroSem,
+                anio: anioNumerico
             };
             const copies = calendarsToCopy.map((calendar, index) => ({
                 ...calendar,
@@ -121,6 +124,7 @@
 
             setData(prev => ({
                 ...prev,
+
                 calendars: prev.calendars
                     .map((c) => {
                         if (isBlankSemester) return { ...c, visible: false };
@@ -135,13 +139,14 @@
         const [selectedLectiveTerm, setSelectedLectiveTerm] = React.useState("");
 
         React.useEffect(() => {
+
             if (!selectedLectiveTerm) return;
 
             setData(prev => ({
                 ...prev,
                 calendars: prev.calendars.map(calendar => ({
                     ...calendar,
-                    visible: calendar.lectiveTerm?.idSemestre === selectedLectiveTerm
+                    visible: calendar.lectiveTerm?.idSemestre === Number(selectedLectiveTerm)
                 }))
             }));
         }, [selectedLectiveTerm, setData]);
@@ -172,7 +177,7 @@
             if (!selectedLectiveTerm) return null;
 
             return data.calendars.filter(
-                c => c.lectiveTerm?.idSemestre === selectedLectiveTerm
+                c => c.lectiveTerm?.idSemestre === Number(selectedLectiveTerm)
             );
         }, [data.calendars, selectedLectiveTerm]);
 

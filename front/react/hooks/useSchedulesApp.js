@@ -32,6 +32,7 @@
             data,
             setData,
             selectedCareer,
+            selectedLectiveTerm,
             reloadGroupsFromDb: db.reloadGroupsFromDb,
             subjects: subject.subjects
         });

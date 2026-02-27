@@ -78,7 +78,7 @@ function buildCalendars() {
   const calendars = [];
   const defaultLectiveTerm = "1er semestre 2026";
 
-  const anio = 2025; // Año fijo para prueba
+  const anio = 2026; // Año fijo para prueba
   let idCounter = 1;
 
   for (let year = 1; year <= 5; year += 1) {

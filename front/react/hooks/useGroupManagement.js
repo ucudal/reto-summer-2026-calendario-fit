@@ -1,10 +1,11 @@
 (function () {
     function useGroupManagement({
-                                    data,
-                                    setData,
-                                    selectedCareer,
-                                    subjects = []
-                                }) {
+        data,
+        setData,
+        selectedCareer,
+        selectedLectiveTerm,
+        subjects = []
+    }) {
         const {
             DAYS,
             TIME_BLOCKS,
@@ -118,9 +119,9 @@
             groupsModalFns.createGroupsModalHandlers({
                 setIsGroupsListOpen,
                 openSubjectGroupsModal:
-                subjectGroupsModalHandlers.openSubjectGroupsModal,
+                    subjectGroupsModalHandlers.openSubjectGroupsModal,
                 openCreateNewGroupModal:
-                createNewGroupHandlers.openCreateNewGroupModal
+                    createNewGroupHandlers.openCreateNewGroupModal
             });
 
         return {
