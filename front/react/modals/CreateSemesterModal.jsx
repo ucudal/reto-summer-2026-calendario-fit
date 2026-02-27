@@ -18,14 +18,7 @@ function CreateSemesterModal(props) {
 
   const hasAvailableSemesters = availableSemesters.length > 0;
 
-  // Extraer términos lectivos únicos de los calendarios disponibles
-  const uniqueLectiveTerms = [...new Set(
-    availableSemesters
-      .map((calendar) => calendar.lectiveTerm)
-      .filter((term) => term)
-  )].sort();
-
-  const hasLectiveTerms = uniqueLectiveTerms.length > 0;
+  const hasLectiveTerms = availableSemesters.length > 0;
 
   if (!isOpen) return null;
 
@@ -61,8 +54,13 @@ function CreateSemesterModal(props) {
                   ? "-- Seleccione semestre lectivo --"
                   : "-- No hay semestres disponibles --"}
               </option>
-              {uniqueLectiveTerms.map((term) => (
-                <option key={term} value={term}>{term}</option>
+              {availableSemesters.map((term) => (
+                <option
+                  key={term.idSemestre}
+                  value={term.idSemestre}
+                >
+                  {window.AppData.formatLectiveTerm(term)}
+                </option>
               ))}
             </select>
           </label>

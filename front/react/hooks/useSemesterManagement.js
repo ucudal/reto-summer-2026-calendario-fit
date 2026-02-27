@@ -37,7 +37,7 @@
             }
 
             const calendarsToCopy = data.calendars.filter(
-                c => c.lectiveTerm === sourceTerm
+                c => c.lectiveTerm?.idSemestre === sourceTerm
             );
 
             if (calendarsToCopy.length === 0) {
@@ -46,10 +46,16 @@
             }
 
             const now = Date.now();
+
+            const newLectiveObject = {
+                idSemestre: `sem-${Date.now()}`,
+                numeroSem: 1,
+                anio: newName
+            };
             const copies = calendarsToCopy.map((calendar, index) => ({
                 ...calendar,
                 id: `${calendar.id}-copy-${now}-${index}`,
-                lectiveTerm: newName,
+                lectiveTerm: newLectiveObject,
                 visible: true,
                 classes: calendar.classes.map(item => ({ ...item })),
                 alerts: []

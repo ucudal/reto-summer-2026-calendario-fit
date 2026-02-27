@@ -261,7 +261,7 @@
         <CreateSemesterModal
             isOpen={isCreateSemesterOpen}
             form={semesterForm}
-            availableSemesters={data.calendars}
+            availableSemesters={availableLectiveTerms}
             errorMessage={semesterModalError}
             onClose={closeCreateSemesterModal}
             onChange={updateSemesterForm}
