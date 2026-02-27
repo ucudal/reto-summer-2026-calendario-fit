@@ -4,6 +4,7 @@
 
         const [data, setData] = React.useState(cloneInitialData());
         const [selectedCareer, setSelectedCareer] = React.useState("");
+        const [selectedLectiveTerm, setSelectedLectiveTerm] = React.useState("");
 
         const db = window.useDatabaseSync({
             selectedCareer,
@@ -45,6 +46,8 @@
             data,
             selectedCareer,
             setSelectedCareer,
+            selectedLectiveTerm,
+            setSelectedLectiveTerm,
             ...db,
             ...visibility,
             ...career,

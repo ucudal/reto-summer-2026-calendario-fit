@@ -134,6 +134,18 @@
 
         const [selectedLectiveTerm, setSelectedLectiveTerm] = React.useState("");
 
+        React.useEffect(() => {
+            if (!selectedLectiveTerm) return;
+
+            setData(prev => ({
+                ...prev,
+                calendars: prev.calendars.map(calendar => ({
+                    ...calendar,
+                    visible: calendar.lectiveTerm?.idSemestre === selectedLectiveTerm
+                }))
+            }));
+        }, [selectedLectiveTerm, setData]);
+
         const availableLectiveTerms = React.useMemo(() => {
             const seen = new Set();
             const unique = [];

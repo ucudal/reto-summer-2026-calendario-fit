@@ -57,7 +57,7 @@ function CreateSemesterModal(props) {
                   : "-- No hay semestres disponibles --"}
               </option>
               <option value="__blank__">Nuevo semestre en blanco</option>
-              {uniqueLectiveTerms.map((term) => (
+              {availableSemesters.map((term) => (
                 <option key={term.idSemestre} value={term.idSemestre}>{window.AppData.formatLectiveTerm(term)}</option>
               ))}
             </select>
