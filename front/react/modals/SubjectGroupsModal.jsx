@@ -33,6 +33,12 @@ function SubjectGroupsModal(props) {
   const [isSaving, setIsSaving] = React.useState(false);
   const careerDropdownRef = React.useRef(null);
 
+  const subjectName = typeof subject === "string"
+    ? subject
+    : String(subject?.name || subject?.subjectName || "").trim();
+  const editContext = subject && typeof subject === "object" ? subject : null;
+  const isEditMode = Boolean(editContext?.mode === "edit");
+
   // Fallback por si no hay backend de docentes disponible.
   const fallbackTeachers = [
     "Angel Mamberto",
@@ -52,15 +58,17 @@ function SubjectGroupsModal(props) {
   React.useEffect(() => {
     if (!isOpen) return;
 
-    setGroupName("");
+    const draft = editContext?.draft || null;
+
+    setGroupName(String(draft?.groupName || "").trim());
     setTeacherSearch("");
-    setSelectedTeachers([]);
+    setSelectedTeachers(Array.isArray(draft?.selectedTeachers) ? [...draft.selectedTeachers] : []);
     setAvailableTeachers([]);
     setIsCareerDropdownOpen(false);
     setCareerOptions([]);
-    setSelectedCareers([]);
-    setSelectedDays([]);
-    setDayTimeRanges({});
+    setSelectedCareers(Array.isArray(draft?.selectedCareers) ? [...draft.selectedCareers] : []);
+    setSelectedDays(Array.isArray(draft?.selectedDays) ? [...draft.selectedDays] : []);
+    setDayTimeRanges(draft?.dayTimeRanges && typeof draft.dayTimeRanges === "object" ? { ...draft.dayTimeRanges } : {});
     setError("");
     setIsSaving(false);
   }, [isOpen, subject, careers]);
@@ -112,7 +120,7 @@ function SubjectGroupsModal(props) {
   }, [isOpen]);
 
   React.useEffect(() => {
-    if (!isOpen || !subject) return;
+    if (!isOpen || !subjectName) return;
 
     let isCancelled = false;
 
@@ -126,7 +134,7 @@ function SubjectGroupsModal(props) {
           return;
         }
 
-        const response = await window.api.materias.listarCarrerasPlanes(subject);
+        const response = await window.api.materias.listarCarrerasPlanes(subjectName);
         if (isCancelled) return;
 
         if (!response?.success || !Array.isArray(response.data)) {
@@ -153,11 +161,24 @@ function SubjectGroupsModal(props) {
         }
 
         setCareerOptions(unique);
-        setSelectedCareers(unique.map((item) => item.key));
+
+        const preselected = Array.isArray(editContext?.draft?.selectedCareers)
+          ? editContext.draft.selectedCareers.map((value) => String(value || "").trim())
+          : [];
+
+        if (preselected.length > 0) {
+          const availableSet = new Set(unique.map((item) => item.key));
+          const selected = preselected.filter((item) => availableSet.has(item));
+          setSelectedCareers(selected.length > 0 ? selected : unique.map((item) => item.key));
+        } else {
+          setSelectedCareers(unique.map((item) => item.key));
+        }
       } catch (e) {
         if (!isCancelled) {
           setCareerOptions([]);
-          setSelectedCareers([]);
+          if (!Array.isArray(editContext?.draft?.selectedCareers)) {
+            setSelectedCareers([]);
+          }
         }
       }
     }
@@ -167,7 +188,7 @@ function SubjectGroupsModal(props) {
     return () => {
       isCancelled = true;
     };
-  }, [isOpen, subject]);
+  }, [isOpen, subjectName, editContext]);
 
   React.useEffect(() => {
     if (!isOpen || !isCareerDropdownOpen) return;
@@ -183,7 +204,7 @@ function SubjectGroupsModal(props) {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [isOpen, isCareerDropdownOpen]);
 
-  if (!isOpen || !subject) return null;
+  if (!isOpen || !subjectName) return null;
 
   const filteredTeachers = availableTeachers.filter((teacher) => {
     const matches = teacher.toLowerCase().includes(teacherSearch.toLowerCase());
@@ -328,6 +349,53 @@ function SubjectGroupsModal(props) {
     setError("");
     setIsSaving(true);
 
+    const editGroupRef = String(editContext?.draft?.groupRef || groupName.trim()).trim();
+    const editedGroupColor = String(editContext?.draft?.color || "").trim();
+    const payloadSchedules = selectedDays.map((day, index) => {
+      const dayRange = dayTimeRanges[day] || { fromTime: "08:00", toTime: "09:20" };
+      return {
+        id: Date.now() + index,
+        days: [day],
+        fromTime: dayRange.fromTime,
+        toTime: dayRange.toTime,
+        groups: [
+          {
+            id: Date.now() + 1 + index,
+            name: groupName.trim(),
+            groupRef: editGroupRef,
+            teachers: [...selectedTeachers],
+            assignedCareers: [...finalSelectedCareers],
+            color: editedGroupColor
+          }
+        ]
+      };
+    });
+
+    if (isEditMode) {
+      try {
+        if (onSaveGroups) {
+          onSaveGroups(
+            payloadSchedules,
+            subjectName,
+            String(editContext?.selectedYear || "1"),
+            {
+              mode: "edit",
+              calendarId: editContext?.calendarId,
+              groupRef: editGroupRef
+            }
+          );
+        }
+
+        if (onClose) onClose();
+        else onBack();
+      } catch (e) {
+        setError(e?.message || "Ocurrió un error actualizando el grupo.");
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
+
     try {
       if (!window.api?.materias?.listar || !window.api?.grupos?.crear) {
         setError("No está disponible la API de grupos/materias.");
@@ -343,7 +411,7 @@ function SubjectGroupsModal(props) {
       }
 
       const materia = materiasResp.data.find(
-        (m) => String(m.nombre || "").trim().toLowerCase() === String(subject || "").trim().toLowerCase()
+        (m) => String(m.nombre || "").trim().toLowerCase() === String(subjectName || "").trim().toLowerCase()
       );
       if (!materia?.id) {
         setError("No se encontró la materia en la base de datos.");
@@ -427,27 +495,27 @@ function SubjectGroupsModal(props) {
         }
       }
 
-    const payloadSchedules = selectedDays.map((day, index) => {
-      const dayRange = dayTimeRanges[day] || { fromTime: "08:00", toTime: "09:20" };
-      return {
-        id: Date.now() + index,
-        days: [day],
-        fromTime: dayRange.fromTime,
-        toTime: dayRange.toTime,
-        groups: [
-          {
-            id: Date.now() + 1 + index,
-            name: groupName.trim(),
-            teachers: [...selectedTeachers],
-            assignedCareers: [...finalSelectedCareers],
-            color: groupColor
-          }
-        ]
-      };
-    });
+      const payloadSchedules = selectedDays.map((day, index) => {
+        const dayRange = dayTimeRanges[day] || { fromTime: "08:00", toTime: "09:20" };
+        return {
+          id: Date.now() + index,
+          days: [day],
+          fromTime: dayRange.fromTime,
+          toTime: dayRange.toTime,
+          groups: [
+            {
+              id: Date.now() + 1 + index,
+              name: groupName.trim(),
+              teachers: [...selectedTeachers],
+              assignedCareers: [...finalSelectedCareers],
+              color: groupColor
+            }
+          ]
+        };
+      });
 
       if (onSaveGroups) {
-        onSaveGroups(payloadSchedules, subject, String(resolvedYear));
+        onSaveGroups(payloadSchedules, subjectName, String(resolvedYear));
       }
 
       if (onGroupCreated) {
@@ -475,7 +543,7 @@ function SubjectGroupsModal(props) {
     >
       <section className="group-modal groups-list-modal second-step-modal" role="dialog" aria-modal="true">
         <div className="modal-header-with-button">
-          <h2 className="modal-title">Grupos por horario / {subject}</h2>
+          <h2 className="modal-title">Grupos por horario / {subjectName}</h2>
           <button
             type="button"
             className="modal-close-btn"
@@ -623,7 +691,7 @@ function SubjectGroupsModal(props) {
           {error && <div className="modal-error">{error}</div>}
 
           <button type="button" className="add-schedule-btn second-step-submit" onClick={handleAddGroup} disabled={isSaving}>
-            {isSaving ? "Guardando..." : "+ Agregar grupo"}
+            {isSaving ? "Guardando..." : isEditMode ? "Guardar cambios" : "+ Agregar grupo"}
           </button>
         </div>
       </section>
