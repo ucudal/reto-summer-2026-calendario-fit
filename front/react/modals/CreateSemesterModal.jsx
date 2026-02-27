@@ -16,8 +16,6 @@ function CreateSemesterModal(props) {
     onSubmit
   } = props;
 
-  const hasAvailableSemesters = availableSemesters.length > 0;
-
   // Extraer términos lectivos únicos de los calendarios disponibles
   const uniqueLectiveTerms = [...new Set(
     availableSemesters
@@ -26,6 +24,7 @@ function CreateSemesterModal(props) {
   )].sort();
 
   const hasLectiveTerms = uniqueLectiveTerms.length > 0;
+  const yearOptions = Array.from({ length: 10 }, (_, i) => String(2026 + i));
 
   if (!isOpen) return null;
 
@@ -61,6 +60,7 @@ function CreateSemesterModal(props) {
                   ? "-- Seleccione semestre lectivo --"
                   : "-- No hay semestres disponibles --"}
               </option>
+              <option value="__blank__">Nuevo semestre en blanco</option>
               {uniqueLectiveTerms.map((term) => (
                 <option key={term} value={term}>{term}</option>
               ))}
@@ -68,15 +68,30 @@ function CreateSemesterModal(props) {
           </label>
 
           <label className="form-label">
-            Nombre del nuevo semestre lectivo
-            <input
+            Nuevo semestre
+            <select
               className="form-input"
-              type="text"
-              value={form.newLectiveName}
-              onChange={(event) => onChange("newLectiveName", event.target.value)}
-              placeholder="Ej: Primer semestre 2026"
+              value={form.newSemester}
+              onChange={(event) => onChange("newSemester", event.target.value)}
               required
-            />
+            >
+              <option value="1er semestre">1er semestre</option>
+              <option value="2do semestre">2do semestre</option>
+            </select>
+          </label>
+
+          <label className="form-label">
+            Año
+            <select
+              className="form-input"
+              value={form.newYear}
+              onChange={(event) => onChange("newYear", event.target.value)}
+              required
+            >
+              {yearOptions.map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
           </label>
 
           <div className="checkbox-empty">
@@ -88,7 +103,7 @@ function CreateSemesterModal(props) {
           <button
             type="submit"
             className="modal-confirm-btn"
-            disabled={!hasLectiveTerms || !form.sourceLectiveTerm || !form.newLectiveName}
+            disabled={!form.sourceLectiveTerm || !form.newSemester || !form.newYear}
           >
             Crear semestre lectivo
           </button>

@@ -1,7 +1,21 @@
 import { and, asc, eq } from "drizzle-orm";
-import { db } from "../../db/database.js";
-import { carreras, grupos, horarios, materias, profesores } from "../../db/drizzle/schema/base.js";
-import { grupoHorario, materiaCarrera, profesorGrupo } from "../../db/drizzle/schema/links.js";
+import { db, sqlite } from "../../db/database.js";
+import { carreras, grupos, horarios, materias, profesores, semestres } from "../../db/drizzle/schema/base.js";
+import { grupoHorario, profesorGrupo } from "../../db/drizzle/schema/links.js";
+
+function ensureGrupoCarreraTable() {
+  sqlite
+    .prepare(`
+      CREATE TABLE IF NOT EXISTS grupo_carrera (
+        id_grupo INTEGER NOT NULL,
+        id_carrera INTEGER NOT NULL,
+        PRIMARY KEY (id_grupo, id_carrera),
+        FOREIGN KEY (id_grupo) REFERENCES grupos(id) ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY (id_carrera) REFERENCES carreras(id) ON DELETE CASCADE ON UPDATE CASCADE
+      )
+    `)
+    .run();
+}
 
 export function crearGrupo(grupo) {
   return db
@@ -31,6 +45,8 @@ export function obtenerGrupoPorId(id) {
 }
 
 export function listarGrupos() {
+  ensureGrupoCarreraTable();
+
   // Trae grupos + materia + horario(s) para que el front pueda dibujar calendario.
   const rows = db
     .select({
@@ -43,25 +59,26 @@ export function listarGrupos() {
       esContrasemestre: grupos.esContrasemestre,
       cupo: grupos.cupo,
       idSemestre: grupos.idSemestre,
-      grupo: grupos.anio,
+      color: grupos.color,
+      semestreLectivo: semestres.numeroSemestre,
+      anioLectivo: semestres.anio,
       dia: horarios.dia,
       modulo: horarios.modulo
     })
     .from(grupos)
     .leftJoin(materias, eq(materias.id, grupos.idMateria))
+    .leftJoin(semestres, eq(semestres.id, grupos.idSemestre))
     .leftJoin(grupoHorario, eq(grupoHorario.idGrupo, grupos.id))
     .leftJoin(horarios, eq(horarios.id, grupoHorario.idHorario))
     .orderBy(asc(grupos.codigo))
     .all();
 
-  const careerRows = db
-    .select({
-      idGrupo: grupos.id,
-      carreraNombre: carreras.nombre
-    })
-    .from(grupos)
-    .leftJoin(materiaCarrera, eq(materiaCarrera.idMateria, grupos.idMateria))
-    .leftJoin(carreras, eq(carreras.id, materiaCarrera.idCarrera))
+  const careerRows = sqlite
+    .prepare(`
+      SELECT gc.id_grupo AS idGrupo, c.nombre AS carreraNombre
+      FROM grupo_carrera gc
+      INNER JOIN carreras c ON c.id = gc.id_carrera
+    `)
     .all();
 
   const careersByGroup = new Map();
@@ -69,6 +86,25 @@ export function listarGrupos() {
     const groupId = row.idGrupo;
     if (!careersByGroup.has(groupId)) careersByGroup.set(groupId, new Set());
     if (row.carreraNombre) careersByGroup.get(groupId).add(row.carreraNombre);
+  }
+
+  const academicRows = sqlite
+    .prepare(`
+      SELECT gc.id_grupo AS idGrupo, mc.semestre AS semestre, mc.anio AS anio
+      FROM grupo_carrera gc
+      INNER JOIN grupos g ON g.id = gc.id_grupo
+      INNER JOIN materia_carrera mc ON mc.id_materia = g.id_materia AND mc.id_carrera = gc.id_carrera
+      ORDER BY gc.id_grupo ASC
+    `)
+    .all();
+
+  const academicByGroup = new Map();
+  for (const row of academicRows) {
+    if (academicByGroup.has(row.idGrupo)) continue;
+    academicByGroup.set(row.idGrupo, {
+      semestre: Number(row.semestre || 1),
+      anio: Number(row.anio || 1)
+    });
   }
 
   const teacherRows = db
@@ -103,6 +139,10 @@ export function listarGrupos() {
         esContrasemestre: row.esContrasemestre,
         cupo: row.cupo,
         idSemestre: row.idSemestre,
+        semestre: academicByGroup.get(row.id)?.semestre || 1,
+        anio: academicByGroup.get(row.id)?.anio || 1,
+        semestreLectivo: row.semestreLectivo,
+        anioLectivo: row.anioLectivo,
         color: row.color,
         carreras: Array.from(careersByGroup.get(row.id) || []),
         docentes: Array.from(teachersByGroup.get(row.id) || []),
@@ -119,6 +159,45 @@ export function listarGrupos() {
   }
 
   return Array.from(byId.values());
+}
+
+export function asignarCarrerasAGrupo(idGrupo, carrerasNombres = []) {
+  ensureGrupoCarreraTable();
+
+  const nombres = [...new Set((carrerasNombres || []).map((n) => String(n || "").trim()).filter(Boolean))];
+  sqlite.prepare("DELETE FROM grupo_carrera WHERE id_grupo = ?").run(idGrupo);
+  if (nombres.length === 0) return;
+
+  const placeholders = nombres.map(() => "?").join(", ");
+  const rows = sqlite
+    .prepare(`SELECT id, nombre FROM carreras WHERE nombre IN (${placeholders})`)
+    .all(...nombres);
+
+  const insertStmt = sqlite.prepare(
+    "INSERT OR IGNORE INTO grupo_carrera (id_grupo, id_carrera) VALUES (?, ?)"
+  );
+
+  rows.forEach((row) => {
+    insertStmt.run(idGrupo, Number(row.id));
+  });
+}
+
+export function obtenerSemestrePorNumeroYAnio(numeroSemestre, anio) {
+  return db
+    .select({ id: semestres.id })
+    .from(semestres)
+    .where(and(eq(semestres.numeroSemestre, Number(numeroSemestre)), eq(semestres.anio, Number(anio))))
+    .get();
+}
+
+export function crearSemestre(numeroSemestre, anio) {
+  return db
+    .insert(semestres)
+    .values({
+      numeroSemestre: Number(numeroSemestre),
+      anio: Number(anio)
+    })
+    .run();
 }
 
 export function asignarProfesor(data) {
@@ -138,13 +217,37 @@ export function insertarHorarios(idGrupo, horariosPayload) {
   const inserted = [];
 
   for (const h of horariosPayload) {
-    const horarioRow = db
+    let horarioRow = db
       .select({ id: horarios.id })
       .from(horarios)
       .where(and(eq(horarios.modulo, h.modulo), eq(horarios.dia, h.dia)))
       .get();
 
-    if (!horarioRow) continue;
+    // Si la base esta "nueva" y no tiene filas en horarios,
+    // las creamos en el momento para no perder el bloque del grupo.
+    if (!horarioRow) {
+      const createHorario = db
+        .insert(horarios)
+        .values({
+          modulo: Number(h.modulo),
+          dia: String(h.dia)
+        })
+        .run();
+
+      const newHorarioId = Number(createHorario?.lastInsertRowid || 0);
+      if (newHorarioId > 0) {
+        horarioRow = { id: newHorarioId };
+      } else {
+        // Fallback: si no devolvio id, reintentamos lookup.
+        horarioRow = db
+          .select({ id: horarios.id })
+          .from(horarios)
+          .where(and(eq(horarios.modulo, h.modulo), eq(horarios.dia, h.dia)))
+          .get();
+      }
+    }
+
+    if (!horarioRow?.id) continue;
 
     inserted.push(
       db
@@ -159,4 +262,3 @@ export function insertarHorarios(idGrupo, horariosPayload) {
 
   return inserted;
 }
-
