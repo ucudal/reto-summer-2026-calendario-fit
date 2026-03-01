@@ -262,3 +262,7 @@ export function insertarHorarios(idGrupo, horariosPayload) {
 
   return inserted;
 }
+
+export function limpiarHorariosDeGrupo(idGrupo) {
+  return sqlite.prepare("DELETE FROM grupo_horario WHERE id_grupo = ?").run(idGrupo);
+}

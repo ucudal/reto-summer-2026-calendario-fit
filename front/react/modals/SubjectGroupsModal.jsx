@@ -280,6 +280,55 @@ function SubjectGroupsModal(props) {
     return groupColors[usedColors.size % groupColors.length] || "#A0C4FF";
   }
 
+  function toNormalizedCareerList(items) {
+    return [...new Set((items || []).map((value) => String(value || "").trim()).filter(Boolean))].sort();
+  }
+
+  function areCareerListsEqual(a, b) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i += 1) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  }
+
+  function buildDbHorariosPayloadFromSelection() {
+    const payload = [];
+    for (const day of selectedDays) {
+      const dayRange = dayTimeRanges[day] || { fromTime: "08:00", toTime: "09:20" };
+      const startIndex = startTimes.indexOf(dayRange.fromTime);
+      const endIndex = endTimes.indexOf(dayRange.toTime);
+      const dbDay = dayUiToDb(day);
+      if (startIndex < 0 || endIndex < 0 || endIndex < startIndex || !dbDay) continue;
+
+      for (let idx = startIndex; idx <= endIndex; idx += 1) {
+        payload.push({ dia: dbDay, modulo: idx + 1 });
+      }
+    }
+    return payload;
+  }
+
+  function toGroupId(groupRef) {
+    const parsed = Number(String(groupRef || "").trim());
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+  }
+
+  function resolveUniqueGroupCode(baseCode, takenCodes) {
+    const normalizedBase = String(baseCode || "").trim();
+    if (!normalizedBase) return normalizedBase;
+
+    if (!takenCodes.has(normalizedBase.toLowerCase())) return normalizedBase;
+
+    let suffix = 2;
+    while (suffix < 1000) {
+      const candidate = `${normalizedBase}-${suffix}`;
+      if (!takenCodes.has(candidate.toLowerCase())) return candidate;
+      suffix += 1;
+    }
+
+    return `${normalizedBase}-${Date.now()}`;
+  }
+
   async function handleAddGroup() {
     if (isSaving) return;
 
@@ -327,6 +376,182 @@ function SubjectGroupsModal(props) {
 
     setError("");
     setIsSaving(true);
+
+    const editedGroupColor = String(editContext?.draft?.color || "").trim();
+
+    if (isEditMode) {
+      try {
+        if (
+          !window.api?.grupos?.listar ||
+          !window.api?.grupos?.actualizar ||
+          !window.api?.grupos?.crear ||
+          !window.api?.grupos?.agregarHorarios ||
+          !window.api?.grupos?.reemplazarHorarios
+        ) {
+          setError("No está disponible la API de grupos.");
+          setIsSaving(false);
+          return;
+        }
+
+        const originalGroupId = toGroupId(editContext?.draft?.groupRef);
+        if (!originalGroupId) {
+          setError("No se pudo identificar el grupo original a editar.");
+          setIsSaving(false);
+          return;
+        }
+
+        const groupsResp = await window.api.grupos.listar();
+        const allGroups = groupsResp?.success && Array.isArray(groupsResp.data) ? groupsResp.data : [];
+        const originalGroup = allGroups.find((group) => Number(group?.id) === originalGroupId);
+        if (!originalGroup) {
+          setError("No se encontró el grupo original en la base de datos.");
+          setIsSaving(false);
+          return;
+        }
+
+        const originalCareers = toNormalizedCareerList(
+          Array.isArray(originalGroup?.carreras) && originalGroup.carreras.length > 0
+            ? originalGroup.carreras
+            : editContext?.draft?.selectedCareers || []
+        );
+        const selectedCareerList = toNormalizedCareerList(finalSelectedCareers);
+        const sameCareerSelection = areCareerListsEqual(originalCareers, selectedCareerList);
+        const horariosPayload = buildDbHorariosPayloadFromSelection();
+        if (horariosPayload.length === 0) {
+          setError("No se pudo construir el horario para guardar.");
+          setIsSaving(false);
+          return;
+        }
+
+        if (sameCareerSelection) {
+          const updateResp = await window.api.grupos.actualizar({
+            id: originalGroupId,
+            codigo: groupName.trim(),
+            idMateria: Number(originalGroup.idMateria),
+            horasSemestrales: totalModules * 20,
+            esContrasemestre: Boolean(originalGroup.esContrasemestre),
+            cupo: Number(originalGroup.cupo || 30),
+            color: editedGroupColor || String(originalGroup.color || "#A0C4FF"),
+            idSemestre: Number(originalGroup.idSemestre),
+            carreras: selectedCareerList
+          });
+
+          if (!updateResp?.success) {
+            setError(updateResp?.error || "No se pudo actualizar el grupo.");
+            setIsSaving(false);
+            return;
+          }
+
+          const replaceResp = await window.api.grupos.reemplazarHorarios(originalGroupId, horariosPayload);
+          if (!replaceResp?.success) {
+            setError(replaceResp?.error || "No se pudieron reemplazar horarios.");
+            setIsSaving(false);
+            return;
+          }
+        } else {
+          const originalCareerSet = new Set(originalCareers);
+          const splitCareers = selectedCareerList.filter((career) => originalCareerSet.has(career));
+          const remainingCareers = originalCareers.filter((career) => !splitCareers.includes(career));
+
+          if (splitCareers.length === 0) {
+            setError("Selecciona al menos una carrera que pertenezca al grupo original.");
+            setIsSaving(false);
+            return;
+          }
+
+          if (remainingCareers.length === 0) {
+            setError("Para mantener el mismo grupo, selecciona todas las carreras.");
+            setIsSaving(false);
+            return;
+          }
+
+          const takenCodes = new Set(
+            allGroups.map((group) => String(group?.codigo || "").trim().toLowerCase()).filter(Boolean)
+          );
+          const originalCode = String(originalGroup?.codigo || "").trim();
+          const requestedCode = String(groupName || "").trim();
+          if (requestedCode.toLowerCase() !== originalCode.toLowerCase() && takenCodes.has(requestedCode.toLowerCase())) {
+            setError("Ya existe otro grupo con ese nombre/código.");
+            setIsSaving(false);
+            return;
+          }
+          const splitCode =
+            requestedCode.toLowerCase() === originalCode.toLowerCase()
+              ? resolveUniqueGroupCode(requestedCode, takenCodes)
+              : requestedCode;
+
+          if (!splitCode) {
+            setError("No se pudo definir un código para el nuevo grupo.");
+            setIsSaving(false);
+            return;
+          }
+
+          const createResp = await window.api.grupos.crear({
+            codigo: splitCode,
+            idMateria: Number(originalGroup.idMateria),
+            horasSemestrales: totalModules * 20,
+            esContrasemestre: Boolean(originalGroup.esContrasemestre),
+            cupo: Number(originalGroup.cupo || 30),
+            color: editedGroupColor || String(originalGroup.color || "#A0C4FF"),
+            carreras: splitCareers,
+            semestreLectivoNumero: Number(originalGroup.semestreLectivo || 1),
+            anioLectivo: Number(originalGroup.anioLectivo || 2026),
+            semestre: resolvedSemester,
+            anio: resolvedYear
+          });
+
+          if (!createResp?.success) {
+            setError(createResp?.error || "No se pudo crear el nuevo grupo para la carrera seleccionada.");
+            setIsSaving(false);
+            return;
+          }
+
+          const newGroupId = Number(createResp?.data?.id || 0);
+          if (!newGroupId) {
+            setError("No se pudo obtener el ID del nuevo grupo.");
+            setIsSaving(false);
+            return;
+          }
+
+          const horariosResp = await window.api.grupos.agregarHorarios(newGroupId, horariosPayload);
+          if (!horariosResp?.success) {
+            setError(horariosResp?.error || "No se pudieron guardar horarios del nuevo grupo.");
+            setIsSaving(false);
+            return;
+          }
+
+          const originalUpdateResp = await window.api.grupos.actualizar({
+            id: originalGroupId,
+            codigo: originalCode || groupName.trim(),
+            idMateria: Number(originalGroup.idMateria),
+            horasSemestrales: Number(originalGroup.horasSemestrales || 0),
+            esContrasemestre: Boolean(originalGroup.esContrasemestre),
+            cupo: Number(originalGroup.cupo || 30),
+            color: String(originalGroup.color || "#A0C4FF"),
+            idSemestre: Number(originalGroup.idSemestre),
+            carreras: remainingCareers
+          });
+
+          if (!originalUpdateResp?.success) {
+            setError(originalUpdateResp?.error || "No se pudieron actualizar carreras del grupo original.");
+            setIsSaving(false);
+            return;
+          }
+        }
+
+        if (onGroupCreated) {
+          await onGroupCreated();
+        }
+
+        if (onClose) onClose();
+        else onBack();
+      } catch (e) {
+        setError(e?.message || "Ocurrió un error actualizando el grupo.");
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
 
     try {
       if (!window.api?.materias?.listar || !window.api?.grupos?.crear) {

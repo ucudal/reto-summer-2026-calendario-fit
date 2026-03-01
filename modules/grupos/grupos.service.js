@@ -3,6 +3,7 @@ import {
     crearGrupo,
     crearSemestre,
     eliminarGrupo,
+    limpiarHorariosDeGrupo,
     obtenerGrupoPorId,
     obtenerSemestrePorNumeroYAnio,
     modificarGrupo,
@@ -48,7 +49,7 @@ export function actualizarGrupo(data) {
 
   validarGrupo(data);
 
-  return modificarGrupo(data.id, {
+  const result = modificarGrupo(data.id, {
     codigo: data.codigo.trim(),
     idMateria: data.idMateria,
     horasSemestrales: data.horasSemestrales,
@@ -57,6 +58,12 @@ export function actualizarGrupo(data) {
     color: data.color,
     idSemestre: data.idSemestre
   });
+
+  if (Array.isArray(data.carreras)) {
+    asignarCarrerasAGrupo(data.id, data.carreras);
+  }
+
+  return result;
 };
 
 export function bajaGrupo(id) {
@@ -120,6 +127,29 @@ export async function agregarHorarioGrupo(idGrupo, horarios) {
     }
   }
 
+  return await insertarHorarios(idGrupo, horarios);
+}
+
+export async function reemplazarHorariosGrupo(idGrupo, horarios) {
+  if (!idGrupo) {
+    throw new Error("ID de grupo requerido");
+  }
+
+  if (!Array.isArray(horarios) || horarios.length === 0) {
+    throw new Error("Debe enviar horarios");
+  }
+
+  for (const h of horarios) {
+    if (!DIAS_VALIDOS.includes(h.dia.toLowerCase())) {
+      throw new Error(`Día inválido: ${h.dia}`);
+    }
+
+    if (!MODULOS_VALIDOS[h.modulo]) {
+      throw new Error(`Módulo inválido: ${h.modulo}`);
+    }
+  }
+
+  limpiarHorariosDeGrupo(idGrupo);
   return await insertarHorarios(idGrupo, horarios);
 }
 
