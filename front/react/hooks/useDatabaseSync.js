@@ -34,6 +34,9 @@
         function mapDbGroupToClasses(grupo) {
             const horarios = Array.isArray(grupo.horarios) ? grupo.horarios : [];
             const teachers = Array.isArray(grupo.docentes) ? grupo.docentes : [];
+            const careers = Array.isArray(grupo.carreras) ? grupo.carreras : [];
+            const groupCode = String(grupo.codigo || "").trim();
+            const groupRef = String(grupo.id || groupCode || "").trim();
 
             return horarios
                 .map((h) => {
@@ -45,9 +48,12 @@
 
                     return {
                         title: grupo.nombreMateria || `Materia ${grupo.idMateria}`,
+                        group: groupCode,
                         classNumber: String(grupo.codigo || ""),
+                        groupRef,
                         credits: Number(grupo.creditosMateria || 0),
                         teachers,
+                        careers,
                         color: grupo.color || "",
                         day,
                         start: block.start,

@@ -130,6 +130,67 @@ function ScheduleGrid(props) {
     return (unitsBefore / totalUnits) * 100;
   }
 
+  function getClassGroupRef(classItem) {
+    return String(classItem.groupRef || classItem.classNumber || classItem.group || "")
+      .trim()
+      .toLowerCase();
+  }
+
+  function buildEditPayload(classItem) {
+    const calendarId = String(calendar?.id || "");
+    const selectedYearMatch = calendarId.match(/y(\d+)$/i);
+    const selectedYear = selectedYearMatch ? selectedYearMatch[1] : "1";
+    const groupRef = getClassGroupRef(classItem);
+
+    const relatedClasses = calendar.classes.filter((entry) => {
+      if (String(entry?.title || "") !== String(classItem?.title || "")) return false;
+      if (!groupRef) return true;
+      return getClassGroupRef(entry) === groupRef;
+    });
+
+    const daysList = [...new Set(relatedClasses.map((entry) => entry.day).filter(Boolean))];
+    const dayTimeRanges = {};
+    daysList.forEach((day) => {
+      const dayClasses = relatedClasses.filter((entry) => entry.day === day);
+      const startIndexes = dayClasses
+        .map((entry) => timeBlocks.findIndex((block) => block.start === entry.start))
+        .filter((index) => index >= 0);
+      const endIndexes = dayClasses
+        .map((entry) => timeBlocks.findIndex((block) => block.end === entry.end))
+        .filter((index) => index >= 0);
+
+      const minStartIndex = startIndexes.length > 0 ? Math.min(...startIndexes) : -1;
+      const maxEndIndex = endIndexes.length > 0 ? Math.max(...endIndexes) : -1;
+
+      dayTimeRanges[day] = {
+        fromTime: minStartIndex >= 0 ? timeBlocks[minStartIndex]?.start || classItem.start : classItem.start,
+        toTime: maxEndIndex >= 0 ? timeBlocks[maxEndIndex]?.end || classItem.end : classItem.end
+      };
+    });
+
+    return {
+      mode: "edit",
+      subjectName: String(classItem?.title || "").trim(),
+      calendarId,
+      selectedYear,
+      draft: {
+        groupName: String(classItem?.group || classItem?.classNumber || "").trim(),
+        selectedTeachers: Array.isArray(classItem?.teachers) ? [...classItem.teachers] : [],
+        selectedCareers: Array.isArray(classItem?.careers) ? [...classItem.careers] : [],
+        selectedDays: daysList,
+        dayTimeRanges,
+        groupRef: groupRef || String(classItem?.group || classItem?.classNumber || "").trim(),
+        color: classItem?.color || ""
+      }
+    };
+  }
+
+  function handleEventCardClick(classItem) {
+    const payload = buildEditPayload(classItem);
+    if (!payload.subjectName) return;
+    window.SubjectGroupsModalFunctions?.requestOpenSubjectGroupsModal(payload);
+  }
+
   // Funcion local para calcular estilo absoluto de cada bloque.
   function getEventStyle(classItem, classIndex) {
     const dayIndex = days.indexOf(classItem.day);
@@ -202,7 +263,20 @@ function ScheduleGrid(props) {
             }}
           >
             {calendar.classes.map((classItem, index) => (
-              <article key={`${calendar.id}-${index}`} className="event-card" style={getEventStyle(classItem, index)}>
+              <article
+                key={`${calendar.id}-${index}`}
+                className="event-card"
+                style={getEventStyle(classItem, index)}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleEventCardClick(classItem)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    handleEventCardClick(classItem);
+                  }
+                }}
+              >
                 <div className="event-title">{classItem.title}</div>
                 {classItem.classNumber && (
                   <div className="event-meta">N° de clase: {classItem.classNumber}</div>
