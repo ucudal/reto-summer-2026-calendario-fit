@@ -45,6 +45,7 @@ contextBridge.exposeInMainWorld("api", {
     asignarProfesor: (data) => ipcRenderer.invoke("grupos:asignarProfesor", data),
     agregarHorarios: (idGrupo, horarios) => ipcRenderer.invoke("grupos:agregarHorarios", { idGrupo, horarios }),
     reemplazarHorarios: (idGrupo, horarios) => ipcRenderer.invoke("grupos:reemplazarHorarios", { idGrupo, horarios }),
+    reemplazarProfesores: (idGrupo, profesores) => ipcRenderer.invoke("grupos:reemplazarProfesores", { idGrupo, profesores }),
     agregarRequerimientos: (idGrupo, requerimientos) => ipcRenderer.invoke("grupos:agregarRequerimientos", { idGrupo, requerimientos })
   },
 

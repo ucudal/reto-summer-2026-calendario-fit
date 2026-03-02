@@ -4,6 +4,7 @@ import {
     crearGrupo,
     crearSemestre,
     eliminarGrupo,
+    limpiarProfesoresDeGrupo,
     limpiarHorariosDeGrupo,
     obtenerGrupoPorId,
     obtenerSemestrePorNumeroYAnio,
@@ -186,6 +187,37 @@ export async function reemplazarHorariosGrupo(idGrupo, horarios) {
 
   limpiarHorariosDeGrupo(idGrupo);
   return await insertarHorarios(idGrupo, horarios);
+}
+
+export async function reemplazarProfesoresGrupo(idGrupo, profesoresData) {
+  if (!idGrupo) {
+    throw new Error("ID de grupo requerido");
+  }
+  if (!Array.isArray(profesoresData)) {
+    throw new Error("Debe enviar profesores");
+  }
+
+  limpiarProfesoresDeGrupo(idGrupo);
+
+  const inserted = [];
+  for (let i = 0; i < profesoresData.length; i += 1) {
+    const profesor = profesoresData[i] || {};
+    const idProfesor = Number(profesor.idProfesor || 0);
+    if (!idProfesor) {
+      throw new Error("ID de profesor inválido");
+    }
+
+    inserted.push(
+      await asignarProfesor({
+        idProfesor,
+        idGrupo,
+        carga: profesor.carga || (i === 0 ? "Titular" : "Ayudante"),
+        esPrincipal: typeof profesor.esPrincipal === "boolean" ? profesor.esPrincipal : i === 0
+      })
+    );
+  }
+
+  return inserted;
 }
 
 /* export async function agregarRequerimientosGrupo(idGrupo, requerimientos) {

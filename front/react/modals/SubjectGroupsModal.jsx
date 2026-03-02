@@ -426,6 +426,36 @@ function SubjectGroupsModal(props) {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
   }
 
+  async function buildTeacherAssignments() {
+    if (selectedTeachers.length === 0) return [];
+    if (!window.api?.docentes?.listar) return [];
+
+    const docentesResp = await window.api.docentes.listar();
+    const docentes = docentesResp?.success && Array.isArray(docentesResp.data) ? docentesResp.data : [];
+    if (docentes.length === 0) return [];
+
+    const assignments = [];
+    for (let i = 0; i < selectedTeachers.length; i += 1) {
+      const teacherName = selectedTeachers[i];
+      const [nombre = "", ...rest] = String(teacherName).split(" ");
+      const apellido = rest.join(" ").trim();
+      const docente = docentes.find((d) => {
+        const nom = String(d.nombre || "").trim().toLowerCase();
+        const ape = String(d.apellido || "").trim().toLowerCase();
+        return nom === nombre.toLowerCase() && ape === apellido.toLowerCase();
+      });
+      if (!docente?.id) continue;
+
+      assignments.push({
+        idProfesor: Number(docente.id),
+        carga: i === 0 ? "Titular" : "Ayudante",
+        esPrincipal: i === 0
+      });
+    }
+
+    return assignments;
+  }
+
   async function handleAddGroup() {
     if (isSaving) return;
 
@@ -486,7 +516,8 @@ function SubjectGroupsModal(props) {
           !window.api?.grupos?.actualizar ||
           !window.api?.grupos?.crear ||
           !window.api?.grupos?.agregarHorarios ||
-          !window.api?.grupos?.reemplazarHorarios
+          !window.api?.grupos?.reemplazarHorarios ||
+          !window.api?.grupos?.reemplazarProfesores
         ) {
           setError("No está disponible la API de grupos.");
           setIsSaving(false);
@@ -528,6 +559,7 @@ function SubjectGroupsModal(props) {
         }
         const sameCareerSelection = areCareerListsEqual(originalCareers, selectedCareerList);
         const horariosPayload = buildDbHorariosPayloadFromSelection();
+        const teacherAssignments = await buildTeacherAssignments();
         const calendarId = String(editContext?.calendarId || "").trim();
         const editedSemesterMatch = calendarId.match(/s([12])y/i);
         const editedSemester = editedSemesterMatch ? Number(editedSemesterMatch[1]) : resolvedSemester;
@@ -583,6 +615,13 @@ function SubjectGroupsModal(props) {
               setIsSaving(false);
               return;
             }
+
+            const replaceTeachersResp = await window.api.grupos.reemplazarProfesores(siblingId, teacherAssignments);
+            if (!replaceTeachersResp?.success) {
+              setError(replaceTeachersResp?.error || "No se pudieron reemplazar docentes en uno de los grupos vinculados.");
+              setIsSaving(false);
+              return;
+            }
           }
 
           if (onGroupCreated) {
@@ -616,6 +655,13 @@ function SubjectGroupsModal(props) {
           const replaceResp = await window.api.grupos.reemplazarHorarios(originalGroupId, horariosPayload);
           if (!replaceResp?.success) {
             setError(replaceResp?.error || "No se pudieron reemplazar horarios.");
+            setIsSaving(false);
+            return;
+          }
+
+          const replaceTeachersResp = await window.api.grupos.reemplazarProfesores(originalGroupId, teacherAssignments);
+          if (!replaceTeachersResp?.success) {
+            setError(replaceTeachersResp?.error || "No se pudieron reemplazar docentes.");
             setIsSaving(false);
             return;
           }
@@ -676,6 +722,13 @@ function SubjectGroupsModal(props) {
           const horariosResp = await window.api.grupos.agregarHorarios(newGroupId, horariosPayload);
           if (!horariosResp?.success) {
             setError(horariosResp?.error || "No se pudieron guardar horarios del nuevo grupo.");
+            setIsSaving(false);
+            return;
+          }
+
+          const replaceTeachersResp = await window.api.grupos.reemplazarProfesores(newGroupId, teacherAssignments);
+          if (!replaceTeachersResp?.success) {
+            setError(replaceTeachersResp?.error || "No se pudieron guardar docentes del nuevo grupo.");
             setIsSaving(false);
             return;
           }
@@ -798,29 +851,14 @@ function SubjectGroupsModal(props) {
         }
       }
 
-      if (selectedTeachers.length > 0 && window.api?.docentes?.listar && window.api?.grupos?.asignarProfesor) {
-        const docentesResp = await window.api.docentes.listar();
-        const docentes = docentesResp?.success && Array.isArray(docentesResp.data) ? docentesResp.data : [];
-
-        for (let i = 0; i < selectedTeachers.length; i += 1) {
-          const teacherName = selectedTeachers[i];
-          const [nombre = "", ...rest] = String(teacherName).split(" ");
-          const apellido = rest.join(" ").trim();
-          const docente = docentes.find((d) => {
-            const nom = String(d.nombre || "").trim().toLowerCase();
-            const ape = String(d.apellido || "").trim().toLowerCase();
-            return nom === nombre.toLowerCase() && ape === apellido.toLowerCase();
-          });
-
-          if (!docente?.id) continue;
-
-          for (const idGrupo of createdGroupIds) {
-            await window.api.grupos.asignarProfesor({
-              idGrupo,
-              idProfesor: docente.id,
-              carga: i === 0 ? "Titular" : "Ayudante",
-              esPrincipal: i === 0
-            });
+      if (window.api?.grupos?.reemplazarProfesores) {
+        const teacherAssignments = await buildTeacherAssignments();
+        for (const idGrupo of createdGroupIds) {
+          const replaceTeachersResp = await window.api.grupos.reemplazarProfesores(idGrupo, teacherAssignments);
+          if (!replaceTeachersResp?.success) {
+            setError(replaceTeachersResp?.error || "No se pudieron guardar docentes.");
+            setIsSaving(false);
+            return;
           }
         }
       }

@@ -284,9 +284,9 @@ function ScheduleGrid(props) {
                 {Number.isFinite(classItem.credits) && classItem.credits > 0 && (
                   <div className="event-meta">Créditos: {classItem.credits}</div>
                 )}
-                {Array.isArray(classItem.teachers) && classItem.teachers.length > 0 && (
-                  <div className="event-meta">Docente: {classItem.teachers.join(", ")}</div>
-                )}
+                <div className="event-meta">
+                  Docente: {Array.isArray(classItem.teachers) && classItem.teachers.length > 0 ? classItem.teachers.join(", ") : "TBD"}
+                </div>
               </article>
             ))}
           </div>

@@ -245,6 +245,10 @@ export function asignarProfesor(data) {
     .run();
 }
 
+export function limpiarProfesoresDeGrupo(idGrupo) {
+  return sqlite.prepare("DELETE FROM profesor_grupo WHERE id_grupo = ?").run(idGrupo);
+}
+
 export function insertarHorarios(idGrupo, horariosPayload) {
   const inserted = [];
 

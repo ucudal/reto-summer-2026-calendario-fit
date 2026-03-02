@@ -8,7 +8,8 @@ import{
     listarGruposService,
     asignarProfesorGrupo,
     agregarHorarioGrupo,
-    reemplazarHorariosGrupo
+    reemplazarHorariosGrupo,
+    reemplazarProfesoresGrupo
 } from './grupos.service.js';
 
 export function registerGruposHandlers() {
@@ -99,6 +100,16 @@ export function registerGruposHandlers() {
     ipcMain.handle('grupos:reemplazarHorarios', async (event, { idGrupo, horarios }) => {
         try {
             const result = await reemplazarHorariosGrupo(idGrupo, horarios);
+            return { success: true, data: result };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    });
+
+    // Reemplazar todos los profesores de un grupo (permite vaciar)
+    ipcMain.handle('grupos:reemplazarProfesores', async (event, { idGrupo, profesores }) => {
+        try {
+            const result = await reemplazarProfesoresGrupo(idGrupo, profesores);
             return { success: true, data: result };
         } catch (error) {
             return { success: false, error: error.message };
