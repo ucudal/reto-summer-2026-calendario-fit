@@ -39,9 +39,11 @@ export async function runMigrations() {
     const causeMessage = String(error?.cause?.message || "");
     const alreadyExists =
       message.includes("already exists") || causeMessage.includes("already exists");
+    const duplicateColumn =
+      message.includes("duplicate column name") || causeMessage.includes("duplicate column name");
 
-    if (alreadyExists) {
-      console.warn("Migrations skipped: schema ya existe.");
+    if (alreadyExists || duplicateColumn) {
+      console.warn("Migrations skipped: esquema/columnas ya existentes.");
       return;
     }
 

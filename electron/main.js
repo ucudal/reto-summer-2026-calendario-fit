@@ -3,6 +3,7 @@ import { fileURLToPath } from "url";
 import { app, BrowserWindow } from "electron";
 import { initializeDatabase } from "../db/init.js";
 import { runMigrations } from "../db/runMigrations.js";
+import { closeDatabase } from "../db/database.js";
 
 
 //import { runMigrations } from "./db/migrations.js";
@@ -37,7 +38,7 @@ function createWindow() {
 
 app.whenReady().then(async () => {
   try {
-    await runMigrations();
+    // await runMigrations();
     // await initializeDatabase(); @todo eliminar si esta todo ok
     registerAllHandlers();
     createWindow();
@@ -49,4 +50,8 @@ app.whenReady().then(async () => {
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
+});
+
+app.on("before-quit", () => {
+  closeDatabase();
 });

@@ -1,4 +1,4 @@
-import XLSX from "xlsx";
+﻿import XLSX from "xlsx";
 import { sqlite } from "../../db/database.js";
 
 const MODULO_BY_START = {
@@ -16,11 +16,9 @@ const DAY_MAP = {
   lunes: "Lunes",
   martes: "Martes",
   miercoles: "Miercoles",
-  miércoles: "Miercoles",
   jueves: "Jueves",
   viernes: "Viernes",
-  sabado: "Sabado",
-  sábado: "Sabado"
+  sabado: "Sabado"
 };
 
 function normalizeText(value) {
@@ -50,28 +48,99 @@ function inferCarreraFromFilePath(filePath) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
-  if (lower.includes("ambiental")) return "Ingeniería Ambiental";
-  if (lower.includes("informat")) return "Ingeniería Informática";
-  if (lower.includes("industrial")) return "Ingeniería Industrial";
-  if (lower.includes("agronom")) return "Ingeniería Agronómica";
-  if (lower.includes("mecanic")) return "Ingeniería Mecánica";
-  if (lower.includes("civil")) return "Ingeniería Civil";
-  if (lower.includes("biomed")) return "Ingeniería Biomédica";
-  if (lower.includes("electr")) return "Ingeniería Eléctrica, Telecom y Potencia";
+  if (lower.includes("ambiental")) return "IngenierÃ­a Ambiental";
+  if (lower.includes("informat")) return "IngenierÃ­a InformÃ¡tica";
+  if (lower.includes("industrial")) return "IngenierÃ­a Industrial";
+  if (lower.includes("agronom")) return "IngenierÃ­a AgronÃ³mica";
+  if (lower.includes("mecanic")) return "IngenierÃ­a MecÃ¡nica";
+  if (lower.includes("civil")) return "IngenierÃ­a Civil";
+  if (lower.includes("biomed")) return "IngenierÃ­a BiomÃ©dica";
+  if (lower.includes("electr")) return "IngenierÃ­a ElÃ©ctrica, Telecom y Potencia";
   return "";
 }
 
-function parsePlanAndSemestreFromCx(cx) {
+function parsePlanAndSemestreFromCx(cx, fallbackYear = 2026) {
   const value = normalizeText(cx);
   const semMatch = value.match(/Sem(\d+)/i);
-  const planMatch = value.match(/P(\d{4})/i);
+  const planMatch = value.match(/P?(\d{4})/i);
   const semestre = semMatch ? Number(semMatch[1]) : 1;
-  const planYear = planMatch ? Number(planMatch[1]) : 2026;
+  const planYear = planMatch ? Number(planMatch[1]) : fallbackYear;
   return {
     semestre,
     plan: `Plan ${planYear}`,
     anioPlan: planYear
   };
+}
+
+function parsePlanYear(raw, fallbackYear = 2026) {
+  const value = normalizeText(raw);
+  if (!value) return fallbackYear;
+  const match = value.match(/(20\d{2})/);
+  if (match) return Number(match[1]);
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && numeric >= 2000 && numeric <= 2100) return Math.trunc(numeric);
+  return fallbackYear;
+}
+
+function normalizePlanLabel(raw, year) {
+  const value = normalizeText(raw);
+  if (!value) return `Plan ${year}`;
+  if (/^\d{4}$/.test(value)) return `Plan ${value}`;
+  return value;
+}
+
+function parseCarreraFromPlan(raw) {
+  const value = normalizeText(raw);
+  if (!value) return "";
+  const withoutYear = value
+    .replace(/20\d{2}/g, " ")
+    .replace(/\bplan\b/gi, " ")
+    .replace(/[-_/|]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return withoutYear;
+}
+
+function parseSemestreNumber(raw, fallbackSemestre = 1) {
+  const value = normalizeText(raw);
+  if (!value) return fallbackSemestre;
+  const match = value.match(/(\d{1,2})/);
+  if (!match) return fallbackSemestre;
+  const semestre = Number(match[1]);
+  return Number.isFinite(semestre) && semestre > 0 ? semestre : fallbackSemestre;
+}
+
+function parsePlanAndSemestre({ cx, plan, semestre, fallbackYear = 2026 }) {
+  const fromCx = parsePlanAndSemestreFromCx(cx, fallbackYear);
+  const planYear = parsePlanYear(plan, fromCx.anioPlan);
+  const semestreNumero = parseSemestreNumber(semestre, fromCx.semestre);
+  return {
+    semestre: semestreNumero,
+    plan: normalizePlanLabel(plan, planYear),
+    anioPlan: planYear
+  };
+}
+
+function getCell(row, index) {
+  return index >= 0 ? row[index] : "";
+}
+
+function resolveCarreraNombre({ rowCarrera, plan, fallbackCarrera }) {
+  return normalizeText(rowCarrera) || parseCarreraFromPlan(plan) || normalizeText(fallbackCarrera);
+}
+
+function ensureGrupoCarreraTable() {
+  sqlite
+    .prepare(`
+      CREATE TABLE IF NOT EXISTS grupo_carrera (
+        id_grupo INTEGER NOT NULL,
+        id_carrera INTEGER NOT NULL,
+        PRIMARY KEY (id_grupo, id_carrera),
+        FOREIGN KEY (id_grupo) REFERENCES grupos(id) ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY (id_carrera) REFERENCES carreras(id) ON DELETE CASCADE ON UPDATE CASCADE
+      )
+    `)
+    .run();
 }
 
 function parseTipo(raw) {
@@ -118,7 +187,10 @@ function extractStartTime(timeCell) {
 }
 
 function detectDay(text) {
-  const raw = normalizeText(text).toLowerCase();
+  const raw = normalizeText(text)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
   if (!raw) return "";
   for (const key of Object.keys(DAY_MAP)) {
     if (raw.includes(key)) return DAY_MAP[key];
@@ -148,7 +220,7 @@ function findStartForCell(rows, rowIndex) {
 
 function buildHorarioMap(workbook) {
   const map = new Map();
-  const ignoredSheets = new Set(["Módulos", "Listas", "Paleta", "Requerimientos matemática"]);
+  const ignoredSheets = new Set(["MÃ³dulos", "Listas", "Paleta", "Requerimientos matemÃ¡tica"]);
   for (const sheetName of workbook.SheetNames) {
     if (ignoredSheets.has(sheetName)) continue;
     const ws = workbook.Sheets[sheetName];
@@ -232,6 +304,8 @@ function getModuloSheet(workbook) {
   if (!workbook?.Sheets) return null;
   if (workbook.Sheets["Módulos"]) return workbook.Sheets["Módulos"];
   if (workbook.Sheets["Modulos"]) return workbook.Sheets["Modulos"];
+  if (workbook.Sheets["DatosBD"]) return workbook.Sheets["DatosBD"];
+  if (workbook.Sheets["Datos"]) return workbook.Sheets["Datos"];
   const key = Object.keys(workbook.Sheets).find(
     (name) =>
       normalizeText(name)
@@ -239,7 +313,9 @@ function getModuloSheet(workbook) {
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "") === "modulos"
   );
-  return key ? workbook.Sheets[key] : null;
+  if (key) return workbook.Sheets[key];
+  const firstDataSheet = workbook.SheetNames.find((name) => normalizeText(name).toLowerCase() !== "fuentes");
+  return firstDataSheet ? workbook.Sheets[firstDataSheet] : null;
 }
 
 function normalizeEmail(value) {
@@ -252,10 +328,11 @@ function isValidEmail(value) {
 }
 
 export function importarModulosDesdeExcel(filePath, options = {}) {
+  ensureGrupoCarreraTable();
   const workbook = XLSX.readFile(filePath, { cellDates: true });
   const moduloSheet = getModuloSheet(workbook);
   if (!moduloSheet) {
-    throw new Error("No se encontro la hoja 'Módulos' en el Excel");
+    throw new Error("No se encontro la hoja 'MÃ³dulos' en el Excel");
   }
 
   const rows = XLSX.utils.sheet_to_json(moduloSheet, { header: 1, defval: null, raw: false });
@@ -263,32 +340,38 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
   const dataRows = rows
     .slice(1)
     .filter((row) => row.some((cell) => normalizeText(cell) !== ""))
-    .filter((row) => normalizeText(row[headerIndex(headers, "Curso")]) !== "");
+    .filter((row) => normalizeText(row[headerIndex(headers, ["Curso", "materia_nombre", "Materia nombre"])]) !== "");
 
   const idx = {
-    carrera: headerIndex(headers, ["Carrera", "Nombre carrera"]),
+    carrera: headerIndex(headers, ["Carrera", "Nombre carrera", "carrera_nombre"]),
     cx: headerIndex(headers, ["cx", "cx "]),
-    curso: headerIndex(headers, ["Curso"]),
-    tipo: headerIndex(headers, ["Tipo"]),
-    horas: headerIndex(headers, ["Horas"]),
-    idClase: headerIndex(headers, ["ID Clase", "Id Clase", "IDClase"]),
-    cupo: headerIndex(headers, ["Cupo"]),
+    plan: headerIndex(headers, ["Plan", "Plan de estudios", "Plan anio", "Plan año", "plan_nombre", "plan_anio"]),
+    semestre: headerIndex(headers, ["Semestre", "Numero semestre", "Nro semestre", "plan_semestre"]),
+    curso: headerIndex(headers, ["Curso", "materia_nombre", "Materia nombre"]),
+    tipo: headerIndex(headers, ["Tipo", "materia_tipo"]),
+    horas: headerIndex(headers, ["Horas", "Horas anuales", "grupo_horas_semestrales", "grupo_horas_anuales"]),
+    idClase: headerIndex(headers, ["ID Clase", "Id Clase", "IDClase", "Codigo", "Código", "grupo_codigo"]),
+    cupo: headerIndex(headers, ["Cupo", "grupo_cupo"]),
+    color: headerIndex(headers, ["Color", "grupo_color"]),
     /* requerimiento: headerIndex(headers, [
-      "Requerim. salón",
+      "Requerim. salÃ³n",
       "Requerim. salon",
-      "Requerimiento salón",
+      "Requerimiento salÃ³n",
       "Requerimiento salon",
       "Requerimientos",
-      "Req salón",
+      "Req salÃ³n",
       "Req salon"
     ]), */
-    salon: headerIndex(headers, ["Salón", "Salon", "Salones", "Aula", "Aulas"]),
-    creditos: headerIndex(headers, ["Créditos", "Creditos"]),
+    salon: headerIndex(headers, ["Salón", "Salon", "Salones", "Aula", "Aulas", "salones"]),
+    salonNombre: headerIndex(headers, ["Nombre salon", "Nombre salon", "Nombre salon/aula"]),
+    salonEdificio: headerIndex(headers, ["Edificio"]),
+    salonAforo: headerIndex(headers, ["Aforo"]),
+    creditos: headerIndex(headers, ["Créditos", "Creditos", "materia_creditos"]),
     prof1: headerIndex(headers, ["Prof 1", "Profesor 1"]),
     prof2: headerIndex(headers, ["Prof 2", "Profesor 2"]),
     prof3: headerIndex(headers, ["Prof 3", "Profesor 3"]),
     asis1: headerIndex(headers, ["Asis 1", "Asistente 1"]),
-    correo: headerIndex(headers, ["Correo", "Email", "Mail"]),
+    correo: headerIndex(headers, ["Correo", "Email", "Mail", "docentes"]),
     correo1: headerIndex(headers, ["Correo 1", "Email 1", "Correo Prof 1", "Mail Prof 1"]),
     correo2: headerIndex(headers, ["Correo 2", "Email 2", "Correo Prof 2", "Mail Prof 2"]),
     correo3: headerIndex(headers, ["Correo 3", "Email 3", "Correo Prof 3", "Mail Prof 3"]),
@@ -296,16 +379,19 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
   };
 
   if (idx.curso < 0 || idx.idClase < 0) {
-    throw new Error("La hoja 'Módulos' no tiene columnas requeridas (Curso / ID Clase)");
+    throw new Error("La hoja 'MÃ³dulos' no tiene columnas requeridas (Curso / ID Clase)");
   }
 
   const inferredCareer = inferCarreraFromFilePath(filePath);
-  const carreraNombre = options.carreraNombre || inferredCareer || "Ingeniería Informática";
+  const carreraNombre = options.carreraNombre || inferredCareer || "IngenierÃ­a InformÃ¡tica";
   const anioLectivo = parseYearFromFileName(filePath);
   const horarioMap = buildHorarioMap(workbook);
 
   const getCarrera = sqlite.prepare("SELECT id FROM carreras WHERE nombre = ?");
   const insertCarrera = sqlite.prepare("INSERT INTO carreras (nombre) VALUES (?)");
+  const linkGrupoCarrera = sqlite.prepare(
+    "INSERT OR IGNORE INTO grupo_carrera (id_grupo, id_carrera) VALUES (?, ?)"
+  );
   const getSemestre = sqlite.prepare(
     "SELECT id FROM semestres WHERE numero_semestre = ? AND anio = ?"
   );
@@ -379,6 +465,7 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
     },
     linked: {
       materiaCarrera: 0,
+      grupoCarrera: 0,
       profesorGrupo: 0,
       grupoReq: 0,
       grupoHorario: 0,
@@ -401,33 +488,56 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
       summary.warnings.push("No se encontro columna de salon/aula en la hoja Modulos.");
     }
 
-    let carrera = getCarrera.get(carreraNombre);
-    if (!carrera) {
-      const result = insertCarrera.run(carreraNombre);
-      carrera = { id: Number(result.lastInsertRowid) };
-      summary.inserted.carreras += 1;
-    }
+    const carreraCache = new Map();
+    const ensureCarrera = (name) => {
+      const normalized = normalizeText(name);
+      if (!normalized) return null;
+      if (carreraCache.has(normalized)) return carreraCache.get(normalized);
+      let carrera = getCarrera.get(normalized);
+      if (!carrera) {
+        const result = insertCarrera.run(normalized);
+        carrera = { id: Number(result.lastInsertRowid) };
+        summary.inserted.carreras += 1;
+      }
+      carreraCache.set(normalized, carrera);
+      return carrera;
+    };
 
     const usedEmails = new Set();
 
     for (const row of dataRows) {
-      const curso = normalizeText(row[idx.curso]);
-      const idClase = normalizeText(row[idx.idClase]).toUpperCase();
-      const horas = parseFloatSafe(row[idx.horas], 0);
-      const cupo = parseIntSafe(row[idx.cupo], 0);
-      const tipo = parseTipo(row[idx.tipo]);
-      const creditos = parseIntSafe(row[idx.creditos], 0);
-      const cx = normalizeText(row[idx.cx]);
+      const curso = normalizeText(getCell(row, idx.curso));
+      const idClase = normalizeText(getCell(row, idx.idClase)).toUpperCase();
+      const horas = parseFloatSafe(getCell(row, idx.horas), 0);
+      const cupo = parseIntSafe(getCell(row, idx.cupo), 0);
+      const tipo = parseTipo(getCell(row, idx.tipo));
+      const creditos = parseIntSafe(getCell(row, idx.creditos), 0);
+      const cx = normalizeText(getCell(row, idx.cx));
+      const planRaw = normalizeText(getCell(row, idx.plan));
+      const semestreRaw = normalizeText(getCell(row, idx.semestre));
+      const rowCarreraRaw = normalizeText(getCell(row, idx.carrera));
 
       if (!idClase) {
         summary.skipped.rowsWithoutClassId += 1;
         continue;
       }
 
-      const planData = parsePlanAndSemestreFromCx(cx);
-      let semestre = getSemestre.get(planData.semestre, anioLectivo);
+      const planData = parsePlanAndSemestre({
+        cx,
+        plan: planRaw,
+        semestre: semestreRaw,
+        fallbackYear: anioLectivo
+      });
+      const carreraRowName = resolveCarreraNombre({
+        rowCarrera: rowCarreraRaw,
+        plan: planData.plan,
+        fallbackCarrera: carreraNombre
+      });
+      const carrera = ensureCarrera(carreraRowName || carreraNombre);
+      if (!carrera) continue;
+      let semestre = getSemestre.get(planData.semestre, planData.anioPlan);
       if (!semestre) {
-        const semResult = insertSemestre.run(planData.semestre, anioLectivo);
+        const semResult = insertSemestre.run(planData.semestre, planData.anioPlan);
         semestre = { id: Number(semResult.lastInsertRowid) };
         summary.inserted.semestres += 1;
       }
@@ -466,7 +576,7 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
           String(horas),
           cupo || null,
           semestre.id,
-          normalizeText(options.color) || "#2563EB"
+          normalizeText(getCell(row, idx.color)) || normalizeText(options.color) || "#2563EB"
         );
         grupo = { id: Number(grupoResult.lastInsertRowid) };
         summary.inserted.grupos += 1;
@@ -476,10 +586,13 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
           String(horas),
           cupo || null,
           semestre.id,
-          normalizeText(options.color) || "#2563EB",
+          normalizeText(getCell(row, idx.color)) || normalizeText(options.color) || "#2563EB",
           grupo.id
         );
       }
+
+      const linkGrupoCarreraResult = linkGrupoCarrera.run(grupo.id, carrera.id);
+      if (linkGrupoCarreraResult.changes > 0) summary.linked.grupoCarrera += 1;
 
       const docentes = [
         {
@@ -555,13 +668,18 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
         reqIds.push(req.id);
       } */
 
-      const salones = parseSalonCell(row[idx.salon]);
+      const directSalonNombre = normalizeText(getCell(row, idx.salonNombre));
+      const directSalonEdificio = normalizeText(getCell(row, idx.salonEdificio)) || "Sin edificio";
+      const directSalonAforo = parseIntSafe(getCell(row, idx.salonAforo), 0);
+      const salones = directSalonNombre
+        ? [{ nombre: directSalonNombre, edificio: directSalonEdificio, aforo: directSalonAforo }]
+        : parseSalonCell(getCell(row, idx.salon)).map((s) => ({ ...s, aforo: 0 }));
       for (const salonData of salones) {
         let salon =
           getSalonByNombreEdificio.get(salonData.nombre, salonData.edificio) ||
           getSalonByNombre.get(salonData.nombre);
         if (!salon) {
-          const salonResult = insertSalon.run(salonData.nombre, salonData.edificio, 0);
+          const salonResult = insertSalon.run(salonData.nombre, salonData.edificio, salonData.aforo || 0);
           salon = { id: Number(salonResult.lastInsertRowid) };
           summary.inserted.salones += 1;
         }
@@ -600,10 +718,11 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
 }
 
 export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
+  ensureGrupoCarreraTable();
   const workbook = XLSX.readFile(filePath, { cellDates: true });
   const moduloSheet = getModuloSheet(workbook);
   if (!moduloSheet) {
-    throw new Error("No se encontro la hoja 'Módulos' en el Excel");
+    throw new Error("No se encontro la hoja 'MÃ³dulos' en el Excel");
   }
 
   const entity = normalizeText(options.entity).toLowerCase();
@@ -627,29 +746,40 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
     .filter((row) => row.some((cell) => normalizeText(cell) !== ""));
 
   const idx = {
+    carrera: headerIndex(headers, ["Carrera", "Nombre carrera", "carrera_nombre"]),
     cx: headerIndex(headers, ["cx", "cx "]),
-    curso: headerIndex(headers, ["Curso"]),
-    tipo: headerIndex(headers, ["Tipo"]),
-    horas: headerIndex(headers, ["Horas"]),
-    idClase: headerIndex(headers, ["ID Clase", "Id Clase", "IDClase"]),
-    cupo: headerIndex(headers, ["Cupo"]),
+    plan: headerIndex(headers, ["Plan", "Plan de estudios", "Plan anio", "Plan año", "plan_nombre", "plan_anio"]),
+    semestre: headerIndex(headers, ["Semestre", "Numero semestre", "Nro semestre", "plan_semestre"]),
+    curso: headerIndex(headers, ["Curso", "materia_nombre", "Materia nombre"]),
+    tipo: headerIndex(headers, ["Tipo", "materia_tipo"]),
+    horas: headerIndex(headers, ["Horas", "Horas anuales", "grupo_horas_semestrales", "grupo_horas_anuales"]),
+    idClase: headerIndex(headers, ["ID Clase", "Id Clase", "IDClase", "Codigo", "Código", "grupo_codigo"]),
+    cupo: headerIndex(headers, ["Cupo", "grupo_cupo"]),
     requerimiento: headerIndex(headers, [
-      "Requerim. salÃ³n",
+      "Requerim. salÃƒÂ³n",
       "Requerim. salon",
-      "Requerimiento salÃ³n",
+      "Requerimiento salÃƒÂ³n",
       "Requerimiento salon",
       "Requerimientos",
-      "Req salÃ³n",
+      "Req salÃƒÂ³n",
       "Req salon"
     ]),
-    salon: headerIndex(headers, ["SalÃ³n", "Salon", "Salones", "Aula", "Aulas"]),
-    creditos: headerIndex(headers, ["CrÃ©ditos", "Creditos"]),
-    profesor: headerIndex(headers, ["Profesor", "Docente", "Nombre completo"]),
+    salon: headerIndex(headers, ["Salón", "Salon", "Salones", "Aula", "Aulas", "salones"]),
+    salonNombre: headerIndex(headers, ["Nombre salon", "Nombre salÃƒÂ³n", "Nombre salon/aula"]),
+    salonEdificio: headerIndex(headers, ["Edificio"]),
+    salonAforo: headerIndex(headers, ["Aforo"]),
+    dia: headerIndex(headers, ["Dia", "DÃ­a"]),
+    modulo: headerIndex(headers, ["Modulo", "MÃ³dulo"]),
+    color: headerIndex(headers, ["Color", "grupo_color"]),
+    creditos: headerIndex(headers, ["Créditos", "Creditos", "materia_creditos"]),
+    profesor: headerIndex(headers, ["Profesor", "Docente", "Nombre completo", "docentes"]),
+    nombre: headerIndex(headers, ["Nombre"]),
+    apellido: headerIndex(headers, ["Apellido"]),
     prof1: headerIndex(headers, ["Prof 1", "Profesor 1"]),
     prof2: headerIndex(headers, ["Prof 2", "Profesor 2"]),
     prof3: headerIndex(headers, ["Prof 3", "Profesor 3"]),
     asis1: headerIndex(headers, ["Asis 1", "Asistente 1"]),
-    correo: headerIndex(headers, ["Correo", "Email", "Mail"]),
+    correo: headerIndex(headers, ["Correo", "Email", "Mail", "docentes"]),
     correo1: headerIndex(headers, ["Correo 1", "Email 1", "Correo Prof 1", "Mail Prof 1"]),
     correo2: headerIndex(headers, ["Correo 2", "Email 2", "Correo Prof 2", "Mail Prof 2"]),
     correo3: headerIndex(headers, ["Correo 3", "Email 3", "Correo Prof 3", "Mail Prof 3"]),
@@ -657,12 +787,15 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
   };
 
   const inferredCareer = inferCarreraFromFilePath(filePath);
-  const carreraNombre = options.carreraNombre || inferredCareer || "IngenierÃ­a InformÃ¡tica";
+  const carreraNombre = options.carreraNombre || inferredCareer || "IngenierÃƒÂ­a InformÃƒÂ¡tica";
   const anioLectivo = parseYearFromFileName(filePath);
   const horarioMap = entity === "horarios" ? buildHorarioMap(workbook) : null;
 
   const getCarrera = sqlite.prepare("SELECT id FROM carreras WHERE nombre = ?");
   const insertCarrera = sqlite.prepare("INSERT INTO carreras (nombre) VALUES (?)");
+  const linkGrupoCarrera = sqlite.prepare(
+    "INSERT OR IGNORE INTO grupo_carrera (id_grupo, id_carrera) VALUES (?, ?)"
+  );
 
   const getSemestre = sqlite.prepare(
     "SELECT id FROM semestres WHERE numero_semestre = ? AND anio = ?"
@@ -677,6 +810,12 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
   );
   const updateMateria = sqlite.prepare(
     "UPDATE materias SET tipo = ?, creditos = ?, requerimientosSalon = ? WHERE id = ?"
+  );
+  const linkMateriaCarrera = sqlite.prepare(
+    "INSERT OR IGNORE INTO materia_carrera (id_materia, id_carrera, plan, semestre, anio) VALUES (?, ?, ?, ?, ?)"
+  );
+  const updateMateriaCarrera = sqlite.prepare(
+    "UPDATE materia_carrera SET plan = ?, semestre = ?, anio = ? WHERE id_materia = ? AND id_carrera = ?"
   );
 
   const getGrupo = sqlite.prepare("SELECT id FROM grupos WHERE codigo = ?");
@@ -737,8 +876,9 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
       const seen = new Set();
       for (const row of dataRows) {
         const fromRow = normalizeText(row[idx.carrera >= 0 ? idx.carrera : -1]);
+        const fromPlan = parseCarreraFromPlan(normalizeText(row[idx.plan >= 0 ? idx.plan : -1]));
         const fromCurso = normalizeText(row[idx.curso >= 0 ? idx.curso : -1]);
-        const candidate = fromRow || fromCurso || carreraNombre;
+        const candidate = fromRow || fromPlan || fromCurso || carreraNombre;
         if (!candidate || seen.has(candidate.toLowerCase())) continue;
         seen.add(candidate.toLowerCase());
         if (!getCarrera.get(candidate)) {
@@ -750,30 +890,53 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
     }
 
     const usedEmails = new Set();
+    const carreraCache = new Map();
+    const ensureCarrera = (name) => {
+      const normalized = normalizeText(name);
+      if (!normalized) return null;
+      if (carreraCache.has(normalized)) return carreraCache.get(normalized);
+      let carrera = getCarrera.get(normalized);
+      if (!carrera) {
+        const result = insertCarrera.run(normalized);
+        carrera = { id: Number(result.lastInsertRowid) };
+        summary.inserted.carreras += 1;
+      }
+      carreraCache.set(normalized, carrera);
+      return carrera;
+    };
 
     for (const row of dataRows) {
-      const curso = normalizeText(row[idx.curso]);
-      const idClase = normalizeText(row[idx.idClase]).toUpperCase();
-      const horas = parseFloatSafe(row[idx.horas], 0);
-      const cupo = parseIntSafe(row[idx.cupo], 0);
-      const tipo = parseTipo(row[idx.tipo]);
-      const creditos = parseIntSafe(row[idx.creditos], 0);
-      const cx = normalizeText(row[idx.cx]);
-      const req = idx.requerimiento >= 0 ? normalizeText(row[idx.requerimiento]) : "";
+      const curso = normalizeText(getCell(row, idx.curso));
+      const idClase = normalizeText(getCell(row, idx.idClase)).toUpperCase();
+      const horas = parseFloatSafe(getCell(row, idx.horas), 0);
+      const cupo = parseIntSafe(getCell(row, idx.cupo), 0);
+      const tipo = parseTipo(getCell(row, idx.tipo));
+      const creditos = parseIntSafe(getCell(row, idx.creditos), 0);
+      const cx = normalizeText(getCell(row, idx.cx));
+      const planRaw = normalizeText(getCell(row, idx.plan));
+      const semestreRaw = normalizeText(getCell(row, idx.semestre));
+      const rowCarreraRaw = normalizeText(getCell(row, idx.carrera));
+      const req = idx.requerimiento >= 0 ? normalizeText(getCell(row, idx.requerimiento)) : "";
 
       if ((entity === "materias" || entity === "grupos") && !curso) {
         summary.skipped.rowsWithoutCourse += 1;
         continue;
       }
 
-      if ((entity === "grupos" || entity === "horarios") && !idClase) {
+      const hasHorarioDirecto = normalizeText(getCell(row, idx.dia)) !== "" && parseIntSafe(getCell(row, idx.modulo), 0) > 0;
+      if ((entity === "grupos" || (entity === "horarios" && !hasHorarioDirecto)) && !idClase) {
         summary.skipped.rowsWithoutClassId += 1;
         continue;
       }
 
       let planData = null;
-      if (entity === "semestres" || entity === "grupos") {
-        planData = parsePlanAndSemestreFromCx(cx);
+      if (entity === "semestres" || entity === "grupos" || entity === "materias") {
+        planData = parsePlanAndSemestre({
+          cx,
+          plan: planRaw,
+          semestre: semestreRaw,
+          fallbackYear: anioLectivo
+        });
         if (!planData?.semestre) {
           summary.skipped.rowsWithoutSemestre += 1;
           continue;
@@ -781,17 +944,29 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
       }
 
       if (entity === "semestres") {
-        if (!getSemestre.get(planData.semestre, anioLectivo)) {
-          insertSemestre.run(planData.semestre, anioLectivo);
+        if (!getSemestre.get(planData.semestre, planData.anioPlan)) {
+          insertSemestre.run(planData.semestre, planData.anioPlan);
           summary.inserted.semestres += 1;
         }
         continue;
       }
 
       if (entity === "materias") {
+        const carreraRowName = resolveCarreraNombre({
+          rowCarrera: rowCarreraRaw,
+          plan: planData?.plan || planRaw,
+          fallbackCarrera: carreraNombre
+        });
+        const carrera = ensureCarrera(carreraRowName || carreraNombre);
+        if (!carrera) {
+          summary.skipped.rowsWithoutCourse += 1;
+          continue;
+        }
+
         let materia = getMateria.get(curso);
         if (!materia) {
-          insertMateria.run(tipo || "Semestral", creditos || 0, curso, req || null);
+          const materiaResult = insertMateria.run(tipo || "Semestral", creditos || 0, curso, req || null);
+          materia = { id: Number(materiaResult.lastInsertRowid) };
           summary.inserted.materias += 1;
         } else {
           updateMateria.run(
@@ -802,10 +977,38 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
           );
           summary.updated.materias += 1;
         }
+
+        const mcResult = linkMateriaCarrera.run(
+          materia.id,
+          carrera.id,
+          planData.plan,
+          planData.semestre,
+          planData.anioPlan
+        );
+        if (mcResult.changes === 0) {
+          updateMateriaCarrera.run(
+            planData.plan,
+            planData.semestre,
+            planData.anioPlan,
+            materia.id,
+            carrera.id
+          );
+        }
         continue;
       }
 
       if (entity === "grupos") {
+        const carreraRowName = resolveCarreraNombre({
+          rowCarrera: normalizeText(getCell(row, idx.carrera)),
+          plan: planData?.plan || planRaw,
+          fallbackCarrera: carreraNombre
+        });
+        const carrera = ensureCarrera(carreraRowName || carreraNombre);
+        if (!carrera) {
+          summary.skipped.rowsWithoutCourse += 1;
+          continue;
+        }
+
         let materia = getMateria.get(curso);
         if (!materia) {
           const materiaResult = insertMateria.run(tipo || "Semestral", creditos || 0, curso, req || null);
@@ -813,17 +1016,18 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
           summary.inserted.materias += 1;
         }
 
-        let semestre = getSemestre.get(planData.semestre, anioLectivo);
+        let semestre = getSemestre.get(planData.semestre, planData.anioPlan);
         if (!semestre) {
-          const semResult = insertSemestre.run(planData.semestre, anioLectivo);
+          const semResult = insertSemestre.run(planData.semestre, planData.anioPlan);
           semestre = { id: Number(semResult.lastInsertRowid) };
           summary.inserted.semestres += 1;
         }
 
-        const color = normalizeText(options.color) || "#2563EB";
+        const color = normalizeText(getCell(row, idx.color)) || normalizeText(options.color) || "#2563EB";
         const grupo = getGrupo.get(idClase);
+        let grupoId = null;
         if (!grupo) {
-          insertGrupo.run(
+          const result = insertGrupo.run(
             idClase,
             materia.id,
             String(horas),
@@ -831,8 +1035,10 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
             semestre.id,
             color
           );
+          grupoId = Number(result.lastInsertRowid);
           summary.inserted.grupos += 1;
         } else {
+          grupoId = Number(grupo.id);
           updateGrupo.run(
             materia.id,
             String(horas),
@@ -843,30 +1049,37 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
           );
           summary.updated.grupos += 1;
         }
+
+        if (grupoId) {
+          linkGrupoCarrera.run(grupoId, carrera.id);
+        }
         continue;
       }
 
       if (entity === "profesores") {
+        const nombreSimple = normalizeText(getCell(row, idx.nombre));
+        const apellidoSimple = normalizeText(getCell(row, idx.apellido));
+        const nombreCompletoSimple = `${nombreSimple} ${apellidoSimple}`.trim();
         const docentes = [
           {
-            nombreCompleto: normalizeText(row[idx.profesor]),
-            correoPreferido: normalizeText(row[idx.correo])
+            nombreCompleto: normalizeText(getCell(row, idx.profesor)) || nombreCompletoSimple,
+            correoPreferido: normalizeText(getCell(row, idx.correo))
           },
           {
-            nombreCompleto: normalizeText(row[idx.prof1]),
-            correoPreferido: normalizeText(row[idx.correo1 >= 0 ? idx.correo1 : idx.correo])
+            nombreCompleto: normalizeText(getCell(row, idx.prof1)),
+            correoPreferido: normalizeText(getCell(row, idx.correo1 >= 0 ? idx.correo1 : idx.correo))
           },
           {
-            nombreCompleto: normalizeText(row[idx.prof2]),
-            correoPreferido: normalizeText(row[idx.correo2 >= 0 ? idx.correo2 : -1])
+            nombreCompleto: normalizeText(getCell(row, idx.prof2)),
+            correoPreferido: normalizeText(getCell(row, idx.correo2 >= 0 ? idx.correo2 : -1))
           },
           {
-            nombreCompleto: normalizeText(row[idx.prof3]),
-            correoPreferido: normalizeText(row[idx.correo3 >= 0 ? idx.correo3 : -1])
+            nombreCompleto: normalizeText(getCell(row, idx.prof3)),
+            correoPreferido: normalizeText(getCell(row, idx.correo3 >= 0 ? idx.correo3 : -1))
           },
           {
-            nombreCompleto: normalizeText(row[idx.asis1]),
-            correoPreferido: normalizeText(row[idx.correoAsis1 >= 0 ? idx.correoAsis1 : -1])
+            nombreCompleto: normalizeText(getCell(row, idx.asis1)),
+            correoPreferido: normalizeText(getCell(row, idx.correoAsis1 >= 0 ? idx.correoAsis1 : -1))
           }
         ].filter((d) => d.nombreCompleto !== "" && d.nombreCompleto.toUpperCase() !== "TBD");
 
@@ -901,13 +1114,18 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
       }
 
       if (entity === "salones") {
-        const salones = parseSalonCell(row[idx.salon]);
+        const directNombre = normalizeText(getCell(row, idx.salonNombre));
+        const directEdificio = normalizeText(getCell(row, idx.salonEdificio)) || "Sin edificio";
+        const directAforo = parseIntSafe(getCell(row, idx.salonAforo), 0);
+        const salones = directNombre
+          ? [{ nombre: directNombre, edificio: directEdificio, aforo: directAforo }]
+          : parseSalonCell(getCell(row, idx.salon)).map((s) => ({ ...s, aforo: 0 }));
         for (const salonData of salones) {
           const salon =
             getSalonByNombreEdificio.get(salonData.nombre, salonData.edificio) ||
             getSalonByNombre.get(salonData.nombre);
           if (!salon) {
-            insertSalon.run(salonData.nombre, salonData.edificio, 0);
+            insertSalon.run(salonData.nombre, salonData.edificio, salonData.aforo || 0);
             summary.inserted.salones += 1;
           }
         }
@@ -915,13 +1133,22 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
       }
 
       if (entity === "horarios") {
-        const horarios = horarioMap?.get(idClase) || new Set();
-        for (const item of horarios) {
-          const [dia, moduloStr] = item.split("|");
-          const modulo = Number(moduloStr);
-          if (!getHorario.get(dia, modulo)) {
-            insertHorario.run(dia, modulo);
+        const directDia = normalizeText(getCell(row, idx.dia));
+        const directModulo = parseIntSafe(getCell(row, idx.modulo), 0);
+        if (directDia && directModulo > 0) {
+          if (!getHorario.get(directDia, directModulo)) {
+            insertHorario.run(directDia, directModulo);
             summary.inserted.horarios += 1;
+          }
+        } else {
+          const horarios = horarioMap?.get(idClase) || new Set();
+          for (const item of horarios) {
+            const [dia, moduloStr] = item.split("|");
+            const modulo = Number(moduloStr);
+            if (!getHorario.get(dia, modulo)) {
+              insertHorario.run(dia, modulo);
+              summary.inserted.horarios += 1;
+            }
           }
         }
       }
@@ -931,4 +1158,5 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
   run();
   return summary;
 }
+
 

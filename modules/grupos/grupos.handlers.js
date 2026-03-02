@@ -7,7 +7,9 @@ import{
     obtenerGrupo,
     listarGruposService,
     asignarProfesorGrupo,
-    agregarHorarioGrupo
+    agregarHorarioGrupo,
+    reemplazarHorariosGrupo,
+    reemplazarProfesoresGrupo
 } from './grupos.service.js';
 
 export function registerGruposHandlers() {
@@ -17,10 +19,14 @@ export function registerGruposHandlers() {
         try {
             const result = altaGrupo(data);
             const id = Number(result?.lastInsertRowid || 0);
+            const ids = Array.isArray(result?.ids)
+                ? result.ids.map((value) => Number(value)).filter((value) => Number.isFinite(value) && value > 0)
+                : (id > 0 ? [id] : []);
             return {
                 success: true,
                 data: {
                     id,
+                    ids,
                     changes: Number(result?.changes || 0)
                 }
             };
@@ -84,6 +90,26 @@ export function registerGruposHandlers() {
     ipcMain.handle('grupos:agregarHorarios', async (event, { idGrupo, horarios }) => {
         try {
             const result = await agregarHorarioGrupo(idGrupo, horarios);
+            return { success: true, data: result };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    });
+
+    // Reemplazar todos los horarios de un grupo
+    ipcMain.handle('grupos:reemplazarHorarios', async (event, { idGrupo, horarios }) => {
+        try {
+            const result = await reemplazarHorariosGrupo(idGrupo, horarios);
+            return { success: true, data: result };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    });
+
+    // Reemplazar todos los profesores de un grupo (permite vaciar)
+    ipcMain.handle('grupos:reemplazarProfesores', async (event, { idGrupo, profesores }) => {
+        try {
+            const result = await reemplazarProfesoresGrupo(idGrupo, profesores);
             return { success: true, data: result };
         } catch (error) {
             return { success: false, error: error.message };

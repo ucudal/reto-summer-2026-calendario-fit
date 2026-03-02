@@ -135,10 +135,7 @@ export const grupos = sqliteTable(
         cupo: integer("cupo"),
         idSemestre: integer("id_semestre").notNull().references(() => semestres.id),
         color: text("color").notNull()
-    },
-    (table) => ({
-        codigoUnicoIdx: uniqueIndex("grupos_codigo_unico_idx").on(table.codigo)
-    })
+    }
 );
 
 // ------------------------------

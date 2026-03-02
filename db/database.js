@@ -48,3 +48,18 @@ sqlite.pragma("journal_mode = WAL");
 sqlite.pragma("busy_timeout = 5000");
 
 export const db = drizzle(sqlite);
+
+export function closeDatabase() {
+  try {
+    // Fuerza volcado de WAL a archivo principal antes de cerrar.
+    sqlite.pragma("wal_checkpoint(FULL)");
+  } catch (error) {
+    console.warn("No se pudo ejecutar wal_checkpoint(FULL):", error?.message || error);
+  }
+
+  try {
+    sqlite.close();
+  } catch (error) {
+    console.warn("No se pudo cerrar SQLite:", error?.message || error);
+  }
+}
