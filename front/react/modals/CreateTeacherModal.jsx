@@ -11,8 +11,10 @@ function CreateTeacherModal(props) {
     form,
     errorMessage,
     onClose,
+    onBack,
     onChange,
-    onSubmit
+    onSubmit,
+    isEditMode = false
   } = props;
 
   if (!isOpen) return null;
@@ -27,7 +29,14 @@ function CreateTeacherModal(props) {
       <section className="group-modal groups-list-modal create-teacher-modal" role="dialog" aria-modal="true" aria-labelledby="teacherModalTitle">
         <button type="button" className="modal-close-btn" aria-label="Cerrar" onClick={onClose}>X</button>
 
-        <h2 id="teacherModalTitle" className="modal-title">Crear docente</h2>
+        {onBack ? (
+          <div className="modal-header-with-back">
+            <button type="button" className="modal-back-btn" onClick={onBack}>← Volver</button>
+            <h2 id="teacherModalTitle" className="modal-title">{isEditMode ? 'Editar docente' : 'Crear docente'}</h2>
+          </div>
+        ) : (
+          <h2 id="teacherModalTitle" className="modal-title">{isEditMode ? 'Editar docente' : 'Crear docente'}</h2>
+        )}
 
         <form
           className="group-form"

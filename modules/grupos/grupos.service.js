@@ -1,12 +1,14 @@
 import {
+    asignarCarrerasAGrupo,
     crearGrupo,
+    crearSemestre,
     eliminarGrupo,
     obtenerGrupoPorId,
+    obtenerSemestrePorNumeroYAnio,
     modificarGrupo,
     listarGrupos,
     asignarProfesor,
-    insertarHorarios,
-    insertarRequerimientos
+    insertarHorarios
 } from './grupos.repository.js';
 
 const DIAS_VALIDOS = ["lunes", "martes", "miercoles", "miércoles", "jueves", "viernes", "sabado", "sábado"];
@@ -14,16 +16,24 @@ const MODULOS_VALIDOS = { 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 
 
 export function altaGrupo(data) {
   validarGrupo(data);
+  const idSemestre = resolverIdSemestre(data);
 
-  return crearGrupo({
+  const result = crearGrupo({
     codigo: data.codigo.trim(),
     idMateria: data.idMateria,
     horasSemestrales: data.horasSemestrales,
     esContrasemestre: data.esContrasemestre,
     cupo: data.cupo,
-    semestre: data.semestre,
-    anio: data.anio
+    color: String(data.color || "#A0C4FF"),
+    idSemestre
   });
+
+  const idGrupo = Number(result?.lastInsertRowid || 0);
+  if (idGrupo > 0) {
+    asignarCarrerasAGrupo(idGrupo, data.carreras || []);
+  }
+
+  return result;
 };
 
 export function actualizarGrupo(data) {
@@ -44,8 +54,8 @@ export function actualizarGrupo(data) {
     horasSemestrales: data.horasSemestrales,
     esContrasemestre: data.esContrasemestre,
     cupo: data.cupo,
-    semestre: data.semestre,
-    anio: data.anio
+    color: data.color,
+    idSemestre: data.idSemestre
   });
 };
 
@@ -113,7 +123,7 @@ export async function agregarHorarioGrupo(idGrupo, horarios) {
   return await insertarHorarios(idGrupo, horarios);
 }
 
-export async function agregarRequerimientosGrupo(idGrupo, requerimientos) {
+/* export async function agregarRequerimientosGrupo(idGrupo, requerimientos) {
 
   if (!idGrupo) {
     throw new Error("ID de grupo requerido");
@@ -124,7 +134,7 @@ export async function agregarRequerimientosGrupo(idGrupo, requerimientos) {
   }
 
   return await insertarRequerimientos(idGrupo, requerimientos);
-}
+} */
 
 function validarGrupo(data) {
   if (!data) {
@@ -147,15 +157,37 @@ function validarGrupo(data) {
     throw new Error("Cupo inválido");
   }
 
-  if (data.semestre == null || isNaN(Number(data.semestre)) || !Number.isInteger(Number(data.semestre)) || Number(data.semestre) <= 0) {
-    throw new Error("Semestre inválido");
-  }
-
-  if (data.anio == null || isNaN(Number(data.anio)) || Number(data.anio) <= 0) {
-    throw new Error("Año inválido");
-  }
-
   if (data.esContrasemestre !== undefined && typeof data.esContrasemestre !== 'boolean') {
     throw new Error("esContrasemestre debe ser booleano");
   }
+}
+
+function resolverIdSemestre(data) {
+  if (data.idSemestre && Number(data.idSemestre) > 0) {
+    return Number(data.idSemestre);
+  }
+
+  const numeroSemestre =
+    Number(data.semestreLectivoNumero || data.semestreLectivo || 0);
+  const anioLectivo =
+    Number(data.anioLectivo || 0);
+
+  if (!numeroSemestre || (numeroSemestre !== 1 && numeroSemestre !== 2)) {
+    throw new Error("El semestre es obligatorio");
+  }
+  if (!anioLectivo || anioLectivo < 2026) {
+    throw new Error("Año lectivo inválido");
+  }
+
+  const existente = obtenerSemestrePorNumeroYAnio(numeroSemestre, anioLectivo);
+  if (existente?.id) return Number(existente.id);
+
+  const created = crearSemestre(numeroSemestre, anioLectivo);
+  const newId = Number(created?.lastInsertRowid || 0);
+  if (!newId) {
+    const retry = obtenerSemestrePorNumeroYAnio(numeroSemestre, anioLectivo);
+    if (retry?.id) return Number(retry.id);
+    throw new Error("No se pudo crear el semestre lectivo");
+  }
+  return newId;
 }

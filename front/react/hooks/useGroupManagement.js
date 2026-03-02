@@ -1,8 +1,9 @@
-﻿(function () {
+(function () {
     function useGroupManagement({
                                     data,
                                     setData,
                                     selectedCareer,
+                                    subjects = []
                                 }) {
         const {
             DAYS,
@@ -83,6 +84,56 @@
             };
         }
 
+        function replaceSingleGroupInCalendar(
+            prevData,
+            calendarId,
+            selectedYear,
+            subject,
+            groupRef,
+            newGroups
+        ) {
+            const target = calendarId
+                ? prevData.calendars.find(c => c.id === calendarId)
+                : findCalendarForYear(selectedYear, prevData.calendars);
+
+            if (!target) return prevData;
+
+            const normalizedGroupRef = String(groupRef || "").trim().toLowerCase();
+
+            function getClassGroupRef(classItem) {
+                return String(
+                    classItem.groupRef ||
+                    classItem.classNumber ||
+                    classItem.group ||
+                    ""
+                )
+                    .trim()
+                    .toLowerCase();
+            }
+
+            return {
+                ...prevData,
+                calendars: prevData.calendars.map(calendar => {
+                    if (calendar.id !== target.id) return calendar;
+
+                    const filtered = calendar.classes.filter((classItem) => {
+                        const sameSubject = classItem.title === subject;
+                        if (!sameSubject || classItem.type !== "practice") return true;
+
+                        if (!normalizedGroupRef) return false;
+
+                        return getClassGroupRef(classItem) !== normalizedGroupRef;
+                    });
+
+                    return {
+                        ...calendar,
+                        visible: true,
+                        classes: [...filtered, ...newGroups]
+                    };
+                })
+            };
+        }
+
         const createNewGroupHandlers =
             createNewGroupModalFns.createNewGroupModalHandlers({
                 DAYS,
@@ -109,8 +160,24 @@
                 setIsSubjectGroupsModalOpen,
                 setSelectedSubject,
                 setData,
-                replaceSubjectGroupsInCalendar
+                replaceSubjectGroupsInCalendar,
+                replaceSingleGroupInCalendar,
+                subjects
             });
+
+        React.useEffect(() => {
+            if (!subjectGroupsModalFns?.registerOpenSubjectGroupsModalRequester) {
+                return () => {};
+            }
+
+            const unregister = subjectGroupsModalFns.registerOpenSubjectGroupsModalRequester(
+                subjectGroupsModalHandlers.openSubjectGroupsModal
+            );
+
+            return () => {
+                unregister();
+            };
+        }, [subjectGroupsModalHandlers, subjectGroupsModalFns]);
 
         const groupsModalHandlers =
             groupsModalFns.createGroupsModalHandlers({

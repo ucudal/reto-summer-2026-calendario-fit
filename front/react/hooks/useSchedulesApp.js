@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
     function useSchedulesApp() {
         const { cloneInitialData } = window.AppData;
 
@@ -23,11 +23,16 @@
 
         const teacher = window.useTeacherManagement();
 
+        const subject = window.useSubjectManagement({
+            careers: db.careers
+        });
+
         const groups = window.useGroupManagement({
             data,
             setData,
             selectedCareer,
-            reloadGroupsFromDb: db.reloadGroupsFromDb
+            reloadGroupsFromDb: db.reloadGroupsFromDb,
+            subjects: subject.subjects
         });
 
         const excel = window.useExcelActions({
@@ -45,6 +50,7 @@
             ...career,
             ...semester,
             ...teacher,
+            ...subject,
             ...groups,
             ...excel
         };

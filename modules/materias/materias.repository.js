@@ -11,7 +11,8 @@ export function crearMateria(asignatura) {
     tipo: asignatura.tipo,
     creditos: asignatura.creditos,
     nombre: asignatura.nombre,
-    tieneContrasemestre: asignatura.tieneContrasemestre
+    tieneContrasemestre: asignatura.tieneContrasemestre,
+    requerimientosSalon: asignatura.requerimientosSalon
   }).run();
 }
 
@@ -24,7 +25,8 @@ export function listarMaterias() {
     tipo: materias.tipo,
     creditos: materias.creditos,
     nombre: materias.nombre,
-    tieneContrasemestre: materias.tieneContrasemestre
+    tieneContrasemestre: materias.tieneContrasemestre,
+    requerimientosSalon: materias.requerimientosSalon
   })
   .from(materias)
   .orderBy(asc(materias.nombre))
@@ -40,7 +42,8 @@ export function obtenerMateriaPorId(id) {
     tipo: materias.tipo,
     creditos: materias.creditos,
     nombre: materias.nombre,
-    tieneContrasemestre: materias.tieneContrasemestre
+    tieneContrasemestre: materias.tieneContrasemestre,
+    requerimientosSalon: materias.requerimientosSalon
   })
   .from(materias)
   .where(eq(materias.id, id))
@@ -56,7 +59,8 @@ export function actualizarMateria(id, datos) {
       tipo: datos.tipo,
       creditos: datos.creditos,
       nombre: datos.nombre,
-      tieneContrasemestre: datos.tieneContrasemestre
+      tieneContrasemestre: datos.tieneContrasemestre,
+      requerimientosSalon: datos.requerimientosSalon
     })
     .where(eq(materias.id, id))
     .run();
@@ -75,16 +79,73 @@ export function eliminarMateria(id) {
  * Lista combinaciones carrera-plan para una materia (por nombre).
  */
 export function listarCarrerasPlanesPorMateriaNombre(nombreMateria) {
-  return db.select({
+  const target = normalizeKey(nombreMateria);
+
+  const rows = db.select({
+    idCarrera: carreras.id,
     carreraNombre: carreras.nombre,
     plan: materiaCarrera.plan,
     semestre: materiaCarrera.semestre,
-    anio: materiaCarrera.anio
+    anio: materiaCarrera.anio,
+    materiaNombre: materias.nombre
   })
     .from(materiaCarrera)
     .innerJoin(materias, eq(materias.id, materiaCarrera.idMateria))
     .innerJoin(carreras, eq(carreras.id, materiaCarrera.idCarrera))
-    .where(eq(materias.nombre, nombreMateria))
     .orderBy(asc(carreras.nombre), asc(materiaCarrera.plan))
     .all();
+
+  return rows
+    .filter((row) => normalizeKey(row.materiaNombre) === target)
+    .map((row) => ({
+      idCarrera: row.idCarrera,
+      carreraNombre: row.carreraNombre,
+      plan: row.plan,
+      semestre: row.semestre,
+      anio: row.anio
+    }));
+}
+
+/**
+ * Trae carreras por nombre para poder convertir "nombre" a "id".
+ */
+export function listarCarrerasPorNombres(nombres) {
+  const cleanNames = Array.isArray(nombres)
+    ? nombres.map((item) => normalizeKey(item)).filter(Boolean)
+    : [];
+
+  if (cleanNames.length === 0) return [];
+
+  const rows = db.select({
+    id: carreras.id,
+    nombre: carreras.nombre
+  })
+    .from(carreras)
+    .all();
+
+  return rows.filter((row) => cleanNames.includes(normalizeKey(row.nombre)));
+}
+
+/**
+ * Reemplaza todas las carreras/semestres de una materia.
+ * Borra primero y vuelve a insertar.
+ */
+export function reemplazarCarrerasMateria(idMateria, nuevasFilas) {
+  db.transaction((tx) => {
+    tx.delete(materiaCarrera)
+      .where(eq(materiaCarrera.idMateria, idMateria))
+      .run();
+
+    if (Array.isArray(nuevasFilas) && nuevasFilas.length > 0) {
+      tx.insert(materiaCarrera).values(nuevasFilas).run();
+    }
+  });
+}
+
+function normalizeKey(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
 }

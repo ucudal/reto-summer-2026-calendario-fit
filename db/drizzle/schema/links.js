@@ -15,7 +15,6 @@ import {
   profesores,
   salones,
   horarios,
-  requerimientosSalon,
   grupos
 } from "./base.js";
 
@@ -145,9 +144,29 @@ export const salonGrupo = sqliteTable(
 );
 
 // ------------------------------
+// Tabla puente: grupo_carrera
+// ------------------------------
+export const grupoCarrera = sqliteTable(
+  "grupo_carrera",
+  {
+    idGrupo: integer("id_grupo").notNull().references(() => grupos.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade"
+    }),
+    idCarrera: integer("id_carrera").notNull().references(() => carreras.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade"
+    })
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.idGrupo, table.idCarrera] })
+  })
+);
+
+// ------------------------------
 // Tabla puente: salon_requerimiento_salon
 // ------------------------------
-export const salonRequerimientoSalon = sqliteTable(
+/* export const salonRequerimientoSalon = sqliteTable(
   "salon_requerimiento_salon",
   {
     idSalon: integer("id_salon").notNull().references(() => salones.id, {
@@ -165,12 +184,12 @@ export const salonRequerimientoSalon = sqliteTable(
   (table) => ({
     pk: primaryKey({ columns: [table.idSalon, table.idRequerimientoSalon] })
   })
-);
+); */
 
 // ------------------------------
 // Tabla puente: grupo_requerimiento_salon
 // ------------------------------
-export const grupoRequerimientoSalon = sqliteTable(
+/* export const grupoRequerimientoSalon = sqliteTable(
   "grupo_requerimiento_salon",
   {
     idGrupo: integer("id_grupo").notNull().references(() => grupos.id, {
@@ -188,4 +207,4 @@ export const grupoRequerimientoSalon = sqliteTable(
   (table) => ({
     pk: primaryKey({ columns: [table.idGrupo, table.idRequerimientoSalon] })
   })
-);
+); */
