@@ -30,7 +30,7 @@ function SubjectGroupsModal(props) {
   const [selectedCareers, setSelectedCareers] = React.useState([]);
   const [selectedDays, setSelectedDays] = React.useState([]);
   const [dayTimeRanges, setDayTimeRanges] = React.useState({});
-  const [applyChangesToAllCareers, setApplyChangesToAllCareers] = React.useState(true);
+  const [applyChangesToAllCareers, setApplyChangesToAllCareers] = React.useState(false);
   const [editScopeCareers, setEditScopeCareers] = React.useState([]);
   const [error, setError] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
@@ -77,7 +77,7 @@ function SubjectGroupsModal(props) {
     setSelectedCareers(Array.isArray(draft?.selectedCareers) ? [...draft.selectedCareers] : []);
     setSelectedDays(Array.isArray(draft?.selectedDays) ? [...draft.selectedDays] : []);
     setDayTimeRanges(draft?.dayTimeRanges && typeof draft.dayTimeRanges === "object" ? { ...draft.dayTimeRanges } : {});
-    setApplyChangesToAllCareers(true);
+    setApplyChangesToAllCareers(false);
     setEditScopeCareers(draftEditCareers);
     setError("");
     setIsSaving(false);
