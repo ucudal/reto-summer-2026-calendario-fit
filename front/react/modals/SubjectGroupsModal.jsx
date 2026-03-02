@@ -29,6 +29,7 @@ function SubjectGroupsModal(props) {
   const [selectedCareers, setSelectedCareers] = React.useState([]);
   const [selectedDays, setSelectedDays] = React.useState([]);
   const [dayTimeRanges, setDayTimeRanges] = React.useState({});
+  const [applyChangesToAllCareers, setApplyChangesToAllCareers] = React.useState(true);
   const [error, setError] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
   const careerDropdownRef = React.useRef(null);
@@ -69,6 +70,7 @@ function SubjectGroupsModal(props) {
     setSelectedCareers(Array.isArray(draft?.selectedCareers) ? [...draft.selectedCareers] : []);
     setSelectedDays(Array.isArray(draft?.selectedDays) ? [...draft.selectedDays] : []);
     setDayTimeRanges(draft?.dayTimeRanges && typeof draft.dayTimeRanges === "object" ? { ...draft.dayTimeRanges } : {});
+    setApplyChangesToAllCareers(true);
     setError("");
     setIsSaving(false);
   }, [isOpen, subject, careers]);
@@ -301,6 +303,55 @@ function SubjectGroupsModal(props) {
     return groupColors[usedColors.size % groupColors.length] || "#A0C4FF";
   }
 
+  function getVisibleCalendarAcademicTarget() {
+    const byLective = (calendars || []).filter(
+      (calendar) =>
+        Boolean(calendar?.visible) &&
+        (!currentLectiveTerm || String(calendar.lectiveTerm || "") === String(currentLectiveTerm))
+    );
+    const activeCalendar =
+      byLective[0] || (calendars || []).find((calendar) => Boolean(calendar?.visible)) || null;
+    const match = String(activeCalendar?.id || "").match(/s([12])y([1-5])/i);
+    if (!match) return { semester: 1, year: 1 };
+    return {
+      semester: Number(match[1]) || 1,
+      year: Number(match[2]) || 1
+    };
+  }
+
+  function toNormalizedCareerList(items) {
+    return [...new Set((items || []).map((value) => String(value || "").trim()).filter(Boolean))].sort();
+  }
+
+  function areCareerListsEqual(a, b) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i += 1) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  }
+
+  function buildDbHorariosPayloadFromSelection() {
+    const payload = [];
+    for (const day of selectedDays) {
+      const dayRange = dayTimeRanges[day] || { fromTime: "08:00", toTime: "09:20" };
+      const startIndex = startTimes.indexOf(dayRange.fromTime);
+      const endIndex = endTimes.indexOf(dayRange.toTime);
+      const dbDay = dayUiToDb(day);
+      if (startIndex < 0 || endIndex < 0 || endIndex < startIndex || !dbDay) continue;
+
+      for (let idx = startIndex; idx <= endIndex; idx += 1) {
+        payload.push({ dia: dbDay, modulo: idx + 1 });
+      }
+    }
+    return payload;
+  }
+
+  function toGroupId(groupRef) {
+    const parsed = Number(String(groupRef || "").trim());
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+  }
+
   async function handleAddGroup() {
     if (isSaving) return;
 
@@ -329,10 +380,13 @@ function SubjectGroupsModal(props) {
     }
 
     const selectedMeta = careerOptions.filter((option) => finalSelectedCareers.includes(option.key));
-    // Si hay diferencias entre carreras, usamos el primer año/semestre disponible.
-    // (segun tu criterio actual, esto no debe bloquear la creación del grupo)
-    const resolvedSemester = Number(selectedMeta[0]?.semestre || 1);
-    const resolvedYear = Number(selectedMeta[0]?.anio || 1);
+    const activeAcademic = getVisibleCalendarAcademicTarget();
+    const metaSemester = Number(selectedMeta[0]?.semestre || 0);
+    const metaYear = Number(selectedMeta[0]?.anio || 0);
+    // Prioriza el calendario visible actual para que el grupo aparezca donde se está trabajando.
+    const resolvedSemester =
+      activeAcademic.semester || (metaSemester === 1 || metaSemester === 2 ? metaSemester : 1);
+    const resolvedYear = activeAcademic.year || (metaYear >= 1 && metaYear <= 5 ? metaYear : 1);
 
     let totalModules = 0;
     for (const day of selectedDays) {
@@ -349,41 +403,219 @@ function SubjectGroupsModal(props) {
     setError("");
     setIsSaving(true);
 
-    const editGroupRef = String(editContext?.draft?.groupRef || groupName.trim()).trim();
     const editedGroupColor = String(editContext?.draft?.color || "").trim();
-    const payloadSchedules = selectedDays.map((day, index) => {
-      const dayRange = dayTimeRanges[day] || { fromTime: "08:00", toTime: "09:20" };
-      return {
-        id: Date.now() + index,
-        days: [day],
-        fromTime: dayRange.fromTime,
-        toTime: dayRange.toTime,
-        groups: [
-          {
-            id: Date.now() + 1 + index,
-            name: groupName.trim(),
-            groupRef: editGroupRef,
-            teachers: [...selectedTeachers],
-            assignedCareers: [...finalSelectedCareers],
-            color: editedGroupColor
-          }
-        ]
-      };
-    });
 
     if (isEditMode) {
       try {
-        if (onSaveGroups) {
-          onSaveGroups(
-            payloadSchedules,
-            subjectName,
-            String(editContext?.selectedYear || "1"),
-            {
-              mode: "edit",
-              calendarId: editContext?.calendarId,
-              groupRef: editGroupRef
+        if (
+          !window.api?.grupos?.listar ||
+          !window.api?.grupos?.actualizar ||
+          !window.api?.grupos?.crear ||
+          !window.api?.grupos?.agregarHorarios ||
+          !window.api?.grupos?.reemplazarHorarios
+        ) {
+          setError("No está disponible la API de grupos.");
+          setIsSaving(false);
+          return;
+        }
+
+        const originalGroupId = toGroupId(editContext?.draft?.groupRef);
+        if (!originalGroupId) {
+          setError("No se pudo identificar el grupo original a editar.");
+          setIsSaving(false);
+          return;
+        }
+
+        const groupsResp = await window.api.grupos.listar();
+        const allGroups = groupsResp?.success && Array.isArray(groupsResp.data) ? groupsResp.data : [];
+        const originalGroup = allGroups.find((group) => Number(group?.id) === originalGroupId);
+        if (!originalGroup) {
+          setError("No se encontró el grupo original en la base de datos.");
+          setIsSaving(false);
+          return;
+        }
+
+        const originalCareers = toNormalizedCareerList(
+          Array.isArray(originalGroup?.carreras) && originalGroup.carreras.length > 0
+            ? originalGroup.carreras
+            : editContext?.draft?.selectedCareers || []
+        );
+        const selectedCareerList = toNormalizedCareerList(finalSelectedCareers);
+        const sameCareerSelection = areCareerListsEqual(originalCareers, selectedCareerList);
+        const horariosPayload = buildDbHorariosPayloadFromSelection();
+        const calendarId = String(editContext?.calendarId || "").trim();
+        const editedSemesterMatch = calendarId.match(/s([12])y/i);
+        const editedSemester = editedSemesterMatch ? Number(editedSemesterMatch[1]) : resolvedSemester;
+        const editedYear = Number(editContext?.selectedYear || resolvedYear);
+        if (horariosPayload.length === 0) {
+          setError("No se pudo construir el horario para guardar.");
+          setIsSaving(false);
+          return;
+        }
+
+        if (applyChangesToAllCareers) {
+          const siblingGroups = allGroups.filter((group) => {
+            if (!group || Number(group.id) <= 0) return false;
+            const sameCode = String(group.codigo || "").trim() === String(originalGroup.codigo || "").trim();
+            const sameSubject = Number(group.idMateria) === Number(originalGroup.idMateria);
+            const sameSemester = Number(group.idSemestre) === Number(originalGroup.idSemestre);
+            const sameLectiveSemester = Number(group.semestreLectivo || 0) === Number(originalGroup.semestreLectivo || 0);
+            const sameLectiveYear = Number(group.anioLectivo || 0) === Number(originalGroup.anioLectivo || 0);
+            return sameCode && sameSubject && sameSemester && sameLectiveSemester && sameLectiveYear;
+          });
+
+          if (siblingGroups.length === 0) {
+            setError("No se encontraron grupos vinculados para actualizar.");
+            setIsSaving(false);
+            return;
+          }
+
+          for (const sibling of siblingGroups) {
+            const siblingId = Number(sibling.id);
+            if (!siblingId) continue;
+            const siblingCareers = toNormalizedCareerList(Array.isArray(sibling.carreras) ? sibling.carreras : []);
+            const updateResp = await window.api.grupos.actualizar({
+              id: siblingId,
+              codigo: groupName.trim(),
+              idMateria: Number(sibling.idMateria),
+              horasSemestrales: totalModules * 20,
+              esContrasemestre: Boolean(sibling.esContrasemestre),
+              cupo: Number(sibling.cupo || 30),
+              color: editedGroupColor || String(sibling.color || "#A0C4FF"),
+              idSemestre: Number(sibling.idSemestre),
+              carreras: siblingCareers
+            });
+
+            if (!updateResp?.success) {
+              setError(updateResp?.error || "No se pudo actualizar uno de los grupos vinculados.");
+              setIsSaving(false);
+              return;
             }
-          );
+
+            const replaceResp = await window.api.grupos.reemplazarHorarios(siblingId, horariosPayload);
+            if (!replaceResp?.success) {
+              setError(replaceResp?.error || "No se pudieron reemplazar horarios en uno de los grupos vinculados.");
+              setIsSaving(false);
+              return;
+            }
+          }
+
+          if (onGroupCreated) {
+            await onGroupCreated();
+          }
+
+          if (onClose) onClose();
+          else onBack();
+          return;
+        }
+
+        if (sameCareerSelection) {
+          const updateResp = await window.api.grupos.actualizar({
+            id: originalGroupId,
+            codigo: groupName.trim(),
+            idMateria: Number(originalGroup.idMateria),
+            horasSemestrales: totalModules * 20,
+            esContrasemestre: Boolean(originalGroup.esContrasemestre),
+            cupo: Number(originalGroup.cupo || 30),
+            color: editedGroupColor || String(originalGroup.color || "#A0C4FF"),
+            idSemestre: Number(originalGroup.idSemestre),
+            carreras: selectedCareerList
+          });
+
+          if (!updateResp?.success) {
+            setError(updateResp?.error || "No se pudo actualizar el grupo.");
+            setIsSaving(false);
+            return;
+          }
+
+          const replaceResp = await window.api.grupos.reemplazarHorarios(originalGroupId, horariosPayload);
+          if (!replaceResp?.success) {
+            setError(replaceResp?.error || "No se pudieron reemplazar horarios.");
+            setIsSaving(false);
+            return;
+          }
+        } else {
+          const originalCareerSet = new Set(originalCareers);
+          const splitCareers = selectedCareerList.filter((career) => originalCareerSet.has(career));
+          const remainingCareers = originalCareers.filter((career) => !splitCareers.includes(career));
+
+          if (splitCareers.length === 0) {
+            setError("Selecciona al menos una carrera que pertenezca al grupo original.");
+            setIsSaving(false);
+            return;
+          }
+
+          if (remainingCareers.length === 0) {
+            setError("Para mantener el mismo grupo, selecciona todas las carreras.");
+            setIsSaving(false);
+            return;
+          }
+
+          const originalCode = String(originalGroup?.codigo || "").trim();
+          const requestedCode = String(groupName || "").trim();
+          const splitCode = requestedCode || originalCode;
+
+          if (!splitCode) {
+            setError("No se pudo definir un código para el nuevo grupo.");
+            setIsSaving(false);
+            return;
+          }
+
+          const createResp = await window.api.grupos.crear({
+            codigo: splitCode,
+            idMateria: Number(originalGroup.idMateria),
+            horasSemestrales: totalModules * 20,
+            esContrasemestre: Boolean(originalGroup.esContrasemestre),
+            cupo: Number(originalGroup.cupo || 30),
+            color: editedGroupColor || String(originalGroup.color || "#A0C4FF"),
+            carreras: splitCareers,
+            semestreLectivoNumero: Number(originalGroup.semestreLectivo || 1),
+            anioLectivo: Number(originalGroup.anioLectivo || 2026),
+            semestre: editedSemester,
+            anio: editedYear
+          });
+
+          if (!createResp?.success) {
+            setError(createResp?.error || "No se pudo crear el nuevo grupo para la carrera seleccionada.");
+            setIsSaving(false);
+            return;
+          }
+
+          const newGroupId = Number(createResp?.data?.id || 0);
+          if (!newGroupId) {
+            setError("No se pudo obtener el ID del nuevo grupo.");
+            setIsSaving(false);
+            return;
+          }
+
+          const horariosResp = await window.api.grupos.agregarHorarios(newGroupId, horariosPayload);
+          if (!horariosResp?.success) {
+            setError(horariosResp?.error || "No se pudieron guardar horarios del nuevo grupo.");
+            setIsSaving(false);
+            return;
+          }
+
+          const originalUpdateResp = await window.api.grupos.actualizar({
+            id: originalGroupId,
+            codigo: originalCode || groupName.trim(),
+            idMateria: Number(originalGroup.idMateria),
+            horasSemestrales: Number(originalGroup.horasSemestrales || 0),
+            esContrasemestre: Boolean(originalGroup.esContrasemestre),
+            cupo: Number(originalGroup.cupo || 30),
+            color: String(originalGroup.color || "#A0C4FF"),
+            idSemestre: Number(originalGroup.idSemestre),
+            carreras: remainingCareers
+          });
+
+          if (!originalUpdateResp?.success) {
+            setError(originalUpdateResp?.error || "No se pudieron actualizar carreras del grupo original.");
+            setIsSaving(false);
+            return;
+          }
+        }
+
+        if (onGroupCreated) {
+          await onGroupCreated();
         }
 
         if (onClose) onClose();
@@ -442,8 +674,17 @@ function SubjectGroupsModal(props) {
         return;
       }
 
-      const idGrupo = Number(createResp?.data?.id || 0);
-      if (!idGrupo) {
+      const createdGroupIds = Array.isArray(createResp?.data?.ids)
+        ? createResp.data.ids.map((value) => Number(value)).filter((value) => Number.isFinite(value) && value > 0)
+        : [];
+      if (createdGroupIds.length === 0) {
+        const fallbackId = Number(createResp?.data?.id || 0);
+        if (fallbackId > 0) {
+          createdGroupIds.push(fallbackId);
+        }
+      }
+
+      if (createdGroupIds.length === 0) {
         setError("No se pudo obtener el ID del grupo creado.");
         setIsSaving(false);
         return;
@@ -462,11 +703,13 @@ function SubjectGroupsModal(props) {
       }
 
       if (horariosPayload.length > 0 && window.api?.grupos?.agregarHorarios) {
-        const horariosResp = await window.api.grupos.agregarHorarios(idGrupo, horariosPayload);
-        if (!horariosResp?.success) {
-          setError(horariosResp?.error || "No se pudieron guardar horarios.");
-          setIsSaving(false);
-          return;
+        for (const idGrupo of createdGroupIds) {
+          const horariosResp = await window.api.grupos.agregarHorarios(idGrupo, horariosPayload);
+          if (!horariosResp?.success) {
+            setError(horariosResp?.error || "No se pudieron guardar horarios.");
+            setIsSaving(false);
+            return;
+          }
         }
       }
 
@@ -486,12 +729,14 @@ function SubjectGroupsModal(props) {
 
           if (!docente?.id) continue;
 
-          await window.api.grupos.asignarProfesor({
-            idGrupo,
-            idProfesor: docente.id,
-            carga: i === 0 ? "Titular" : "Ayudante",
-            esPrincipal: i === 0
-          });
+          for (const idGrupo of createdGroupIds) {
+            await window.api.grupos.asignarProfesor({
+              idGrupo,
+              idProfesor: docente.id,
+              carga: i === 0 ? "Titular" : "Ayudante",
+              esPrincipal: i === 0
+            });
+          }
         }
       }
 
@@ -514,12 +759,11 @@ function SubjectGroupsModal(props) {
         };
       });
 
-      if (onSaveGroups) {
-        onSaveGroups(payloadSchedules, subjectName, String(resolvedYear));
-      }
-
       if (onGroupCreated) {
         await onGroupCreated();
+      } else if (onSaveGroups) {
+        // Fallback solo si no hay recarga desde DB disponible.
+        onSaveGroups(payloadSchedules, subjectName, String(resolvedYear));
       }
 
       if (onClose) onClose();
@@ -639,6 +883,17 @@ function SubjectGroupsModal(props) {
               )}
             </div>
           </div>
+
+          {isEditMode && (
+            <label className="second-step-career-option" style={{ marginTop: "6px" }}>
+              <input
+                type="checkbox"
+                checked={applyChangesToAllCareers}
+                onChange={(event) => setApplyChangesToAllCareers(Boolean(event.target.checked))}
+              />
+              <span>Aplicar cambios a todas las carreras de este grupo</span>
+            </label>
+          )}
 
           <div className="days-selector second-step-days">
             {days.map((day) => (

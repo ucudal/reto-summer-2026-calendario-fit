@@ -17,6 +17,10 @@ function ensureGrupoCarreraTable() {
     .run();
 }
 
+export function asegurarCodigoGrupoNoUnico() {
+  sqlite.prepare("DROP INDEX IF EXISTS grupos_codigo_unico_idx").run();
+}
+
 export function crearGrupo(grupo) {
   return db
     .insert(grupos)
@@ -90,8 +94,9 @@ export function listarGrupos() {
 
   const academicRows = sqlite
     .prepare(`
-      SELECT gc.id_grupo AS idGrupo, mc.semestre AS semestre, mc.anio AS anio
+      SELECT gc.id_grupo AS idGrupo, c.nombre AS carreraNombre, mc.semestre AS semestre, mc.anio AS anio
       FROM grupo_carrera gc
+      INNER JOIN carreras c ON c.id = gc.id_carrera
       INNER JOIN grupos g ON g.id = gc.id_grupo
       INNER JOIN materia_carrera mc ON mc.id_materia = g.id_materia AND mc.id_carrera = gc.id_carrera
       ORDER BY gc.id_grupo ASC
@@ -99,12 +104,25 @@ export function listarGrupos() {
     .all();
 
   const academicByGroup = new Map();
+  const academicByGroupCareer = new Map();
   for (const row of academicRows) {
-    if (academicByGroup.has(row.idGrupo)) continue;
-    academicByGroup.set(row.idGrupo, {
+    const normalized = {
+      carrera: String(row.carreraNombre || "").trim(),
       semestre: Number(row.semestre || 1),
       anio: Number(row.anio || 1)
-    });
+    };
+
+    if (!academicByGroup.has(row.idGrupo)) {
+      academicByGroup.set(row.idGrupo, {
+        semestre: normalized.semestre,
+        anio: normalized.anio
+      });
+    }
+
+    if (!academicByGroupCareer.has(row.idGrupo)) {
+      academicByGroupCareer.set(row.idGrupo, []);
+    }
+    academicByGroupCareer.get(row.idGrupo).push(normalized);
   }
 
   const teacherRows = db
@@ -145,6 +163,7 @@ export function listarGrupos() {
         anioLectivo: row.anioLectivo,
         color: row.color,
         carreras: Array.from(careersByGroup.get(row.id) || []),
+        academicByCareer: academicByGroupCareer.get(row.id) || [],
         docentes: Array.from(teachersByGroup.get(row.id) || []),
         horarios: []
       });
@@ -198,6 +217,19 @@ export function crearSemestre(numeroSemestre, anio) {
       anio: Number(anio)
     })
     .run();
+}
+
+export function obtenerAcademicoPorMateriaYCarrera(idMateria, nombreCarrera) {
+  return sqlite
+    .prepare(`
+      SELECT mc.semestre AS semestre, mc.anio AS anio
+      FROM materia_carrera mc
+      INNER JOIN carreras c ON c.id = mc.id_carrera
+      WHERE mc.id_materia = ?
+        AND lower(trim(c.nombre)) = lower(trim(?))
+      LIMIT 1
+    `)
+    .get(Number(idMateria), String(nombreCarrera || ""));
 }
 
 export function asignarProfesor(data) {
@@ -261,4 +293,8 @@ export function insertarHorarios(idGrupo, horariosPayload) {
   }
 
   return inserted;
+}
+
+export function limpiarHorariosDeGrupo(idGrupo) {
+  return sqlite.prepare("DELETE FROM grupo_horario WHERE id_grupo = ?").run(idGrupo);
 }
