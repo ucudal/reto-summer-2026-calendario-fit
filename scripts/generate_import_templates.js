@@ -14,16 +14,27 @@ const COLORS = {
 
 const COMMON_COLUMNS = [
   { key: "Carrera", required: false, note: "Nombre de carrera" },
-  { key: "CX", required: false, note: "Plan/Semestre. Ej: P2026-Sem1" },
+  { key: "Plan", required: false, note: "Plan combinado. Ej: Ingenieria Informatica 2026" },
+  { key: "Semestre", required: false, note: "Numero de semestre. Ej: 1" },
   { key: "Curso", required: false, note: "Nombre de materia" },
   { key: "Tipo", required: false, note: "A/B/D o texto" },
   { key: "Horas", required: false, note: "Carga horaria" },
+  { key: "Horas anuales", required: false, note: "Alias DB de horas (grupos.horas_anuales)" },
   { key: "ID Clase", required: false, note: "Codigo unico del grupo" },
+  { key: "Codigo", required: false, note: "Alias DB de ID Clase (grupos.codigo)" },
   { key: "Cupo", required: false, note: "Cantidad maxima" },
+  { key: "Color", required: false, note: "Color del grupo. Ej: #2563EB" },
   { key: "Creditos", required: false, note: "Creditos de la materia" },
   { key: "Requerim. salon", required: false, note: "Requerimiento de aula" },
   { key: "Salon", required: false, note: "Ej: A101 (Central)" },
+  { key: "Nombre salon", required: false, note: "Nombre del salon (tabla salones.nombre)" },
+  { key: "Edificio", required: false, note: "Edificio del salon (tabla salones.edificio)" },
+  { key: "Aforo", required: false, note: "Aforo del salon (tabla salones.aforo)" },
+  { key: "Dia", required: false, note: "Dia del horario. Ej: Lunes" },
+  { key: "Modulo", required: false, note: "Modulo del horario. Ej: 1" },
   { key: "Profesor", required: false, note: "Nombre completo (import parcial profesores)" },
+  { key: "Nombre", required: false, note: "Nombre del profesor" },
+  { key: "Apellido", required: false, note: "Apellido del profesor" },
   { key: "Correo", required: false, note: "Mail para Profesor" },
   { key: "Prof 1", required: false, note: "Docente principal" },
   { key: "Correo 1", required: false, note: "Mail de Prof 1" },
@@ -166,7 +177,7 @@ async function writeTemplatePair(definition) {
     importType,
     rows,
     includeHorarioSheet = false,
-    keepLegacyAsMinimal = true
+    keepLegacyAsMinimal = false
   } = definition;
 
   await writeTemplate({
@@ -207,17 +218,28 @@ async function writeTemplatePair(definition) {
 
 const baseRows = [
   {
-    CX: "P2026-Sem1",
+    Plan: "Ingenieria Informatica 2026",
+    Semestre: "1",
     Carrera: "Ingenieria Informatica",
     Curso: "Programacion 1",
     Tipo: "B",
     Horas: "96",
+    "Horas anuales": "96",
     "ID Clase": "INF-101",
+    Codigo: "INF-101",
     Cupo: "40",
+    Color: "#2563EB",
     Creditos: "8",
     "Requerim. salon": "Proyector",
     Salon: "A101 (Central)",
+    "Nombre salon": "A101",
+    Edificio: "Central",
+    Aforo: "40",
+    Dia: "Lunes",
+    Modulo: "1",
     Profesor: "Ana Perez",
+    Nombre: "Ana",
+    Apellido: "Perez",
     Correo: "ana.perez@ucu.edu.uy",
     "Prof 1": "Ana Perez",
     "Correo 1": "ana.perez@ucu.edu.uy",
@@ -227,17 +249,28 @@ const baseRows = [
     "Correo Asis 1": "sofia.diaz@ucu.edu.uy"
   },
   {
-    CX: "P2026-Sem2",
+    Plan: "Ingenieria Informatica 2026",
+    Semestre: "2",
     Carrera: "Ingenieria Informatica",
     Curso: "Fisica 2",
     Tipo: "A",
     Horas: "120",
+    "Horas anuales": "120",
     "ID Clase": "FIS-201",
+    Codigo: "FIS-201",
     Cupo: "35",
+    Color: "#16A34A",
     Creditos: "10",
     "Requerim. salon": "Laboratorio",
     Salon: "Lab 2 (Ciencias)",
+    "Nombre salon": "Lab 2",
+    Edificio: "Ciencias",
+    Aforo: "35",
+    Dia: "Martes",
+    Modulo: "2",
     Profesor: "Martin Silva",
+    Nombre: "Martin",
+    Apellido: "Silva",
     Correo: "martin.silva@ucu.edu.uy",
     "Prof 1": "Martin Silva",
     "Correo 1": "martin.silva@ucu.edu.uy"
@@ -246,23 +279,12 @@ const baseRows = [
 
 await writeTemplatePair({
   fileBaseName: "template_importacion_modulos",
-  requiredKeys: ["Curso", "ID Clase"],
+  requiredKeys: ["Plan", "Semestre", "Curso", "Tipo", "Creditos", "Codigo", "Horas anuales", "Cupo"],
   title: "Importacion de modulos",
   importType: "IMPORTAR EXCEL (MODULOS)",
   rows: baseRows,
   includeHorarioSheet: true,
   keepLegacyAsMinimal: false
-});
-
-await writeTemplate({
-  fileName: "template_importacion_modulos_completo.xlsx",
-  requiredKeys: ["Curso", "ID Clase"],
-  title: "Importacion de modulos (Legacy)",
-  importType: "IMPORTAR EXCEL (MODULOS)",
-  rows: baseRows,
-  includeHorarioSheet: true,
-  includeOptional: true,
-  profileType: "COMPLETO"
 });
 
 await writeTemplatePair({
@@ -275,7 +297,7 @@ await writeTemplatePair({
 
 await writeTemplatePair({
   fileBaseName: "template_importacion_materias",
-  requiredKeys: ["Curso"],
+  requiredKeys: ["Carrera", "Plan", "Semestre", "Curso", "Tipo", "Creditos"],
   title: "Importacion materias",
   importType: "IMPORTAR DATOS UNICOS > materias",
   rows: baseRows
@@ -283,7 +305,7 @@ await writeTemplatePair({
 
 await writeTemplatePair({
   fileBaseName: "template_importacion_grupos",
-  requiredKeys: ["Curso", "ID Clase"],
+  requiredKeys: ["Plan", "Semestre", "Curso", "Codigo", "Horas anuales", "Cupo", "Color"],
   title: "Importacion grupos",
   importType: "IMPORTAR DATOS UNICOS > grupos",
   rows: baseRows
@@ -291,7 +313,7 @@ await writeTemplatePair({
 
 await writeTemplatePair({
   fileBaseName: "template_importacion_profesores",
-  requiredKeys: ["Profesor", "Correo"],
+  requiredKeys: ["Nombre", "Apellido", "Correo"],
   title: "Importacion profesores",
   importType: "IMPORTAR DATOS UNICOS > profesores",
   rows: baseRows
@@ -299,7 +321,7 @@ await writeTemplatePair({
 
 await writeTemplatePair({
   fileBaseName: "template_importacion_salones",
-  requiredKeys: ["Salon"],
+  requiredKeys: ["Nombre salon", "Edificio", "Aforo"],
   title: "Importacion salones",
   importType: "IMPORTAR DATOS UNICOS > salones",
   rows: baseRows
@@ -307,7 +329,7 @@ await writeTemplatePair({
 
 await writeTemplatePair({
   fileBaseName: "template_importacion_semestres",
-  requiredKeys: ["CX"],
+  requiredKeys: ["Plan", "Semestre"],
   title: "Importacion semestres",
   importType: "IMPORTAR DATOS UNICOS > semestres",
   rows: baseRows
@@ -315,7 +337,7 @@ await writeTemplatePair({
 
 await writeTemplatePair({
   fileBaseName: "template_importacion_horarios",
-  requiredKeys: ["ID Clase"],
+  requiredKeys: ["Dia", "Modulo"],
   title: "Importacion horarios",
   importType: "IMPORTAR DATOS UNICOS > horarios",
   rows: baseRows,
