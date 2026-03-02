@@ -180,6 +180,7 @@ function App() {
         isOpen={isSubjectGroupsModalOpen}
         subject={selectedSubject}
         careers={careers}
+        selectedCareer={selectedCareer}
         calendars={data.calendars}
         days={DAYS}
         currentLectiveTerm={currentLectiveTerm}
