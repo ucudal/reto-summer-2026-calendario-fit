@@ -28,6 +28,7 @@ function HeaderBar(props) {
 
       <div className="header-controls">
         <select className="header-select" value={selectedCareer} onChange={(event) => onCareerChange(event.target.value)}>
+          {!selectedCareer && <option value="">-- Seleccionar carrera --</option>}
           {careers.map((career) => (
             <option key={career} value={career}>{career}</option>
           ))}

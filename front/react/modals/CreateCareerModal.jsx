@@ -14,8 +14,16 @@ function CreateCareerModal(props) {
     onBack,
     onChange,
     onSubmit,
+    onDelete,
     isEditMode = false
   } = props;
+
+  const [confirmingDelete, setConfirmingDelete] = React.useState(false);
+
+  // Reset confirmation state when the modal opens/closes or editMode changes
+  React.useEffect(() => {
+    setConfirmingDelete(false);
+  }, [isOpen, isEditMode]);
 
   if (!isOpen) return null;
 
@@ -59,7 +67,50 @@ function CreateCareerModal(props) {
 
           {errorMessage && <div className="modal-error">{errorMessage}</div>}
 
-          <button type="submit" className="modal-confirm-btn">Confirmar</button>
+          <div style={{ display: "flex", gap: "8px", justifyContent: isEditMode && onDelete ? "space-between" : "flex-end" }}>
+            {isEditMode && onDelete && !confirmingDelete && (
+              <button
+                type="button"
+                className="modal-confirm-btn"
+                style={{ backgroundColor: "#dc3545" }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setConfirmingDelete(true);
+                }}
+              >
+                Eliminar
+              </button>
+            )}
+            {isEditMode && onDelete && confirmingDelete && (
+              <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                <span style={{ fontSize: "13px", color: "#dc3545", fontWeight: 600 }}>¿Confirmar?</span>
+                <button
+                  type="button"
+                  className="modal-confirm-btn"
+                  style={{ backgroundColor: "#dc3545", padding: "6px 12px", fontSize: "13px" }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setConfirmingDelete(false);
+                    onDelete();
+                  }}
+                >
+                  Sí, eliminar
+                </button>
+                <button
+                  type="button"
+                  className="modal-confirm-btn"
+                  style={{ backgroundColor: "#6c757d", padding: "6px 12px", fontSize: "13px" }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setConfirmingDelete(false);
+                  }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            )}
+            <button type="submit" className="modal-confirm-btn">Confirmar</button>
+          </div>
         </form>
       </section>
     </div>

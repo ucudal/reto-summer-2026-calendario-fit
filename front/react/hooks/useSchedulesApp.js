@@ -16,7 +16,10 @@
         const career = window.useCareerManagement({
             careers: db.careers,
             setCareers: db.setCareers,
-            setSelectedCareer
+            careersData: db.careersData,
+            setCareersData: db.setCareersData,
+            setSelectedCareer,
+            reloadGroupsFromDb: db.reloadGroupsFromDb
         });
 
         const semester = window.useSemesterManagement(data, setData);

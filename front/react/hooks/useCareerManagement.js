@@ -1,5 +1,5 @@
 (function () {
-    function useCareerManagement({ careers, setCareers, setSelectedCareer }) {
+    function useCareerManagement({ careers, setCareers, careersData, setCareersData, setSelectedCareer, reloadGroupsFromDb }) {
         const createCareerModalFns = window.CreateCareerModalFunctions;
 
         const [isCareersListOpen, setIsCareersListOpen] = React.useState(false);
@@ -47,9 +47,10 @@
         }
 
         function selectCareerToManage(careerName) {
+            const found = careersData.find(c => c.nombre === careerName);
             setCareerForm({ nombre: careerName });
             setCareerModalError("");
-            setCareerEditMode(careerName);
+            setCareerEditMode(found || careerName);
             setCareerOpenedFromList(true);
             setIsCareersListOpen(false);
             setIsCreateCareerOpen(true);
@@ -63,11 +64,34 @@
             await createCareerModalFns.confirmCreateCareer({
                 careerForm,
                 careers,
+                careersData,
+                careerEditMode,
                 setCareerModalError,
                 setCareers,
+                setCareersData,
                 setSelectedCareer,
-                closeCreateCareerModal
+                closeCreateCareerModal,
+                reloadGroupsFromDb
             });
+        }
+
+        async function deleteCareer() {
+            const wasOpenedFromList = careerOpenedFromList;
+            await createCareerModalFns.deleteCareer({
+                careerEditMode,
+                careers,
+                careersData,
+                setCareers,
+                setCareersData,
+                setSelectedCareer,
+                setCareerModalError,
+                closeCreateCareerModal,
+                reloadGroupsFromDb
+            });
+            // Reabrir la lista de carreras si se abrió desde allí
+            if (wasOpenedFromList) {
+                setIsCareersListOpen(true);
+            }
         }
 
         return {
@@ -85,7 +109,8 @@
             backToCareersListFromModal,
             selectCareerToManage,
             updateCareerForm,
-            confirmCreateCareer
+            confirmCreateCareer,
+            deleteCareer
         };
     }
 

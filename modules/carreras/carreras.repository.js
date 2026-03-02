@@ -1,5 +1,6 @@
 import { db } from '../../db/database.js';
 import { carreras } from "../../db/drizzle/schema/base.js";
+import { materiaCarrera } from "../../db/drizzle/schema/links.js";
 import { asc, eq } from 'drizzle-orm';
 
 export function crearCarrera(data) {
@@ -12,6 +13,12 @@ export function modificarCarrera(id, data) {
   return db.update(carreras)
     .set(data)
     .where(eq(carreras.id, id))
+    .run();
+}
+
+export function eliminarRelacionesMateriaCarrera(idCarrera) {
+  return db.delete(materiaCarrera)
+    .where(eq(materiaCarrera.idCarrera, idCarrera))
     .run();
 }
 

@@ -27,6 +27,7 @@ function App() {
     selectCareerToManage,
     updateCareerForm,
     confirmCreateCareer,
+    deleteCareer,
 
     // Teacher
     teachers,
@@ -212,6 +213,7 @@ function App() {
         onBack={careerOpenedFromList ? backToCareersListFromModal : null}
         onChange={updateCareerForm}
         onSubmit={confirmCreateCareer}
+        onDelete={careerEditMode ? deleteCareer : null}
         isEditMode={Boolean(careerEditMode)}
       />
 
