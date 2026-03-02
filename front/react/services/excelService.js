@@ -266,7 +266,7 @@
         const currentLectiveTerm = payload?.currentLectiveTerm;
 
         // ✅ default 2026
-        const selectedPlan = payload?.selectedPlan || "2026";
+        const selectedPlan = "20__";
 
         if (!Array.isArray(calendars)) throw new Error("Payload inválido: falta calendars[]");
         if (!selectedCareer) throw new Error("Payload inválido: falta selectedCareer");
@@ -387,8 +387,7 @@
             // ====== TITULO (fila 3: ya no existe “fila 3 al pedo”) ======
             const titleStartRow = 3; // 👈 antes era 4
 
-            const titleLine1 =
-                `HORARIOS ${String(calendar.name || "").toUpperCase()} ${String(currentLectiveTerm || "").toUpperCase()}`.trim();
+            const titleLine1 = `HORARIOS ${String(calendar.name || "").toUpperCase()}`;
             const hasContra = shouldMarkContra(calendar);
 
             sheet.mergeCells(titleStartRow, 1, titleStartRow, lastCol);
