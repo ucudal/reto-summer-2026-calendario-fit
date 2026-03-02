@@ -81,8 +81,18 @@ export function listarGrupos() {
     `)
     .all();
 
+  // Fallback: si no existen links en grupo_carrera, derivamos carreras desde materia_carrera.
+  const fallbackCareerRows = sqlite
+    .prepare(`
+      SELECT g.id AS idGrupo, c.nombre AS carreraNombre
+      FROM grupos g
+      INNER JOIN materia_carrera mc ON mc.id_materia = g.id_materia
+      INNER JOIN carreras c ON c.id = mc.id_carrera
+    `)
+    .all();
+
   const careersByGroup = new Map();
-  for (const row of careerRows) {
+  for (const row of [...careerRows, ...fallbackCareerRows]) {
     const groupId = row.idGrupo;
     if (!careersByGroup.has(groupId)) careersByGroup.set(groupId, new Set());
     if (row.carreraNombre) careersByGroup.get(groupId).add(row.carreraNombre);
@@ -90,11 +100,10 @@ export function listarGrupos() {
 
   const academicRows = sqlite
     .prepare(`
-      SELECT gc.id_grupo AS idGrupo, mc.semestre AS semestre, mc.anio AS anio
-      FROM grupo_carrera gc
-      INNER JOIN grupos g ON g.id = gc.id_grupo
-      INNER JOIN materia_carrera mc ON mc.id_materia = g.id_materia AND mc.id_carrera = gc.id_carrera
-      ORDER BY gc.id_grupo ASC
+      SELECT g.id AS idGrupo, s.numero_semestre AS semestre, s.anio AS anio
+      FROM grupos g
+      LEFT JOIN semestres s ON s.id = g.id_semestre
+      ORDER BY g.id ASC
     `)
     .all();
 

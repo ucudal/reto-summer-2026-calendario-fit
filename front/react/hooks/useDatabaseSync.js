@@ -92,6 +92,17 @@
             return () => { cancelled = true; };
         }, []);
 
+        async function reloadCareersFromDb() {
+            if (!window.api?.carreras?.listar) return;
+            const response = await window.api.carreras.listar();
+            if (response?.success) {
+                const names = (response.data || [])
+                    .map((r) => String(r?.nombre || "").trim())
+                    .filter(Boolean);
+                setCareers(names);
+            }
+        }
+
         React.useEffect(() => {
             const selectedCareerNormalized = normalizeText(selectedCareer);
             const classesByCalendar = new Map();
@@ -122,7 +133,7 @@
             }));
         }, [dbGroups, selectedCareer]);
 
-        return { careers, setCareers, reloadGroupsFromDb };
+        return { careers, setCareers, reloadGroupsFromDb, reloadCareersFromDb };
     }
 
     window.useDatabaseSync = useDatabaseSync;

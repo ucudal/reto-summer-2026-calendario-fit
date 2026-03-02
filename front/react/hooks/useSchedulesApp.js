@@ -38,7 +38,8 @@
         const excel = window.useExcelActions({
             data,
             selectedCareer,
-            reloadGroupsFromDb: db.reloadGroupsFromDb
+            reloadGroupsFromDb: db.reloadGroupsFromDb,
+            reloadCareersFromDb: db.reloadCareersFromDb
         });
 
         return {
