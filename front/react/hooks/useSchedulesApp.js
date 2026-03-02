@@ -48,6 +48,7 @@
       data,
       selectedCareer,
       reloadGroupsFromDb: db.reloadGroupsFromDb,
+      reloadCareersFromDb: db.reloadCareersFromDb,
     });
 
     

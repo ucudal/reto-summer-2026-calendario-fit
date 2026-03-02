@@ -51,7 +51,6 @@ export function obtenerGrupoPorId(id) {
 export function listarGrupos() {
   ensureGrupoCarreraTable();
 
-  // Trae grupos + materia + horario(s) para que el front pueda dibujar calendario.
   const rows = db
     .select({
       id: grupos.id,
@@ -85,14 +84,32 @@ export function listarGrupos() {
     `)
     .all();
 
+  const fallbackCareerRows = sqlite
+    .prepare(`
+      SELECT g.id AS idGrupo, c.nombre AS carreraNombre
+      FROM grupos g
+      INNER JOIN materia_carrera mc ON mc.id_materia = g.id_materia
+      INNER JOIN carreras c ON c.id = mc.id_carrera
+    `)
+    .all();
+
   const careersByGroup = new Map();
-  for (const row of careerRows) {
+  for (const row of [...careerRows, ...fallbackCareerRows]) {
     const groupId = row.idGrupo;
     if (!careersByGroup.has(groupId)) careersByGroup.set(groupId, new Set());
     if (row.carreraNombre) careersByGroup.get(groupId).add(row.carreraNombre);
   }
 
   const academicRows = sqlite
+    .prepare(`
+      SELECT g.id AS idGrupo, s.numero_semestre AS semestre, s.anio AS anio
+      FROM grupos g
+      LEFT JOIN semestres s ON s.id = g.id_semestre
+      ORDER BY g.id ASC
+    `)
+    .all();
+
+  const academicRowsByCareer = sqlite
     .prepare(`
       SELECT gc.id_grupo AS idGrupo, c.nombre AS carreraNombre, mc.semestre AS semestre, mc.anio AS anio
       FROM grupo_carrera gc
@@ -105,20 +122,21 @@ export function listarGrupos() {
 
   const academicByGroup = new Map();
   const academicByGroupCareer = new Map();
+
   for (const row of academicRows) {
+    if (academicByGroup.has(row.idGrupo)) continue;
+    academicByGroup.set(row.idGrupo, {
+      semestre: Number(row.semestre || 1),
+      anio: Number(row.anio || 1)
+    });
+  }
+
+  for (const row of academicRowsByCareer) {
     const normalized = {
       carrera: String(row.carreraNombre || "").trim(),
       semestre: Number(row.semestre || 1),
       anio: Number(row.anio || 1)
     };
-
-    if (!academicByGroup.has(row.idGrupo)) {
-      academicByGroup.set(row.idGrupo, {
-        semestre: normalized.semestre,
-        anio: normalized.anio
-      });
-    }
-
     if (!academicByGroupCareer.has(row.idGrupo)) {
       academicByGroupCareer.set(row.idGrupo, []);
     }
@@ -259,8 +277,6 @@ export function insertarHorarios(idGrupo, horariosPayload) {
       .where(and(eq(horarios.modulo, h.modulo), eq(horarios.dia, h.dia)))
       .get();
 
-    // Si la base esta "nueva" y no tiene filas en horarios,
-    // las creamos en el momento para no perder el bloque del grupo.
     if (!horarioRow) {
       const createHorario = db
         .insert(horarios)
@@ -274,7 +290,6 @@ export function insertarHorarios(idGrupo, horariosPayload) {
       if (newHorarioId > 0) {
         horarioRow = { id: newHorarioId };
       } else {
-        // Fallback: si no devolvio id, reintentamos lookup.
         horarioRow = db
           .select({ id: horarios.id })
           .from(horarios)
