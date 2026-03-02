@@ -19,11 +19,14 @@
 
     const visibility = window.useCalendarVisibility(data, setData);
 
-    const career = window.useCareerManagement({
-      careers: db.careers,
-      setCareers: db.setCareers,
-      setSelectedCareer,
-    });
+        const career = window.useCareerManagement({
+            careers: db.careers,
+            setCareers: db.setCareers,
+            careersData: db.careersData,
+            setCareersData: db.setCareersData,
+            setSelectedCareer,
+            reloadGroupsFromDb: db.reloadGroupsFromDb
+        });
 
     const semester = window.useSemesterManagement(data, setData);
 
