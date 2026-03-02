@@ -10,6 +10,9 @@ function App() {
     visibleCalendars,
     visibleAlerts,
     toggleCalendarVisible,
+    lectiveTerms,
+    activeLectiveTerm,
+    setActiveLectiveTerm,
 
     // Career
     isCareersListOpen,
@@ -112,9 +115,11 @@ function App() {
     <>
       <HeaderBar
         careers={careers}
+        lectiveTerms={lectiveTerms}
         selectedCareer={selectedCareer}
-        currentLectiveTerm={currentLectiveTerm}
+        currentLectiveTerm={activeLectiveTerm || currentLectiveTerm}
         onCareerChange={setSelectedCareer}
+        onLectiveTermChange={setActiveLectiveTerm}
         onOpenCreateSemester={openCreateSemesterModal}
         onOpenCreateCareer={openCreateCareerModal}
         onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
