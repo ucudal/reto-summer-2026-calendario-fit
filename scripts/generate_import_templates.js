@@ -1,4 +1,4 @@
-﻿import fs from "node:fs";
+import fs from "node:fs";
 import path from "node:path";
 import ExcelJS from "exceljs";
 
@@ -35,9 +35,12 @@ const COMMON_COLUMNS = [
   { key: "Correo Asis 1", required: false, note: "Mail de asistente" }
 ];
 
-function buildColumns(requiredKeys) {
+function buildColumns(requiredKeys, includeOptional = true) {
   const requiredSet = new Set(requiredKeys);
-  return COMMON_COLUMNS.map((c) => ({ ...c, required: requiredSet.has(c.key) }));
+  const base = includeOptional
+    ? COMMON_COLUMNS
+    : COMMON_COLUMNS.filter((column) => requiredSet.has(column.key));
+  return base.map((column) => ({ ...column, required: requiredSet.has(column.key) }));
 }
 
 function styleHeaderRow(ws, columns) {
@@ -71,14 +74,22 @@ function addDataRows(ws, columns, rows) {
   });
 }
 
-function addGuideSheet(workbook, columns, title, importType) {
+function addGuideSheet(workbook, columns, title, importType, profileType) {
   const ws = workbook.addWorksheet("Guia");
   ws.addRow([`Template: ${title}`]);
   ws.addRow([`Tipo importacion: ${importType}`]);
+  ws.addRow([`Perfil: ${profileType}`]);
+  ws.addRow([
+    "Nota",
+    profileType === "MINIMO"
+      ? "Este template incluye solo columnas obligatorias."
+      : "Este template incluye columnas obligatorias y opcionales."
+  ]);
+  ws.addRow(["Importante", "Las columnas opcionales solo se importan si tienen datos."]);
   ws.addRow([]);
   ws.addRow(["Campo", "Uso", "Estado"]);
 
-  const hdr = ws.getRow(4);
+  const hdr = ws.getRow(7);
   for (let i = 1; i <= 3; i += 1) {
     const c = hdr.getCell(i);
     c.font = { bold: true };
@@ -106,7 +117,7 @@ function addGuideSheet(workbook, columns, title, importType) {
   });
 
   ws.getColumn(1).width = 24;
-  ws.getColumn(2).width = 42;
+  ws.getColumn(2).width = 56;
   ws.getColumn(3).width = 16;
 }
 
@@ -123,35 +134,91 @@ function addHorarioSheet(workbook) {
   }
 }
 
-async function writeTemplate({ fileName, requiredKeys, title, importType, rows, includeHorarioSheet = false }) {
+async function writeTemplate({
+  fileName,
+  requiredKeys,
+  title,
+  importType,
+  rows,
+  includeHorarioSheet = false,
+  includeOptional = true,
+  profileType = "COMPLETO"
+}) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "CalendarioFIT";
   workbook.created = new Date();
 
-  const columns = buildColumns(requiredKeys);
+  const columns = buildColumns(requiredKeys, includeOptional);
   const ws = workbook.addWorksheet("Modulos");
   styleHeaderRow(ws, columns);
   addDataRows(ws, columns, rows);
-  addGuideSheet(workbook, columns, title, importType);
+  addGuideSheet(workbook, columns, title, importType, profileType);
   if (includeHorarioSheet) addHorarioSheet(workbook);
 
   await workbook.xlsx.writeFile(path.join(outDir, fileName));
 }
 
+async function writeTemplatePair(definition) {
+  const {
+    fileBaseName,
+    requiredKeys,
+    title,
+    importType,
+    rows,
+    includeHorarioSheet = false,
+    keepLegacyAsMinimal = true
+  } = definition;
+
+  await writeTemplate({
+    fileName: `${fileBaseName}_minimo.xlsx`,
+    requiredKeys,
+    title: `${title} (Minimo)`,
+    importType,
+    rows,
+    includeHorarioSheet,
+    includeOptional: false,
+    profileType: "MINIMO"
+  });
+
+  await writeTemplate({
+    fileName: `${fileBaseName}_completo.xlsx`,
+    requiredKeys,
+    title: `${title} (Completo)`,
+    importType,
+    rows,
+    includeHorarioSheet,
+    includeOptional: true,
+    profileType: "COMPLETO"
+  });
+
+  if (keepLegacyAsMinimal) {
+    await writeTemplate({
+      fileName: `${fileBaseName}.xlsx`,
+      requiredKeys,
+      title: `${title} (Legacy-Minimo)`,
+      importType,
+      rows,
+      includeHorarioSheet,
+      includeOptional: false,
+      profileType: "MINIMO"
+    });
+  }
+}
+
 const baseRows = [
   {
-    "CX": "P2026-Sem1",
-    "Carrera": "Ingenieria Informatica",
-    "Curso": "Programacion 1",
-    "Tipo": "B",
-    "Horas": "96",
+    CX: "P2026-Sem1",
+    Carrera: "Ingenieria Informatica",
+    Curso: "Programacion 1",
+    Tipo: "B",
+    Horas: "96",
     "ID Clase": "INF-101",
-    "Cupo": "40",
-    "Creditos": "8",
+    Cupo: "40",
+    Creditos: "8",
     "Requerim. salon": "Proyector",
-    "Salon": "A101 (Central)",
-    "Profesor": "Ana Perez",
-    "Correo": "ana.perez@ucu.edu.uy",
+    Salon: "A101 (Central)",
+    Profesor: "Ana Perez",
+    Correo: "ana.perez@ucu.edu.uy",
     "Prof 1": "Ana Perez",
     "Correo 1": "ana.perez@ucu.edu.uy",
     "Prof 2": "Luis Gomez",
@@ -160,82 +227,94 @@ const baseRows = [
     "Correo Asis 1": "sofia.diaz@ucu.edu.uy"
   },
   {
-    "CX": "P2026-Sem2",
-    "Carrera": "Ingenieria Informatica",
-    "Curso": "Fisica 2",
-    "Tipo": "A",
-    "Horas": "120",
+    CX: "P2026-Sem2",
+    Carrera: "Ingenieria Informatica",
+    Curso: "Fisica 2",
+    Tipo: "A",
+    Horas: "120",
     "ID Clase": "FIS-201",
-    "Cupo": "35",
-    "Creditos": "10",
+    Cupo: "35",
+    Creditos: "10",
     "Requerim. salon": "Laboratorio",
-    "Salon": "Lab 2 (Ciencias)",
-    "Profesor": "Martin Silva",
-    "Correo": "martin.silva@ucu.edu.uy",
+    Salon: "Lab 2 (Ciencias)",
+    Profesor: "Martin Silva",
+    Correo: "martin.silva@ucu.edu.uy",
     "Prof 1": "Martin Silva",
     "Correo 1": "martin.silva@ucu.edu.uy"
   }
 ];
 
+await writeTemplatePair({
+  fileBaseName: "template_importacion_modulos",
+  requiredKeys: ["Curso", "ID Clase"],
+  title: "Importacion de modulos",
+  importType: "IMPORTAR EXCEL (MODULOS)",
+  rows: baseRows,
+  includeHorarioSheet: true,
+  keepLegacyAsMinimal: false
+});
+
 await writeTemplate({
   fileName: "template_importacion_modulos_completo.xlsx",
   requiredKeys: ["Curso", "ID Clase"],
-  title: "Importacion completa de modulos",
+  title: "Importacion de modulos (Legacy)",
   importType: "IMPORTAR EXCEL (MODULOS)",
   rows: baseRows,
-  includeHorarioSheet: true
+  includeHorarioSheet: true,
+  includeOptional: true,
+  profileType: "COMPLETO"
 });
 
-await writeTemplate({
-  fileName: "template_importacion_carreras.xlsx",
+await writeTemplatePair({
+  fileBaseName: "template_importacion_carreras",
   requiredKeys: ["Carrera"],
   title: "Importacion carreras",
   importType: "IMPORTAR DATOS UNICOS > carreras",
-  rows: [{ "Carrera": "Ingenieria Informatica" }, { "Carrera": "Ingenieria Industrial" }]
+  rows: [{ Carrera: "Ingenieria Informatica" }, { Carrera: "Ingenieria Industrial" }]
 });
 
-await writeTemplate({
-  fileName: "template_importacion_materias.xlsx",
+await writeTemplatePair({
+  fileBaseName: "template_importacion_materias",
   requiredKeys: ["Curso"],
   title: "Importacion materias",
   importType: "IMPORTAR DATOS UNICOS > materias",
   rows: baseRows
 });
 
-await writeTemplate({
-  fileName: "template_importacion_grupos.xlsx",
+await writeTemplatePair({
+  fileBaseName: "template_importacion_grupos",
   requiredKeys: ["Curso", "ID Clase"],
   title: "Importacion grupos",
   importType: "IMPORTAR DATOS UNICOS > grupos",
   rows: baseRows
 });
 
-await writeTemplate({
-  fileName: "template_importacion_profesores.xlsx",
+await writeTemplatePair({
+  fileBaseName: "template_importacion_profesores",
   requiredKeys: ["Profesor", "Correo"],
   title: "Importacion profesores",
   importType: "IMPORTAR DATOS UNICOS > profesores",
   rows: baseRows
 });
 
-await writeTemplate({
-  fileName: "template_importacion_salones.xlsx",
+await writeTemplatePair({
+  fileBaseName: "template_importacion_salones",
   requiredKeys: ["Salon"],
   title: "Importacion salones",
   importType: "IMPORTAR DATOS UNICOS > salones",
   rows: baseRows
 });
 
-await writeTemplate({
-  fileName: "template_importacion_semestres.xlsx",
+await writeTemplatePair({
+  fileBaseName: "template_importacion_semestres",
   requiredKeys: ["CX"],
   title: "Importacion semestres",
   importType: "IMPORTAR DATOS UNICOS > semestres",
   rows: baseRows
 });
 
-await writeTemplate({
-  fileName: "template_importacion_horarios.xlsx",
+await writeTemplatePair({
+  fileBaseName: "template_importacion_horarios",
   requiredKeys: ["ID Clase"],
   title: "Importacion horarios",
   importType: "IMPORTAR DATOS UNICOS > horarios",
