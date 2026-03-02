@@ -16,16 +16,18 @@ export function modificarCarrera(id, data) {
     .run();
 }
 
-export function eliminarRelacionesMateriaCarrera(idCarrera) {
-  return db.delete(materiaCarrera)
-    .where(eq(materiaCarrera.idCarrera, idCarrera))
-    .run();
-}
-
 export function eliminarCarrera(id) {
-  return db.delete(carreras)
-    .where(eq(carreras.id, id))
-    .run();
+  return db.transaction((tx) => {
+    // Eliminar relaciones con materiaCarrera primero (si existen)
+    tx.delete(materiaCarrera)
+      .where(eq(materiaCarrera.idCarrera, id))
+      .run();
+
+    // Finalmente eliminar la carrera
+    tx.delete(carreras)
+      .where(eq(carreras.id, id))
+      .run();
+  });
 }
 
 export function obtenerCarreraPorId(id) {

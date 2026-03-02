@@ -1,7 +1,6 @@
 import {
   crearCarrera,
   eliminarCarrera,
-  eliminarRelacionesMateriaCarrera,
   listarCarreras,
   modificarCarrera,
   obtenerCarreraPorId
@@ -41,8 +40,6 @@ export function bajaCarrera(id) {
   if (!existente) {
     throw new Error('Carrera no encontrada');
   }
-
-  eliminarRelacionesMateriaCarrera(id);
   return eliminarCarrera(id);
 }
 
