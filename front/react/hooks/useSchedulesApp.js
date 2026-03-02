@@ -5,11 +5,17 @@
     const [data, setData] = React.useState(cloneInitialData());
     const [selectedCareer, setSelectedCareer] = React.useState("");
 
-    const db = window.useDatabaseSync({
-      selectedCareer,
-      data,
-      setData,
-    });
+        const db = window.useDatabaseSync({
+            selectedCareer,
+            data,
+            setData
+        });
+
+        React.useEffect(() => {
+            if (selectedCareer) return;
+            if (!Array.isArray(db.careers) || db.careers.length === 0) return;
+            setSelectedCareer(String(db.careers[0] || ""));
+        }, [selectedCareer, db.careers]);
 
     const visibility = window.useCalendarVisibility(data, setData);
 
