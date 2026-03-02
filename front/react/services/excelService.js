@@ -421,7 +421,7 @@
 
             sheet.mergeCells(cursorRow, 1, cursorRow, lastCol);
             const sub = sheet.getCell(cursorRow, 1);
-            sub.value = "Además de estos cursos puedes hacer al menos uno del Core UCU. Para más información revisar currículo.";
+            sub.value = "Además de estos cursos puedes hacer al menos uno del Core UCU en cualquiera de las áreas de Antropología y Filosofía, Ética y Ciudadanía o Sociedad y Religión. ";
             sub.font = { italic: true, size: 10, color: { argb: "FFB00020" } };
             sub.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
             sheet.getRow(cursorRow).height = 18;
