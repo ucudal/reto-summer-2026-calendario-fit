@@ -47,9 +47,15 @@ contextBridge.exposeInMainWorld("api", {
     agregarRequerimientos: (idGrupo, requerimientos) => ipcRenderer.invoke("grupos:agregarRequerimientos", { idGrupo, requerimientos })
   },
 
+  //Generar calendario excel
   excel: {
     guardarArchivo: (buffer) =>
-        ipcRenderer.invoke("excel:guardarArchivo", buffer)},
+        ipcRenderer.invoke("excel:guardarArchivo", buffer),
+
+    seleccionarPlan: () =>
+        ipcRenderer.invoke("excel:seleccionarPlan")
+  },
+
   // Expose Exportaciones
   exportaciones: {
     guardarExcel: (payload) => ipcRenderer.invoke("exportaciones:guardarExcel", payload),
