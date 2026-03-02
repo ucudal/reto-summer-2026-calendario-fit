@@ -27,7 +27,9 @@
 
         const semester = window.useSemesterManagement(data, setData);
 
-        const teacher = window.useTeacherManagement();
+        const teacher = window.useTeacherManagement({
+            reloadGroupsFromDb: db.reloadGroupsFromDb
+        });
 
         const subject = window.useSubjectManagement({
             careers: db.careers

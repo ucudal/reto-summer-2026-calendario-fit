@@ -1,5 +1,6 @@
 import { db } from '../../db/database.js';
 import { profesores }  from "../../db/drizzle/schema/base.js";
+import { profesorGrupo } from "../../db/drizzle/schema/links.js";
 import { asc, eq } from "drizzle-orm";
 
 /**
@@ -20,6 +21,16 @@ export function crearDocente(docente) {
 export function eliminarDocente(id) {
   return db.delete(profesores)
     .where(eq(profesores.id, id))
+    .run();
+}
+
+
+/**
+ * Eliminar relaciones profesor-grupo de un docente
+ */
+export function eliminarRelacionesProfesorGrupo(idProfesor) {
+  return db.delete(profesorGrupo)
+    .where(eq(profesorGrupo.idProfesor, idProfesor))
     .run();
 }
 

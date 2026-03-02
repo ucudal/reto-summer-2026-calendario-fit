@@ -12,6 +12,7 @@ function isValidEmail(email) {
 async function confirmCreateTeacher(params) {
   const {
     teacherForm,
+    teacherEditMode,
     setTeacherModalError,
     closeCreateTeacherModal
   } = params;
@@ -41,12 +42,23 @@ async function confirmCreateTeacher(params) {
   }
 
   try {
-    if (!window.api?.docentes?.crear) {
-      setTeacherModalError("No se encontro la API de docentes en preload.");
-      return;
-    }
+    let response;
 
-    const response = await window.api.docentes.crear({ nombre, apellido, correo });
+    if (teacherEditMode && teacherEditMode.id) {
+      // Modo edición: actualizar docente existente
+      if (!window.api?.docentes?.actualizar) {
+        setTeacherModalError("No se encontró la API de actualizar docentes en preload.");
+        return;
+      }
+      response = await window.api.docentes.actualizar({ id: teacherEditMode.id, nombre, apellido, correo });
+    } else {
+      // Modo creación: crear nuevo docente
+      if (!window.api?.docentes?.crear) {
+        setTeacherModalError("No se encontró la API de docentes en preload.");
+        return;
+      }
+      response = await window.api.docentes.crear({ nombre, apellido, correo });
+    }
 
     if (!response?.success) {
       const backendError = String(response?.error || "");
@@ -56,7 +68,7 @@ async function confirmCreateTeacher(params) {
         return;
       }
 
-      setTeacherModalError(backendError || "No se pudo crear el docente.");
+      setTeacherModalError(backendError || (teacherEditMode ? "No se pudo actualizar el docente." : "No se pudo crear el docente."));
       return;
     }
   } catch (error) {
@@ -65,7 +77,35 @@ async function confirmCreateTeacher(params) {
       setTeacherModalError("Ya existe un docente con ese correo.");
       return;
     }
-    setTeacherModalError("No se pudo crear el docente.");
+    setTeacherModalError(teacherEditMode ? "No se pudo actualizar el docente." : "No se pudo crear el docente.");
+    return;
+  }
+
+  closeCreateTeacherModal();
+}
+
+async function deleteTeacher(params) {
+  const { teacherId, setTeacherModalError, closeCreateTeacherModal } = params;
+
+  if (!teacherId) {
+    setTeacherModalError("No se puede eliminar: ID de docente no encontrado.");
+    return;
+  }
+
+  try {
+    if (!window.api?.docentes?.eliminar) {
+      setTeacherModalError("No se encontró la API de eliminar docentes en preload.");
+      return;
+    }
+
+    const response = await window.api.docentes.eliminar(teacherId);
+
+    if (!response?.success) {
+      setTeacherModalError(String(response?.error || "No se pudo eliminar el docente."));
+      return;
+    }
+  } catch (error) {
+    setTeacherModalError(String(error?.message || "No se pudo eliminar el docente."));
     return;
   }
 
@@ -73,5 +113,6 @@ async function confirmCreateTeacher(params) {
 }
 
 window.CreateTeacherModalFunctions = {
-  confirmCreateTeacher
+  confirmCreateTeacher,
+  deleteTeacher
 };
