@@ -39,14 +39,14 @@
             }
         }, [visibleCalendars, lectiveTerms, activeLectiveTerm]);
 
-        function toggleCalendarVisible(calendarId, checked) {
-            setData(prev => ({
-                ...prev,
-                calendars: prev.calendars.map(c =>
-                    c.id === calendarId ? { ...c, visible: checked } : c
-                )
-            }));
-        }
+    function toggleCalendarVisible(calendarId, checked) {
+      setData((prev) => ({
+        ...prev,
+        calendars: prev.calendars.map((c) =>
+          c.id === calendarId ? { ...c, visible: checked } : c,
+        ),
+      }));
+    }
 
         function setActiveLectiveTerm(nextTerm) {
             const selectedTerm = String(nextTerm || "").trim();
@@ -72,5 +72,5 @@
         };
     }
 
-    window.useCalendarVisibility = useCalendarVisibility;
+  window.useCalendarVisibility = useCalendarVisibility;
 })();
