@@ -11,6 +11,7 @@ function SubjectGroupsModal(props) {
     isOpen,
     subject,
     careers = [],
+    selectedCareer = "",
     calendars = [],
     days = [],
     currentLectiveTerm = "",
@@ -30,6 +31,7 @@ function SubjectGroupsModal(props) {
   const [selectedDays, setSelectedDays] = React.useState([]);
   const [dayTimeRanges, setDayTimeRanges] = React.useState({});
   const [applyChangesToAllCareers, setApplyChangesToAllCareers] = React.useState(true);
+  const [editScopeCareers, setEditScopeCareers] = React.useState([]);
   const [error, setError] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
   const careerDropdownRef = React.useRef(null);
@@ -39,6 +41,11 @@ function SubjectGroupsModal(props) {
     : String(subject?.name || subject?.subjectName || "").trim();
   const editContext = subject && typeof subject === "object" ? subject : null;
   const isEditMode = Boolean(editContext?.mode === "edit");
+  const draftEditCareers = toNormalizedCareerList(
+    Array.isArray(editContext?.draft?.selectedCareers) ? editContext.draft.selectedCareers : []
+  );
+  const draftEditCareersKey = draftEditCareers.join("|");
+  const editGroupCareersText = editScopeCareers.length > 0 ? editScopeCareers.join(", ") : "sin carreras";
 
   // Fallback por si no hay backend de docentes disponible.
   const fallbackTeachers = [
@@ -71,9 +78,10 @@ function SubjectGroupsModal(props) {
     setSelectedDays(Array.isArray(draft?.selectedDays) ? [...draft.selectedDays] : []);
     setDayTimeRanges(draft?.dayTimeRanges && typeof draft.dayTimeRanges === "object" ? { ...draft.dayTimeRanges } : {});
     setApplyChangesToAllCareers(true);
+    setEditScopeCareers(draftEditCareers);
     setError("");
     setIsSaving(false);
-  }, [isOpen, subject, careers]);
+  }, [isOpen, subject, careers, draftEditCareersKey]);
 
   React.useEffect(() => {
     if (!isOpen) return;
@@ -206,6 +214,58 @@ function SubjectGroupsModal(props) {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [isOpen, isCareerDropdownOpen]);
 
+  React.useEffect(() => {
+    if (!isOpen || !isEditMode) return;
+    if (!window.api?.grupos?.listar) return;
+
+    let isCancelled = false;
+
+    async function loadEditScopeCareers() {
+      try {
+        const originalGroupId = toGroupId(editContext?.draft?.groupRef);
+        if (!originalGroupId) return;
+
+        const groupsResp = await window.api.grupos.listar();
+        if (isCancelled) return;
+        const allGroups = groupsResp?.success && Array.isArray(groupsResp.data) ? groupsResp.data : [];
+        const originalGroup = allGroups.find((group) => Number(group?.id) === originalGroupId);
+        if (!originalGroup) return;
+
+        const siblingGroups = allGroups.filter((group) => {
+          if (!group || Number(group.id) <= 0) return false;
+          const sameCode = String(group.codigo || "").trim() === String(originalGroup.codigo || "").trim();
+          const sameSubject = Number(group.idMateria) === Number(originalGroup.idMateria);
+          const sameSemester = Number(group.idSemestre) === Number(originalGroup.idSemestre);
+          const sameLectiveSemester = Number(group.semestreLectivo || 0) === Number(originalGroup.semestreLectivo || 0);
+          const sameLectiveYear = Number(group.anioLectivo || 0) === Number(originalGroup.anioLectivo || 0);
+          return sameCode && sameSubject && sameSemester && sameLectiveSemester && sameLectiveYear;
+        });
+
+        const allSiblingCareers = siblingGroups.flatMap((group) =>
+          Array.isArray(group?.carreras) ? group.carreras : []
+        );
+        const resolvedCareers = toNormalizedCareerList(
+          allSiblingCareers.length > 0
+            ? allSiblingCareers
+            : Array.isArray(originalGroup?.carreras)
+            ? originalGroup.carreras
+            : draftEditCareers
+        );
+        setEditScopeCareers(resolvedCareers);
+      } catch (e) {
+        if (!isCancelled) {
+          setEditScopeCareers(draftEditCareers);
+        }
+      }
+    }
+
+    loadEditScopeCareers();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isOpen, isEditMode, editContext, draftEditCareersKey]);
+
   if (!isOpen || !subjectName) return null;
 
   const filteredTeachers = availableTeachers.filter((teacher) => {
@@ -323,6 +383,20 @@ function SubjectGroupsModal(props) {
     return [...new Set((items || []).map((value) => String(value || "").trim()).filter(Boolean))].sort();
   }
 
+  function normalizeText(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function findCareerByNormalized(careerList, target) {
+    const targetNormalized = normalizeText(target);
+    if (!targetNormalized) return "";
+    return careerList.find((item) => normalizeText(item) === targetNormalized) || "";
+  }
+
   function areCareerListsEqual(a, b) {
     if (a.length !== b.length) return false;
     for (let i = 0; i < a.length; i += 1) {
@@ -374,7 +448,7 @@ function SubjectGroupsModal(props) {
         ? [careers[0]]
         : [];
 
-    if (finalSelectedCareers.length === 0) {
+    if (!isEditMode && finalSelectedCareers.length === 0) {
       setError("No hay carreras disponibles para crear el grupo.");
       return;
     }
@@ -440,7 +514,18 @@ function SubjectGroupsModal(props) {
             ? originalGroup.carreras
             : editContext?.draft?.selectedCareers || []
         );
-        const selectedCareerList = toNormalizedCareerList(finalSelectedCareers);
+        let selectedCareerList = toNormalizedCareerList(finalSelectedCareers);
+        if (applyChangesToAllCareers) {
+          selectedCareerList = originalCareers;
+        } else {
+          const matchedCareer = findCareerByNormalized(originalCareers, selectedCareer);
+          if (!matchedCareer) {
+            setError("La carrera actual no pertenece a este grupo.");
+            setIsSaving(false);
+            return;
+          }
+          selectedCareerList = [matchedCareer];
+        }
         const sameCareerSelection = areCareerListsEqual(originalCareers, selectedCareerList);
         const horariosPayload = buildDbHorariosPayloadFromSelection();
         const calendarId = String(editContext?.calendarId || "").trim();
@@ -850,49 +935,63 @@ function SubjectGroupsModal(props) {
               ))}
             </div>
 
-            <div className="second-step-careers" ref={careerDropdownRef}>
-              <button
-                type="button"
-                className="second-step-careers-btn"
-                onClick={() => setIsCareerDropdownOpen((prev) => !prev)}
-              >
-                {careerOptions.length === 0
-                  ? "Sin carreras para esta materia"
-                  : selectedCareers.length === careerOptions.length
-                  ? "Todas las carreras posibles"
-                  : `${selectedCareers.length} seleccionadas`}
-              </button>
+            {!isEditMode && (
+              <div className="second-step-careers" ref={careerDropdownRef}>
+                <button
+                  type="button"
+                  className="second-step-careers-btn"
+                  onClick={() => setIsCareerDropdownOpen((prev) => !prev)}
+                >
+                  {careerOptions.length === 0
+                    ? "Sin carreras para esta materia"
+                    : selectedCareers.length === careerOptions.length
+                    ? "Todas las carreras posibles"
+                    : `${selectedCareers.length} seleccionadas`}
+                </button>
 
-              {isCareerDropdownOpen && (
-                <div className="second-step-dropdown second-step-careers-dropdown">
-                  {careerOptions.length === 0 && (
-                    <div className="second-step-dropdown-item">No hay carreras para esta materia.</div>
-                  )}
+                {isCareerDropdownOpen && (
+                  <div className="second-step-dropdown second-step-careers-dropdown">
+                    {careerOptions.length === 0 && (
+                      <div className="second-step-dropdown-item">No hay carreras para esta materia.</div>
+                    )}
 
-                  {careerOptions.map((option) => (
-                    <label key={option.key} className="second-step-career-option">
-                      <input
-                        type="checkbox"
-                        checked={selectedCareers.includes(option.key)}
-                        onChange={() => toggleCareer(option.key)}
-                      />
-                      <span>{option.label}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
+                    {careerOptions.map((option) => (
+                      <label key={option.key} className="second-step-career-option">
+                        <input
+                          type="checkbox"
+                          checked={selectedCareers.includes(option.key)}
+                          onChange={() => toggleCareer(option.key)}
+                        />
+                        <span>{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {isEditMode && (
-            <label className="second-step-career-option" style={{ marginTop: "6px" }}>
-              <input
-                type="checkbox"
-                checked={applyChangesToAllCareers}
-                onChange={(event) => setApplyChangesToAllCareers(Boolean(event.target.checked))}
-              />
-              <span>Aplicar cambios a todas las carreras de este grupo</span>
-            </label>
+            <div style={{ marginTop: "6px", display: "flex", gap: "16px", flexWrap: "wrap" }}>
+              <label className="second-step-career-option">
+                <input
+                  type="radio"
+                  name="edit-career-scope"
+                  checked={applyChangesToAllCareers}
+                  onChange={() => setApplyChangesToAllCareers(true)}
+                />
+                <span>{`Aplicar a todas las carreras del grupo (${editGroupCareersText})`}</span>
+              </label>
+              <label className="second-step-career-option">
+                <input
+                  type="radio"
+                  name="edit-career-scope"
+                  checked={!applyChangesToAllCareers}
+                  onChange={() => setApplyChangesToAllCareers(false)}
+                />
+                <span>Aplicar solo a la carrera actual ({selectedCareer || "sin carrera"})</span>
+              </label>
+            </div>
           )}
 
           <div className="days-selector second-step-days">
