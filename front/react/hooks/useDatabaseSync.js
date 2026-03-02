@@ -31,6 +31,22 @@
             return `s${semestre}y${year}`;
         }
 
+        function getLectiveTermFromDbGroup(grupo) {
+            const semestreLectivo = Number(grupo?.semestreLectivo || 0);
+            const anioLectivo = Number(grupo?.anioLectivo || 0);
+
+            if ((semestreLectivo !== 1 && semestreLectivo !== 2) || !anioLectivo) {
+                return "";
+            }
+
+            return `${semestreLectivo === 1 ? "1er" : "2do"} semestre ${anioLectivo}`;
+        }
+
+        function getCalendarBaseId(calendarId) {
+            const match = String(calendarId || "").match(/^s[12]y[1-5]/i);
+            return match ? match[0].toLowerCase() : "";
+        }
+
         function mapDbGroupToClasses(grupo) {
             const horarios = Array.isArray(grupo.horarios) ? grupo.horarios : [];
             const teachers = Array.isArray(grupo.docentes) ? grupo.docentes : [];
@@ -106,10 +122,12 @@
             });
 
             filteredGroups.forEach((grupo) => {
-                const calendarId = getCalendarIdFromDbGroup(grupo);
+                const calendarId = getCalendarIdFromDbGroup(grupo).toLowerCase();
+                const lectiveTerm = getLectiveTermFromDbGroup(grupo);
                 const blocks = mapDbGroupToClasses(grupo);
-                const prev = classesByCalendar.get(calendarId) || [];
-                classesByCalendar.set(calendarId, [...prev, ...blocks]);
+                const mapKey = `${calendarId}|${lectiveTerm}`;
+                const prev = classesByCalendar.get(mapKey) || [];
+                classesByCalendar.set(mapKey, [...prev, ...blocks]);
             });
 
             setData((prev) => ({
@@ -117,7 +135,12 @@
                 calendars: prev.calendars.map((calendar) => ({
                     ...calendar,
                     subtitle: selectedCareer || calendar.subtitle,
-                    classes: classesByCalendar.get(calendar.id) || []
+                    classes:
+                        classesByCalendar.get(
+                            `${getCalendarBaseId(calendar.id)}|${String(calendar?.lectiveTerm || "").trim()}`
+                        ) ||
+                        classesByCalendar.get(`${getCalendarBaseId(calendar.id)}|`) ||
+                        []
                 }))
             }));
         }, [dbGroups, selectedCareer]);
