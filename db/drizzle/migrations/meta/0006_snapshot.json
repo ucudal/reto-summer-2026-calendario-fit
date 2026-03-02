@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "c22f36ff-636a-46bf-97a8-c8f167b918de",
-  "prevId": "0b18a408-f5a3-4b4a-b202-cd9b9691022a",
+  "id": "6ef18d4f-d977-4c82-b8d6-888ae957dc6e",
+  "prevId": "c22f36ff-636a-46bf-97a8-c8f167b918de",
   "tables": {
     "carreras": {
       "name": "carreras",
@@ -352,6 +352,65 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "grupo_carrera": {
+      "name": "grupo_carrera",
+      "columns": {
+        "id_grupo": {
+          "name": "id_grupo",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id_carrera": {
+          "name": "id_carrera",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "grupo_carrera_id_grupo_grupos_id_fk": {
+          "name": "grupo_carrera_id_grupo_grupos_id_fk",
+          "tableFrom": "grupo_carrera",
+          "tableTo": "grupos",
+          "columnsFrom": [
+            "id_grupo"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "grupo_carrera_id_carrera_carreras_id_fk": {
+          "name": "grupo_carrera_id_carrera_carreras_id_fk",
+          "tableFrom": "grupo_carrera",
+          "tableTo": "carreras",
+          "columnsFrom": [
+            "id_carrera"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "grupo_carrera_id_grupo_id_carrera_pk": {
+          "columns": [
+            "id_grupo",
+            "id_carrera"
+          ],
+          "name": "grupo_carrera_id_grupo_id_carrera_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "grupo_horario": {
       "name": "grupo_horario",
       "columns": {
@@ -638,10 +697,7 @@
   "_meta": {
     "schemas": {},
     "tables": {},
-    "columns": {
-      "\"grupos\".\"semestre\"": "\"grupos\".\"id_semestre\"",
-      "\"grupos\".\"anio\"": "\"grupos\".\"color\""
-    }
+    "columns": {}
   },
   "internal": {
     "indexes": {}
