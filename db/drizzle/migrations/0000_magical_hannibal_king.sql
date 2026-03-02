@@ -1,10 +1,10 @@
-CREATE TABLE `carreras` (
+CREATE TABLE IF NOT EXISTS `carreras` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`nombre` text NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `carreras_nombre_unico_idx` ON `carreras` (`nombre`);--> statement-breakpoint
-CREATE TABLE `materias` (
+CREATE UNIQUE INDEX IF NOT EXISTS `carreras_nombre_unico_idx` ON `carreras` (`nombre`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `materias` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`tipo` text NOT NULL,
 	`creditos` integer NOT NULL,
@@ -12,34 +12,34 @@ CREATE TABLE `materias` (
 	`tiene_correlativa` integer DEFAULT false NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `materias_nombre_unico_idx` ON `materias` (`nombre`);--> statement-breakpoint
-CREATE TABLE `profesores` (
+CREATE UNIQUE INDEX IF NOT EXISTS `materias_nombre_unico_idx` ON `materias` (`nombre`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `profesores` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`nombre` text NOT NULL,
 	`apellido` text NOT NULL,
 	`correo` text NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `profesores_correo_unico_idx` ON `profesores` (`correo`);--> statement-breakpoint
-CREATE TABLE `salones` (
+CREATE UNIQUE INDEX IF NOT EXISTS `profesores_correo_unico_idx` ON `profesores` (`correo`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `salones` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`nombre` text NOT NULL,
 	`edificio` text NOT NULL,
 	`aforo` integer NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `horarios` (
+CREATE TABLE IF NOT EXISTS `horarios` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`modulo` integer NOT NULL,
 	`dia` text NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `requerimientos_salon` (
+CREATE TABLE IF NOT EXISTS `requerimientos_salon` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`caracteristicas` text NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `grupos` (
+CREATE TABLE IF NOT EXISTS `grupos` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`codigo` text NOT NULL,
 	`id_materia` integer NOT NULL,
@@ -49,8 +49,8 @@ CREATE TABLE `grupos` (
 	FOREIGN KEY (`id_materia`) REFERENCES `materias`(`id`) ON UPDATE cascade ON DELETE restrict
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `grupos_codigo_unico_idx` ON `grupos` (`codigo`);--> statement-breakpoint
-CREATE TABLE `materia_carrera` (
+CREATE UNIQUE INDEX IF NOT EXISTS `grupos_codigo_unico_idx` ON `grupos` (`codigo`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `materia_carrera` (
 	`id_materia` integer NOT NULL,
 	`id_carrera` integer NOT NULL,
 	`plan` text NOT NULL,
@@ -61,7 +61,7 @@ CREATE TABLE `materia_carrera` (
 	FOREIGN KEY (`id_carrera`) REFERENCES `carreras`(`id`) ON UPDATE cascade ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE TABLE `grupo_horario` (
+CREATE TABLE IF NOT EXISTS `grupo_horario` (
 	`id_grupo` integer NOT NULL,
 	`id_horario` integer NOT NULL,
 	PRIMARY KEY(`id_grupo`, `id_horario`),
@@ -69,7 +69,7 @@ CREATE TABLE `grupo_horario` (
 	FOREIGN KEY (`id_horario`) REFERENCES `horarios`(`id`) ON UPDATE cascade ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE TABLE `profesor_grupo` (
+CREATE TABLE IF NOT EXISTS `profesor_grupo` (
 	`id_profesor` integer NOT NULL,
 	`id_grupo` integer NOT NULL,
 	`carga` text,
@@ -80,7 +80,7 @@ CREATE TABLE `profesor_grupo` (
 	FOREIGN KEY (`id_grupo`) REFERENCES `grupos`(`id`) ON UPDATE cascade ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE TABLE `salon_grupo` (
+CREATE TABLE IF NOT EXISTS `salon_grupo` (
 	`id_salon` integer NOT NULL,
 	`id_grupo` integer NOT NULL,
 	PRIMARY KEY(`id_salon`, `id_grupo`),
@@ -88,7 +88,7 @@ CREATE TABLE `salon_grupo` (
 	FOREIGN KEY (`id_grupo`) REFERENCES `grupos`(`id`) ON UPDATE cascade ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE TABLE `salon_requerimiento_salon` (
+CREATE TABLE IF NOT EXISTS `salon_requerimiento_salon` (
 	`id_salon` integer NOT NULL,
 	`id_requerimiento_salon` integer NOT NULL,
 	PRIMARY KEY(`id_salon`, `id_requerimiento_salon`),
@@ -96,7 +96,7 @@ CREATE TABLE `salon_requerimiento_salon` (
 	FOREIGN KEY (`id_requerimiento_salon`) REFERENCES `requerimientos_salon`(`id`) ON UPDATE cascade ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE TABLE `grupo_requerimiento_salon` (
+CREATE TABLE IF NOT EXISTS `grupo_requerimiento_salon` (
 	`id_grupo` integer NOT NULL,
 	`id_requerimiento_salon` integer NOT NULL,
 	PRIMARY KEY(`id_grupo`, `id_requerimiento_salon`),

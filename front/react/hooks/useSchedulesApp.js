@@ -11,6 +11,12 @@
             setData
         });
 
+        React.useEffect(() => {
+            if (selectedCareer) return;
+            if (!Array.isArray(db.careers) || db.careers.length === 0) return;
+            setSelectedCareer(String(db.careers[0] || ""));
+        }, [selectedCareer, db.careers]);
+
         const visibility = window.useCalendarVisibility(data, setData);
 
         const career = window.useCareerManagement({

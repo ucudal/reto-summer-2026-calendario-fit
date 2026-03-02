@@ -85,7 +85,7 @@ function buildCalendars() {
         name: `${semester === 1 ? "1er" : "2do"} semestre ${ordinalYearLabel(year)} año`,
         subtitle: "Ingenieria en Sistemas 2021",
         lectiveTerm: defaultLectiveTerm,
-        visible: year === 1,
+        visible: true,
         classes: [],
         alerts: []
       });

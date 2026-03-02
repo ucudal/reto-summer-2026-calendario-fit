@@ -51,7 +51,6 @@ export function obtenerGrupoPorId(id) {
 export function listarGrupos() {
   ensureGrupoCarreraTable();
 
-  // Trae grupos + materia + horario(s) para que el front pueda dibujar calendario.
   const rows = db
     .select({
       id: grupos.id,
@@ -85,7 +84,6 @@ export function listarGrupos() {
     `)
     .all();
 
-  // Fallback: si no existen links en grupo_carrera, derivamos carreras desde materia_carrera.
   const fallbackCareerRows = sqlite
     .prepare(`
       SELECT g.id AS idGrupo, c.nombre AS carreraNombre
@@ -124,6 +122,7 @@ export function listarGrupos() {
 
   const academicByGroup = new Map();
   const academicByGroupCareer = new Map();
+
   for (const row of academicRows) {
     if (academicByGroup.has(row.idGrupo)) continue;
     academicByGroup.set(row.idGrupo, {
@@ -131,6 +130,7 @@ export function listarGrupos() {
       anio: Number(row.anio || 1)
     });
   }
+
   for (const row of academicRowsByCareer) {
     const normalized = {
       carrera: String(row.carreraNombre || "").trim(),
@@ -277,8 +277,6 @@ export function insertarHorarios(idGrupo, horariosPayload) {
       .where(and(eq(horarios.modulo, h.modulo), eq(horarios.dia, h.dia)))
       .get();
 
-    // Si la base esta "nueva" y no tiene filas en horarios,
-    // las creamos en el momento para no perder el bloque del grupo.
     if (!horarioRow) {
       const createHorario = db
         .insert(horarios)
@@ -292,7 +290,6 @@ export function insertarHorarios(idGrupo, horariosPayload) {
       if (newHorarioId > 0) {
         horarioRow = { id: newHorarioId };
       } else {
-        // Fallback: si no devolvio id, reintentamos lookup.
         horarioRow = db
           .select({ id: horarios.id })
           .from(horarios)

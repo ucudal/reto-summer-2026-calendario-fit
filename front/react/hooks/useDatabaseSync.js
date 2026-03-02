@@ -24,11 +24,41 @@
             return "";
         }
 
-        function getCalendarIdFromDbGroup(grupo) {
-            const semestre = Number(grupo.semestre || 1) === 2 ? 2 : 1;
-            const rawYear = Number(grupo.anio || 1);
+        function getCalendarIdFromDbGroup(grupo, selectedCareerNormalized) {
+            let semestre = Number(grupo.semestre || 1);
+            let rawYear = Number(grupo.anio || 1);
+
+            const academicByCareer = Array.isArray(grupo?.academicByCareer) ? grupo.academicByCareer : [];
+            if (selectedCareerNormalized) {
+                // Con carrera filtrada, exigimos match explícito por carrera para evitar caídas al global.
+                if (academicByCareer.length === 0) return "";
+                const matching = academicByCareer.find(
+                    (entry) => normalizeText(entry?.carrera) === selectedCareerNormalized
+                );
+                if (!matching) return "";
+                semestre = Number(matching.semestre || semestre);
+                rawYear = Number(matching.anio || rawYear);
+            }
+
+            semestre = semestre === 2 ? 2 : 1;
             const year = rawYear >= 1 && rawYear <= 5 ? rawYear : 1;
             return `s${semestre}y${year}`;
+        }
+
+        function getLectiveTermFromDbGroup(grupo) {
+            const semestreLectivo = Number(grupo?.semestreLectivo || 0);
+            const anioLectivo = Number(grupo?.anioLectivo || 0);
+
+            if ((semestreLectivo !== 1 && semestreLectivo !== 2) || !anioLectivo) {
+                return "";
+            }
+
+            return `${semestreLectivo === 1 ? "1er" : "2do"} semestre ${anioLectivo}`;
+        }
+
+        function getCalendarBaseId(calendarId) {
+            const match = String(calendarId || "").match(/^s[12]y[1-5]/i);
+            return match ? match[0].toLowerCase() : "";
         }
 
         function mapDbGroupToClasses(grupo) {
@@ -117,10 +147,44 @@
             });
 
             filteredGroups.forEach((grupo) => {
-                const calendarId = getCalendarIdFromDbGroup(grupo);
+                const calendarId = getCalendarIdFromDbGroup(grupo, selectedCareerNormalized);
+                if (!calendarId) return;
+                const lectiveTerm = getLectiveTermFromDbGroup(grupo);
                 const blocks = mapDbGroupToClasses(grupo);
-                const prev = classesByCalendar.get(calendarId) || [];
-                classesByCalendar.set(calendarId, [...prev, ...blocks]);
+                const mapKey = `${String(calendarId).toLowerCase()}|${lectiveTerm}`;
+                const prev = classesByCalendar.get(mapKey) || [];
+                classesByCalendar.set(mapKey, [...prev, ...blocks]);
+            });
+
+            classesByCalendar.forEach((classItems, calendarId) => {
+                const mergedByCode = new Map();
+
+                classItems.forEach((item) => {
+                    const mergeKey = [
+                        String(item.title || "").trim().toLowerCase(),
+                        String(item.group || item.classNumber || "").trim().toLowerCase(),
+                        String(item.day || "").trim().toLowerCase(),
+                        String(item.start || "").trim(),
+                        String(item.end || "").trim()
+                    ].join("|");
+
+                    if (!mergedByCode.has(mergeKey)) {
+                        mergedByCode.set(mergeKey, {
+                            ...item,
+                            teachers: Array.isArray(item.teachers) ? [...item.teachers] : [],
+                            careers: Array.isArray(item.careers) ? [...item.careers] : []
+                        });
+                        return;
+                    }
+
+                    const existing = mergedByCode.get(mergeKey);
+                    const mergedTeachers = new Set([...(existing.teachers || []), ...(item.teachers || [])]);
+                    const mergedCareers = new Set([...(existing.careers || []), ...(item.careers || [])]);
+                    existing.teachers = Array.from(mergedTeachers);
+                    existing.careers = Array.from(mergedCareers);
+                });
+
+                classesByCalendar.set(calendarId, Array.from(mergedByCode.values()));
             });
 
             setData((prev) => ({
@@ -128,7 +192,12 @@
                 calendars: prev.calendars.map((calendar) => ({
                     ...calendar,
                     subtitle: selectedCareer || calendar.subtitle,
-                    classes: classesByCalendar.get(calendar.id) || []
+                    classes:
+                        classesByCalendar.get(
+                            `${getCalendarBaseId(calendar.id)}|${String(calendar?.lectiveTerm || "").trim()}`
+                        ) ||
+                        classesByCalendar.get(`${getCalendarBaseId(calendar.id)}|`) ||
+                        []
                 }))
             }));
         }, [dbGroups, selectedCareer]);
