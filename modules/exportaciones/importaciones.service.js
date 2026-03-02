@@ -61,17 +61,74 @@ function inferCarreraFromFilePath(filePath) {
   return "";
 }
 
-function parsePlanAndSemestreFromCx(cx) {
+function parsePlanAndSemestreFromCx(cx, fallbackYear = 2026) {
   const value = normalizeText(cx);
   const semMatch = value.match(/Sem(\d+)/i);
-  const planMatch = value.match(/P(\d{4})/i);
+  const planMatch = value.match(/P?(\d{4})/i);
   const semestre = semMatch ? Number(semMatch[1]) : 1;
-  const planYear = planMatch ? Number(planMatch[1]) : 2026;
+  const planYear = planMatch ? Number(planMatch[1]) : fallbackYear;
   return {
     semestre,
     plan: `Plan ${planYear}`,
     anioPlan: planYear
   };
+}
+
+function parsePlanYear(raw, fallbackYear = 2026) {
+  const value = normalizeText(raw);
+  if (!value) return fallbackYear;
+  const match = value.match(/(20\d{2})/);
+  if (match) return Number(match[1]);
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && numeric >= 2000 && numeric <= 2100) return Math.trunc(numeric);
+  return fallbackYear;
+}
+
+function normalizePlanLabel(raw, year) {
+  const value = normalizeText(raw);
+  if (!value) return `Plan ${year}`;
+  if (/^\d{4}$/.test(value)) return `Plan ${value}`;
+  return value;
+}
+
+function parseCarreraFromPlan(raw) {
+  const value = normalizeText(raw);
+  if (!value) return "";
+  const withoutYear = value
+    .replace(/20\d{2}/g, " ")
+    .replace(/\bplan\b/gi, " ")
+    .replace(/[-_/|]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return withoutYear;
+}
+
+function parseSemestreNumber(raw, fallbackSemestre = 1) {
+  const value = normalizeText(raw);
+  if (!value) return fallbackSemestre;
+  const match = value.match(/(\d{1,2})/);
+  if (!match) return fallbackSemestre;
+  const semestre = Number(match[1]);
+  return Number.isFinite(semestre) && semestre > 0 ? semestre : fallbackSemestre;
+}
+
+function parsePlanAndSemestre({ cx, plan, semestre, fallbackYear = 2026 }) {
+  const fromCx = parsePlanAndSemestreFromCx(cx, fallbackYear);
+  const planYear = parsePlanYear(plan, fromCx.anioPlan);
+  const semestreNumero = parseSemestreNumber(semestre, fromCx.semestre);
+  return {
+    semestre: semestreNumero,
+    plan: normalizePlanLabel(plan, planYear),
+    anioPlan: planYear
+  };
+}
+
+function getCell(row, index) {
+  return index >= 0 ? row[index] : "";
+}
+
+function resolveCarreraNombre({ rowCarrera, plan, fallbackCarrera }) {
+  return normalizeText(rowCarrera) || parseCarreraFromPlan(plan) || normalizeText(fallbackCarrera);
 }
 
 function parseTipo(raw) {
@@ -268,11 +325,14 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
   const idx = {
     carrera: headerIndex(headers, ["Carrera", "Nombre carrera"]),
     cx: headerIndex(headers, ["cx", "cx "]),
+    plan: headerIndex(headers, ["Plan", "Plan de estudios", "Plan anio", "Plan año"]),
+    semestre: headerIndex(headers, ["Semestre", "Numero semestre", "Nro semestre"]),
     curso: headerIndex(headers, ["Curso"]),
     tipo: headerIndex(headers, ["Tipo"]),
-    horas: headerIndex(headers, ["Horas"]),
-    idClase: headerIndex(headers, ["ID Clase", "Id Clase", "IDClase"]),
+    horas: headerIndex(headers, ["Horas", "Horas anuales"]),
+    idClase: headerIndex(headers, ["ID Clase", "Id Clase", "IDClase", "Codigo", "Código"]),
     cupo: headerIndex(headers, ["Cupo"]),
+    color: headerIndex(headers, ["Color"]),
     /* requerimiento: headerIndex(headers, [
       "Requerim. salón",
       "Requerim. salon",
@@ -283,6 +343,9 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
       "Req salon"
     ]), */
     salon: headerIndex(headers, ["Salón", "Salon", "Salones", "Aula", "Aulas"]),
+    salonNombre: headerIndex(headers, ["Nombre salon", "Nombre salon", "Nombre salon/aula"]),
+    salonEdificio: headerIndex(headers, ["Edificio"]),
+    salonAforo: headerIndex(headers, ["Aforo"]),
     creditos: headerIndex(headers, ["Créditos", "Creditos"]),
     prof1: headerIndex(headers, ["Prof 1", "Profesor 1"]),
     prof2: headerIndex(headers, ["Prof 2", "Profesor 2"]),
@@ -401,33 +464,56 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
       summary.warnings.push("No se encontro columna de salon/aula en la hoja Modulos.");
     }
 
-    let carrera = getCarrera.get(carreraNombre);
-    if (!carrera) {
-      const result = insertCarrera.run(carreraNombre);
-      carrera = { id: Number(result.lastInsertRowid) };
-      summary.inserted.carreras += 1;
-    }
+    const carreraCache = new Map();
+    const ensureCarrera = (name) => {
+      const normalized = normalizeText(name);
+      if (!normalized) return null;
+      if (carreraCache.has(normalized)) return carreraCache.get(normalized);
+      let carrera = getCarrera.get(normalized);
+      if (!carrera) {
+        const result = insertCarrera.run(normalized);
+        carrera = { id: Number(result.lastInsertRowid) };
+        summary.inserted.carreras += 1;
+      }
+      carreraCache.set(normalized, carrera);
+      return carrera;
+    };
 
     const usedEmails = new Set();
 
     for (const row of dataRows) {
-      const curso = normalizeText(row[idx.curso]);
-      const idClase = normalizeText(row[idx.idClase]).toUpperCase();
-      const horas = parseFloatSafe(row[idx.horas], 0);
-      const cupo = parseIntSafe(row[idx.cupo], 0);
-      const tipo = parseTipo(row[idx.tipo]);
-      const creditos = parseIntSafe(row[idx.creditos], 0);
-      const cx = normalizeText(row[idx.cx]);
+      const curso = normalizeText(getCell(row, idx.curso));
+      const idClase = normalizeText(getCell(row, idx.idClase)).toUpperCase();
+      const horas = parseFloatSafe(getCell(row, idx.horas), 0);
+      const cupo = parseIntSafe(getCell(row, idx.cupo), 0);
+      const tipo = parseTipo(getCell(row, idx.tipo));
+      const creditos = parseIntSafe(getCell(row, idx.creditos), 0);
+      const cx = normalizeText(getCell(row, idx.cx));
+      const planRaw = normalizeText(getCell(row, idx.plan));
+      const semestreRaw = normalizeText(getCell(row, idx.semestre));
+      const rowCarreraRaw = normalizeText(getCell(row, idx.carrera));
 
       if (!idClase) {
         summary.skipped.rowsWithoutClassId += 1;
         continue;
       }
 
-      const planData = parsePlanAndSemestreFromCx(cx);
-      let semestre = getSemestre.get(planData.semestre, anioLectivo);
+      const planData = parsePlanAndSemestre({
+        cx,
+        plan: planRaw,
+        semestre: semestreRaw,
+        fallbackYear: anioLectivo
+      });
+      const carreraRowName = resolveCarreraNombre({
+        rowCarrera: rowCarreraRaw,
+        plan: planData.plan,
+        fallbackCarrera: carreraNombre
+      });
+      const carrera = ensureCarrera(carreraRowName || carreraNombre);
+      if (!carrera) continue;
+      let semestre = getSemestre.get(planData.semestre, planData.anioPlan);
       if (!semestre) {
-        const semResult = insertSemestre.run(planData.semestre, anioLectivo);
+        const semResult = insertSemestre.run(planData.semestre, planData.anioPlan);
         semestre = { id: Number(semResult.lastInsertRowid) };
         summary.inserted.semestres += 1;
       }
@@ -466,7 +552,7 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
           String(horas),
           cupo || null,
           semestre.id,
-          normalizeText(options.color) || "#2563EB"
+          normalizeText(getCell(row, idx.color)) || normalizeText(options.color) || "#2563EB"
         );
         grupo = { id: Number(grupoResult.lastInsertRowid) };
         summary.inserted.grupos += 1;
@@ -476,7 +562,7 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
           String(horas),
           cupo || null,
           semestre.id,
-          normalizeText(options.color) || "#2563EB",
+          normalizeText(getCell(row, idx.color)) || normalizeText(options.color) || "#2563EB",
           grupo.id
         );
       }
@@ -555,13 +641,18 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
         reqIds.push(req.id);
       } */
 
-      const salones = parseSalonCell(row[idx.salon]);
+      const directSalonNombre = normalizeText(getCell(row, idx.salonNombre));
+      const directSalonEdificio = normalizeText(getCell(row, idx.salonEdificio)) || "Sin edificio";
+      const directSalonAforo = parseIntSafe(getCell(row, idx.salonAforo), 0);
+      const salones = directSalonNombre
+        ? [{ nombre: directSalonNombre, edificio: directSalonEdificio, aforo: directSalonAforo }]
+        : parseSalonCell(getCell(row, idx.salon)).map((s) => ({ ...s, aforo: 0 }));
       for (const salonData of salones) {
         let salon =
           getSalonByNombreEdificio.get(salonData.nombre, salonData.edificio) ||
           getSalonByNombre.get(salonData.nombre);
         if (!salon) {
-          const salonResult = insertSalon.run(salonData.nombre, salonData.edificio, 0);
+          const salonResult = insertSalon.run(salonData.nombre, salonData.edificio, salonData.aforo || 0);
           salon = { id: Number(salonResult.lastInsertRowid) };
           summary.inserted.salones += 1;
         }
@@ -627,11 +718,14 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
     .filter((row) => row.some((cell) => normalizeText(cell) !== ""));
 
   const idx = {
+    carrera: headerIndex(headers, ["Carrera", "Nombre carrera"]),
     cx: headerIndex(headers, ["cx", "cx "]),
+    plan: headerIndex(headers, ["Plan", "Plan de estudios", "Plan anio", "Plan año"]),
+    semestre: headerIndex(headers, ["Semestre", "Numero semestre", "Nro semestre"]),
     curso: headerIndex(headers, ["Curso"]),
     tipo: headerIndex(headers, ["Tipo"]),
-    horas: headerIndex(headers, ["Horas"]),
-    idClase: headerIndex(headers, ["ID Clase", "Id Clase", "IDClase"]),
+    horas: headerIndex(headers, ["Horas", "Horas anuales"]),
+    idClase: headerIndex(headers, ["ID Clase", "Id Clase", "IDClase", "Codigo", "Código"]),
     cupo: headerIndex(headers, ["Cupo"]),
     requerimiento: headerIndex(headers, [
       "Requerim. salÃ³n",
@@ -643,8 +737,16 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
       "Req salon"
     ]),
     salon: headerIndex(headers, ["SalÃ³n", "Salon", "Salones", "Aula", "Aulas"]),
+    salonNombre: headerIndex(headers, ["Nombre salon", "Nombre salÃ³n", "Nombre salon/aula"]),
+    salonEdificio: headerIndex(headers, ["Edificio"]),
+    salonAforo: headerIndex(headers, ["Aforo"]),
+    dia: headerIndex(headers, ["Dia", "Día"]),
+    modulo: headerIndex(headers, ["Modulo", "Módulo"]),
+    color: headerIndex(headers, ["Color"]),
     creditos: headerIndex(headers, ["CrÃ©ditos", "Creditos"]),
     profesor: headerIndex(headers, ["Profesor", "Docente", "Nombre completo"]),
+    nombre: headerIndex(headers, ["Nombre"]),
+    apellido: headerIndex(headers, ["Apellido"]),
     prof1: headerIndex(headers, ["Prof 1", "Profesor 1"]),
     prof2: headerIndex(headers, ["Prof 2", "Profesor 2"]),
     prof3: headerIndex(headers, ["Prof 3", "Profesor 3"]),
@@ -677,6 +779,12 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
   );
   const updateMateria = sqlite.prepare(
     "UPDATE materias SET tipo = ?, creditos = ?, requerimientosSalon = ? WHERE id = ?"
+  );
+  const linkMateriaCarrera = sqlite.prepare(
+    "INSERT OR IGNORE INTO materia_carrera (id_materia, id_carrera, plan, semestre, anio) VALUES (?, ?, ?, ?, ?)"
+  );
+  const updateMateriaCarrera = sqlite.prepare(
+    "UPDATE materia_carrera SET plan = ?, semestre = ?, anio = ? WHERE id_materia = ? AND id_carrera = ?"
   );
 
   const getGrupo = sqlite.prepare("SELECT id FROM grupos WHERE codigo = ?");
@@ -737,8 +845,9 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
       const seen = new Set();
       for (const row of dataRows) {
         const fromRow = normalizeText(row[idx.carrera >= 0 ? idx.carrera : -1]);
+        const fromPlan = parseCarreraFromPlan(normalizeText(row[idx.plan >= 0 ? idx.plan : -1]));
         const fromCurso = normalizeText(row[idx.curso >= 0 ? idx.curso : -1]);
-        const candidate = fromRow || fromCurso || carreraNombre;
+        const candidate = fromRow || fromPlan || fromCurso || carreraNombre;
         if (!candidate || seen.has(candidate.toLowerCase())) continue;
         seen.add(candidate.toLowerCase());
         if (!getCarrera.get(candidate)) {
@@ -750,30 +859,53 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
     }
 
     const usedEmails = new Set();
+    const carreraCache = new Map();
+    const ensureCarrera = (name) => {
+      const normalized = normalizeText(name);
+      if (!normalized) return null;
+      if (carreraCache.has(normalized)) return carreraCache.get(normalized);
+      let carrera = getCarrera.get(normalized);
+      if (!carrera) {
+        const result = insertCarrera.run(normalized);
+        carrera = { id: Number(result.lastInsertRowid) };
+        summary.inserted.carreras += 1;
+      }
+      carreraCache.set(normalized, carrera);
+      return carrera;
+    };
 
     for (const row of dataRows) {
-      const curso = normalizeText(row[idx.curso]);
-      const idClase = normalizeText(row[idx.idClase]).toUpperCase();
-      const horas = parseFloatSafe(row[idx.horas], 0);
-      const cupo = parseIntSafe(row[idx.cupo], 0);
-      const tipo = parseTipo(row[idx.tipo]);
-      const creditos = parseIntSafe(row[idx.creditos], 0);
-      const cx = normalizeText(row[idx.cx]);
-      const req = idx.requerimiento >= 0 ? normalizeText(row[idx.requerimiento]) : "";
+      const curso = normalizeText(getCell(row, idx.curso));
+      const idClase = normalizeText(getCell(row, idx.idClase)).toUpperCase();
+      const horas = parseFloatSafe(getCell(row, idx.horas), 0);
+      const cupo = parseIntSafe(getCell(row, idx.cupo), 0);
+      const tipo = parseTipo(getCell(row, idx.tipo));
+      const creditos = parseIntSafe(getCell(row, idx.creditos), 0);
+      const cx = normalizeText(getCell(row, idx.cx));
+      const planRaw = normalizeText(getCell(row, idx.plan));
+      const semestreRaw = normalizeText(getCell(row, idx.semestre));
+      const rowCarreraRaw = normalizeText(getCell(row, idx.carrera));
+      const req = idx.requerimiento >= 0 ? normalizeText(getCell(row, idx.requerimiento)) : "";
 
       if ((entity === "materias" || entity === "grupos") && !curso) {
         summary.skipped.rowsWithoutCourse += 1;
         continue;
       }
 
-      if ((entity === "grupos" || entity === "horarios") && !idClase) {
+      const hasHorarioDirecto = normalizeText(getCell(row, idx.dia)) !== "" && parseIntSafe(getCell(row, idx.modulo), 0) > 0;
+      if ((entity === "grupos" || (entity === "horarios" && !hasHorarioDirecto)) && !idClase) {
         summary.skipped.rowsWithoutClassId += 1;
         continue;
       }
 
       let planData = null;
-      if (entity === "semestres" || entity === "grupos") {
-        planData = parsePlanAndSemestreFromCx(cx);
+      if (entity === "semestres" || entity === "grupos" || entity === "materias") {
+        planData = parsePlanAndSemestre({
+          cx,
+          plan: planRaw,
+          semestre: semestreRaw,
+          fallbackYear: anioLectivo
+        });
         if (!planData?.semestre) {
           summary.skipped.rowsWithoutSemestre += 1;
           continue;
@@ -781,17 +913,29 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
       }
 
       if (entity === "semestres") {
-        if (!getSemestre.get(planData.semestre, anioLectivo)) {
-          insertSemestre.run(planData.semestre, anioLectivo);
+        if (!getSemestre.get(planData.semestre, planData.anioPlan)) {
+          insertSemestre.run(planData.semestre, planData.anioPlan);
           summary.inserted.semestres += 1;
         }
         continue;
       }
 
       if (entity === "materias") {
+        const carreraRowName = resolveCarreraNombre({
+          rowCarrera: rowCarreraRaw,
+          plan: planData?.plan || planRaw,
+          fallbackCarrera: carreraNombre
+        });
+        const carrera = ensureCarrera(carreraRowName || carreraNombre);
+        if (!carrera) {
+          summary.skipped.rowsWithoutCourse += 1;
+          continue;
+        }
+
         let materia = getMateria.get(curso);
         if (!materia) {
-          insertMateria.run(tipo || "Semestral", creditos || 0, curso, req || null);
+          const materiaResult = insertMateria.run(tipo || "Semestral", creditos || 0, curso, req || null);
+          materia = { id: Number(materiaResult.lastInsertRowid) };
           summary.inserted.materias += 1;
         } else {
           updateMateria.run(
@@ -801,6 +945,23 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
             materia.id
           );
           summary.updated.materias += 1;
+        }
+
+        const mcResult = linkMateriaCarrera.run(
+          materia.id,
+          carrera.id,
+          planData.plan,
+          planData.semestre,
+          planData.anioPlan
+        );
+        if (mcResult.changes === 0) {
+          updateMateriaCarrera.run(
+            planData.plan,
+            planData.semestre,
+            planData.anioPlan,
+            materia.id,
+            carrera.id
+          );
         }
         continue;
       }
@@ -813,14 +974,14 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
           summary.inserted.materias += 1;
         }
 
-        let semestre = getSemestre.get(planData.semestre, anioLectivo);
+        let semestre = getSemestre.get(planData.semestre, planData.anioPlan);
         if (!semestre) {
-          const semResult = insertSemestre.run(planData.semestre, anioLectivo);
+          const semResult = insertSemestre.run(planData.semestre, planData.anioPlan);
           semestre = { id: Number(semResult.lastInsertRowid) };
           summary.inserted.semestres += 1;
         }
 
-        const color = normalizeText(options.color) || "#2563EB";
+        const color = normalizeText(getCell(row, idx.color)) || normalizeText(options.color) || "#2563EB";
         const grupo = getGrupo.get(idClase);
         if (!grupo) {
           insertGrupo.run(
@@ -847,26 +1008,29 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
       }
 
       if (entity === "profesores") {
+        const nombreSimple = normalizeText(getCell(row, idx.nombre));
+        const apellidoSimple = normalizeText(getCell(row, idx.apellido));
+        const nombreCompletoSimple = `${nombreSimple} ${apellidoSimple}`.trim();
         const docentes = [
           {
-            nombreCompleto: normalizeText(row[idx.profesor]),
-            correoPreferido: normalizeText(row[idx.correo])
+            nombreCompleto: normalizeText(getCell(row, idx.profesor)) || nombreCompletoSimple,
+            correoPreferido: normalizeText(getCell(row, idx.correo))
           },
           {
-            nombreCompleto: normalizeText(row[idx.prof1]),
-            correoPreferido: normalizeText(row[idx.correo1 >= 0 ? idx.correo1 : idx.correo])
+            nombreCompleto: normalizeText(getCell(row, idx.prof1)),
+            correoPreferido: normalizeText(getCell(row, idx.correo1 >= 0 ? idx.correo1 : idx.correo))
           },
           {
-            nombreCompleto: normalizeText(row[idx.prof2]),
-            correoPreferido: normalizeText(row[idx.correo2 >= 0 ? idx.correo2 : -1])
+            nombreCompleto: normalizeText(getCell(row, idx.prof2)),
+            correoPreferido: normalizeText(getCell(row, idx.correo2 >= 0 ? idx.correo2 : -1))
           },
           {
-            nombreCompleto: normalizeText(row[idx.prof3]),
-            correoPreferido: normalizeText(row[idx.correo3 >= 0 ? idx.correo3 : -1])
+            nombreCompleto: normalizeText(getCell(row, idx.prof3)),
+            correoPreferido: normalizeText(getCell(row, idx.correo3 >= 0 ? idx.correo3 : -1))
           },
           {
-            nombreCompleto: normalizeText(row[idx.asis1]),
-            correoPreferido: normalizeText(row[idx.correoAsis1 >= 0 ? idx.correoAsis1 : -1])
+            nombreCompleto: normalizeText(getCell(row, idx.asis1)),
+            correoPreferido: normalizeText(getCell(row, idx.correoAsis1 >= 0 ? idx.correoAsis1 : -1))
           }
         ].filter((d) => d.nombreCompleto !== "" && d.nombreCompleto.toUpperCase() !== "TBD");
 
@@ -901,13 +1065,18 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
       }
 
       if (entity === "salones") {
-        const salones = parseSalonCell(row[idx.salon]);
+        const directNombre = normalizeText(getCell(row, idx.salonNombre));
+        const directEdificio = normalizeText(getCell(row, idx.salonEdificio)) || "Sin edificio";
+        const directAforo = parseIntSafe(getCell(row, idx.salonAforo), 0);
+        const salones = directNombre
+          ? [{ nombre: directNombre, edificio: directEdificio, aforo: directAforo }]
+          : parseSalonCell(getCell(row, idx.salon)).map((s) => ({ ...s, aforo: 0 }));
         for (const salonData of salones) {
           const salon =
             getSalonByNombreEdificio.get(salonData.nombre, salonData.edificio) ||
             getSalonByNombre.get(salonData.nombre);
           if (!salon) {
-            insertSalon.run(salonData.nombre, salonData.edificio, 0);
+            insertSalon.run(salonData.nombre, salonData.edificio, salonData.aforo || 0);
             summary.inserted.salones += 1;
           }
         }
@@ -915,13 +1084,22 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
       }
 
       if (entity === "horarios") {
-        const horarios = horarioMap?.get(idClase) || new Set();
-        for (const item of horarios) {
-          const [dia, moduloStr] = item.split("|");
-          const modulo = Number(moduloStr);
-          if (!getHorario.get(dia, modulo)) {
-            insertHorario.run(dia, modulo);
+        const directDia = normalizeText(getCell(row, idx.dia));
+        const directModulo = parseIntSafe(getCell(row, idx.modulo), 0);
+        if (directDia && directModulo > 0) {
+          if (!getHorario.get(directDia, directModulo)) {
+            insertHorario.run(directDia, directModulo);
             summary.inserted.horarios += 1;
+          }
+        } else {
+          const horarios = horarioMap?.get(idClase) || new Set();
+          for (const item of horarios) {
+            const [dia, moduloStr] = item.split("|");
+            const modulo = Number(moduloStr);
+            if (!getHorario.get(dia, modulo)) {
+              insertHorario.run(dia, modulo);
+              summary.inserted.horarios += 1;
+            }
           }
         }
       }
