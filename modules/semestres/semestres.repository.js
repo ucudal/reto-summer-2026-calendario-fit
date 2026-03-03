@@ -89,7 +89,7 @@ export function obtenerGruposPorSemestre(idSemestre) {
 
 /**
  * Replica un arreglo de grupos en un nuevo semestre.
- * Genera un código único para cada grupo nuevo y copia horarios + carreras.
+ * Copia el código existente de cada grupo y replica horarios + carreras.
  */
 export function replicarGruposEnSemestre(gruposOrigen, idSemestreNuevo) {
   const errors = [];
