@@ -161,7 +161,10 @@ function parseSemestreTexto(texto) {
     return { semestre, anio };
   }
 
-  const semestre = value.includes("2do") ? 2 : 1;
+  // Solo detectar "2do" en la parte del semestre (antes de la separación con el año).
+  // El formato esperado es "Xer/Xdo s Yer/Ydo año/ano".
+  const semPart = value.split(/\s+s\s+/)[0] || value;
+  const semestre = semPart.includes("2do") ? 2 : 1;
 
   const yearMatch = value.match(/([1-5])\s*(er|do|to)?\s*a/);
   const anio = yearMatch ? Number(yearMatch[1]) : 1;
