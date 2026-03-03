@@ -1,9 +1,11 @@
 ﻿(function () {
-    function useSemesterManagement(data, setData) {
+    function useSemesterManagement(data, setData, reloadGroupsFromDb) {
         const [isCreateSemesterOpen, setIsCreateSemesterOpen] = React.useState(false);
         const [semesterModalError, setSemesterModalError] = React.useState("");
+        const [semesterLoading, setSemesterLoading] = React.useState(false);
         const [semesterForm, setSemesterForm] = React.useState({
-            sourceLectiveTerm: "",
+            sourceSemester: "",       // "1", "2" o "__blank__"
+            sourceYear: "2026",       // año del semestre a copiar
             newSemester: "1er semestre",
             newYear: "2026"
         });
@@ -100,17 +102,22 @@
         }, [setData]);
 
         function openCreateSemesterModal() {
+            const currentYear = new Date().getFullYear();
+            const defaultYear = String(currentYear < 2026 ? 2026 : currentYear);
             setSemesterForm({
-                sourceLectiveTerm: "",
+                sourceSemester: "",
+                sourceYear: defaultYear,
                 newSemester: "1er semestre",
-                newYear: String(new Date().getFullYear() < 2026 ? 2026 : new Date().getFullYear())
+                newYear: defaultYear
             });
             setSemesterModalError("");
+            setSemesterLoading(false);
             setIsCreateSemesterOpen(true);
         }
 
         function closeCreateSemesterModal() {
             setSemesterModalError("");
+            setSemesterLoading(false);
             setIsCreateSemesterOpen(false);
         }
 
@@ -119,14 +126,15 @@
         }
 
         async function confirmCreateSemester() {
-            const sourceTerm = String(semesterForm.sourceLectiveTerm || "").trim();
+            const sourceSemester = String(semesterForm.sourceSemester || "").trim();
+            const sourceYear = String(semesterForm.sourceYear || "").trim();
             const selectedSemester = String(semesterForm.newSemester || "").trim();
             const selectedYear = String(semesterForm.newYear || "").trim();
             const newName = `${selectedSemester} ${selectedYear}`.trim();
             const parsed = parseLectiveTerm(newName);
 
-            if (!sourceTerm) {
-                setSemesterModalError("Debe seleccionar el semestre lectivo a copiar.");
+            if (!sourceSemester) {
+                setSemesterModalError("Debe seleccionar el tipo de semestre a copiar.");
                 return;
             }
 
@@ -148,32 +156,99 @@
                 return;
             }
 
-            if (window.api?.semestres?.crearLectivo) {
-                const created = await window.api.semestres.crearLectivo({
-                    numeroSemestre: parsed.numeroSemestre,
-                    anio: parsed.anio
-                });
-                if (!created?.success) {
-                    setSemesterModalError(created?.error || "No se pudo crear el semestre lectivo en base de datos.");
-                    return;
+            const isBlankSemester = sourceSemester === "__blank__";
+
+            if (isBlankSemester) {
+                // Crear semestre en la DB
+                if (window.api?.semestres?.crearLectivo) {
+                    const created = await window.api.semestres.crearLectivo({
+                        numeroSemestre: parsed.numeroSemestre,
+                        anio: parsed.anio
+                    });
+                    if (!created?.success) {
+                        setSemesterModalError(created?.error || "No se pudo crear el semestre lectivo en base de datos.");
+                        return;
+                    }
                 }
+
+                // Generar calendarios vacíos en frontend
+                const copies = buildCalendarsForTerm(data.calendars, newName, true);
+
+                setData(prev => ({
+                    ...prev,
+                    calendars: prev.calendars
+                        .map((c) => ({ ...c, visible: false }))
+                        .concat(copies)
+                }));
+
+                closeCreateSemesterModal();
+                return;
             }
 
-            const copies = buildCalendarsForTerm(data.calendars, newName, true);
+            // --- Replicar semestre desde la base de datos ---
+            if (!window.api?.semestres?.replicar) {
+                setSemesterModalError("La función de replicar semestre no está disponible.");
+                return;
+            }
 
-            setData(prev => ({
-                ...prev,
-                calendars: prev.calendars
-                    .map((c) => ({ ...c, visible: false }))
-                    .concat(copies)
-            }));
+            setSemesterLoading(true);
+            setSemesterModalError("");
 
-            closeCreateSemesterModal();
+            try {
+                const sourceNumero = Number(sourceSemester);
+                const result = await window.api.semestres.replicar({
+                    sourceNumero,
+                    sourceAnio: Number(sourceYear),
+                    newNumero: parsed.numeroSemestre,
+                    newAnio: parsed.anio
+                });
+
+                if (!result.success) {
+                    setSemesterModalError(result.error || "Error al replicar el semestre.");
+                    setSemesterLoading(false);
+                    return;
+                }
+
+                const resultData = result.data || {};
+                const createdCount = resultData.created || 0;
+                const errors = resultData.errors || [];
+
+                if (errors.length > 0 && createdCount === 0) {
+                    setSemesterModalError(errors.join(". "));
+                    setSemesterLoading(false);
+                    return;
+                }
+
+                // Crear calendarios en frontend para el nuevo semestre
+                const newCalendars = buildCalendarsForTerm(data.calendars, newName, true);
+
+                setData(prev => ({
+                    ...prev,
+                    calendars: prev.calendars
+                        .map((c) => ({ ...c, visible: false }))
+                        .concat(newCalendars)
+                }));
+
+                // Recargar grupos de la DB para que aparezcan los nuevos
+                if (typeof reloadGroupsFromDb === "function") {
+                    await reloadGroupsFromDb();
+                }
+
+                closeCreateSemesterModal();
+
+                if (errors.length > 0) {
+                    console.warn("Advertencias al replicar semestre:", errors);
+                }
+            } catch (err) {
+                setSemesterModalError(err.message || "Error inesperado al replicar el semestre.");
+                setSemesterLoading(false);
+            }
         }
 
         return {
             isCreateSemesterOpen,
             semesterModalError,
+            semesterLoading,
             semesterForm,
             openCreateSemesterModal,
             closeCreateSemesterModal,
