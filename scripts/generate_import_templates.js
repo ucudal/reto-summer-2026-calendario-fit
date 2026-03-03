@@ -1,4 +1,4 @@
-﻿import fs from "node:fs";
+import fs from "node:fs";
 import path from "node:path";
 import ExcelJS from "exceljs";
 
@@ -14,16 +14,27 @@ const COLORS = {
 
 const COMMON_COLUMNS = [
   { key: "Carrera", required: false, note: "Nombre de carrera" },
-  { key: "CX", required: false, note: "Plan/Semestre. Ej: P2026-Sem1" },
+  { key: "Plan", required: false, note: "Plan combinado. Ej: Ingenieria Informatica 2026" },
+  { key: "Semestre", required: false, note: "Numero de semestre. Ej: 1" },
   { key: "Curso", required: false, note: "Nombre de materia" },
   { key: "Tipo", required: false, note: "A/B/D o texto" },
   { key: "Horas", required: false, note: "Carga horaria" },
+  { key: "Horas anuales", required: false, note: "Alias DB de horas (grupos.horas_anuales)" },
   { key: "ID Clase", required: false, note: "Codigo unico del grupo" },
+  { key: "Codigo", required: false, note: "Alias DB de ID Clase (grupos.codigo)" },
   { key: "Cupo", required: false, note: "Cantidad maxima" },
+  { key: "Color", required: false, note: "Color del grupo. Ej: #2563EB" },
   { key: "Creditos", required: false, note: "Creditos de la materia" },
   { key: "Requerim. salon", required: false, note: "Requerimiento de aula" },
   { key: "Salon", required: false, note: "Ej: A101 (Central)" },
+  { key: "Nombre salon", required: false, note: "Nombre del salon (tabla salones.nombre)" },
+  { key: "Edificio", required: false, note: "Edificio del salon (tabla salones.edificio)" },
+  { key: "Aforo", required: false, note: "Aforo del salon (tabla salones.aforo)" },
+  { key: "Dia", required: false, note: "Dia del horario. Ej: Lunes" },
+  { key: "Modulo", required: false, note: "Modulo del horario. Ej: 1" },
   { key: "Profesor", required: false, note: "Nombre completo (import parcial profesores)" },
+  { key: "Nombre", required: false, note: "Nombre del profesor" },
+  { key: "Apellido", required: false, note: "Apellido del profesor" },
   { key: "Correo", required: false, note: "Mail para Profesor" },
   { key: "Prof 1", required: false, note: "Docente principal" },
   { key: "Correo 1", required: false, note: "Mail de Prof 1" },
@@ -35,9 +46,12 @@ const COMMON_COLUMNS = [
   { key: "Correo Asis 1", required: false, note: "Mail de asistente" }
 ];
 
-function buildColumns(requiredKeys) {
+function buildColumns(requiredKeys, includeOptional = true) {
   const requiredSet = new Set(requiredKeys);
-  return COMMON_COLUMNS.map((c) => ({ ...c, required: requiredSet.has(c.key) }));
+  const base = includeOptional
+    ? COMMON_COLUMNS
+    : COMMON_COLUMNS.filter((column) => requiredSet.has(column.key));
+  return base.map((column) => ({ ...column, required: requiredSet.has(column.key) }));
 }
 
 function styleHeaderRow(ws, columns) {
@@ -71,14 +85,22 @@ function addDataRows(ws, columns, rows) {
   });
 }
 
-function addGuideSheet(workbook, columns, title, importType) {
+function addGuideSheet(workbook, columns, title, importType, profileType) {
   const ws = workbook.addWorksheet("Guia");
   ws.addRow([`Template: ${title}`]);
   ws.addRow([`Tipo importacion: ${importType}`]);
+  ws.addRow([`Perfil: ${profileType}`]);
+  ws.addRow([
+    "Nota",
+    profileType === "MINIMO"
+      ? "Este template incluye solo columnas obligatorias."
+      : "Este template incluye columnas obligatorias y opcionales."
+  ]);
+  ws.addRow(["Importante", "Las columnas opcionales solo se importan si tienen datos."]);
   ws.addRow([]);
   ws.addRow(["Campo", "Uso", "Estado"]);
 
-  const hdr = ws.getRow(4);
+  const hdr = ws.getRow(7);
   for (let i = 1; i <= 3; i += 1) {
     const c = hdr.getCell(i);
     c.font = { bold: true };
@@ -106,7 +128,7 @@ function addGuideSheet(workbook, columns, title, importType) {
   });
 
   ws.getColumn(1).width = 24;
-  ws.getColumn(2).width = 42;
+  ws.getColumn(2).width = 56;
   ws.getColumn(3).width = 16;
 }
 
@@ -123,35 +145,102 @@ function addHorarioSheet(workbook) {
   }
 }
 
-async function writeTemplate({ fileName, requiredKeys, title, importType, rows, includeHorarioSheet = false }) {
+async function writeTemplate({
+  fileName,
+  requiredKeys,
+  title,
+  importType,
+  rows,
+  includeHorarioSheet = false,
+  includeOptional = true,
+  profileType = "COMPLETO"
+}) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "CalendarioFIT";
   workbook.created = new Date();
 
-  const columns = buildColumns(requiredKeys);
+  const columns = buildColumns(requiredKeys, includeOptional);
   const ws = workbook.addWorksheet("Modulos");
   styleHeaderRow(ws, columns);
   addDataRows(ws, columns, rows);
-  addGuideSheet(workbook, columns, title, importType);
+  addGuideSheet(workbook, columns, title, importType, profileType);
   if (includeHorarioSheet) addHorarioSheet(workbook);
 
   await workbook.xlsx.writeFile(path.join(outDir, fileName));
 }
 
+async function writeTemplatePair(definition) {
+  const {
+    fileBaseName,
+    requiredKeys,
+    title,
+    importType,
+    rows,
+    includeHorarioSheet = false,
+    keepLegacyAsMinimal = false
+  } = definition;
+
+  await writeTemplate({
+    fileName: `${fileBaseName}_minimo.xlsx`,
+    requiredKeys,
+    title: `${title} (Minimo)`,
+    importType,
+    rows,
+    includeHorarioSheet,
+    includeOptional: false,
+    profileType: "MINIMO"
+  });
+
+  await writeTemplate({
+    fileName: `${fileBaseName}_completo.xlsx`,
+    requiredKeys,
+    title: `${title} (Completo)`,
+    importType,
+    rows,
+    includeHorarioSheet,
+    includeOptional: true,
+    profileType: "COMPLETO"
+  });
+
+  if (keepLegacyAsMinimal) {
+    await writeTemplate({
+      fileName: `${fileBaseName}.xlsx`,
+      requiredKeys,
+      title: `${title} (Legacy-Minimo)`,
+      importType,
+      rows,
+      includeHorarioSheet,
+      includeOptional: false,
+      profileType: "MINIMO"
+    });
+  }
+}
+
 const baseRows = [
   {
-    "CX": "P2026-Sem1",
-    "Carrera": "Ingenieria Informatica",
-    "Curso": "Programacion 1",
-    "Tipo": "B",
-    "Horas": "96",
+    Plan: "Ingenieria Informatica 2026",
+    Semestre: "1",
+    Carrera: "Ingenieria Informatica",
+    Curso: "Programacion 1",
+    Tipo: "B",
+    Horas: "96",
+    "Horas anuales": "96",
     "ID Clase": "INF-101",
-    "Cupo": "40",
-    "Creditos": "8",
+    Codigo: "INF-101",
+    Cupo: "40",
+    Color: "#2563EB",
+    Creditos: "8",
     "Requerim. salon": "Proyector",
-    "Salon": "A101 (Central)",
-    "Profesor": "Ana Perez",
-    "Correo": "ana.perez@ucu.edu.uy",
+    Salon: "A101 (Central)",
+    "Nombre salon": "A101",
+    Edificio: "Central",
+    Aforo: "40",
+    Dia: "Lunes",
+    Modulo: "1",
+    Profesor: "Ana Perez",
+    Nombre: "Ana",
+    Apellido: "Perez",
+    Correo: "ana.perez@ucu.edu.uy",
     "Prof 1": "Ana Perez",
     "Correo 1": "ana.perez@ucu.edu.uy",
     "Prof 2": "Luis Gomez",
@@ -160,83 +249,95 @@ const baseRows = [
     "Correo Asis 1": "sofia.diaz@ucu.edu.uy"
   },
   {
-    "CX": "P2026-Sem2",
-    "Carrera": "Ingenieria Informatica",
-    "Curso": "Fisica 2",
-    "Tipo": "A",
-    "Horas": "120",
+    Plan: "Ingenieria Informatica 2026",
+    Semestre: "2",
+    Carrera: "Ingenieria Informatica",
+    Curso: "Fisica 2",
+    Tipo: "A",
+    Horas: "120",
+    "Horas anuales": "120",
     "ID Clase": "FIS-201",
-    "Cupo": "35",
-    "Creditos": "10",
+    Codigo: "FIS-201",
+    Cupo: "35",
+    Color: "#16A34A",
+    Creditos: "10",
     "Requerim. salon": "Laboratorio",
-    "Salon": "Lab 2 (Ciencias)",
-    "Profesor": "Martin Silva",
-    "Correo": "martin.silva@ucu.edu.uy",
+    Salon: "Lab 2 (Ciencias)",
+    "Nombre salon": "Lab 2",
+    Edificio: "Ciencias",
+    Aforo: "35",
+    Dia: "Martes",
+    Modulo: "2",
+    Profesor: "Martin Silva",
+    Nombre: "Martin",
+    Apellido: "Silva",
+    Correo: "martin.silva@ucu.edu.uy",
     "Prof 1": "Martin Silva",
     "Correo 1": "martin.silva@ucu.edu.uy"
   }
 ];
 
-await writeTemplate({
-  fileName: "template_importacion_modulos_completo.xlsx",
-  requiredKeys: ["Curso", "ID Clase"],
-  title: "Importacion completa de modulos",
+await writeTemplatePair({
+  fileBaseName: "template_importacion_modulos",
+  requiredKeys: ["Plan", "Semestre", "Curso", "Tipo", "Creditos", "Codigo", "Horas anuales", "Cupo"],
+  title: "Importacion de modulos",
   importType: "IMPORTAR EXCEL (MODULOS)",
   rows: baseRows,
-  includeHorarioSheet: true
+  includeHorarioSheet: true,
+  keepLegacyAsMinimal: false
 });
 
-await writeTemplate({
-  fileName: "template_importacion_carreras.xlsx",
+await writeTemplatePair({
+  fileBaseName: "template_importacion_carreras",
   requiredKeys: ["Carrera"],
   title: "Importacion carreras",
   importType: "IMPORTAR DATOS UNICOS > carreras",
-  rows: [{ "Carrera": "Ingenieria Informatica" }, { "Carrera": "Ingenieria Industrial" }]
+  rows: [{ Carrera: "Ingenieria Informatica" }, { Carrera: "Ingenieria Industrial" }]
 });
 
-await writeTemplate({
-  fileName: "template_importacion_materias.xlsx",
-  requiredKeys: ["Curso"],
+await writeTemplatePair({
+  fileBaseName: "template_importacion_materias",
+  requiredKeys: ["Carrera", "Plan", "Semestre", "Curso", "Tipo", "Creditos"],
   title: "Importacion materias",
   importType: "IMPORTAR DATOS UNICOS > materias",
   rows: baseRows
 });
 
-await writeTemplate({
-  fileName: "template_importacion_grupos.xlsx",
-  requiredKeys: ["Curso", "ID Clase"],
+await writeTemplatePair({
+  fileBaseName: "template_importacion_grupos",
+  requiredKeys: ["Plan", "Semestre", "Curso", "Codigo", "Horas anuales", "Cupo", "Color"],
   title: "Importacion grupos",
   importType: "IMPORTAR DATOS UNICOS > grupos",
   rows: baseRows
 });
 
-await writeTemplate({
-  fileName: "template_importacion_profesores.xlsx",
-  requiredKeys: ["Profesor", "Correo"],
+await writeTemplatePair({
+  fileBaseName: "template_importacion_profesores",
+  requiredKeys: ["Nombre", "Apellido", "Correo"],
   title: "Importacion profesores",
   importType: "IMPORTAR DATOS UNICOS > profesores",
   rows: baseRows
 });
 
-await writeTemplate({
-  fileName: "template_importacion_salones.xlsx",
-  requiredKeys: ["Salon"],
+await writeTemplatePair({
+  fileBaseName: "template_importacion_salones",
+  requiredKeys: ["Nombre salon", "Edificio", "Aforo"],
   title: "Importacion salones",
   importType: "IMPORTAR DATOS UNICOS > salones",
   rows: baseRows
 });
 
-await writeTemplate({
-  fileName: "template_importacion_semestres.xlsx",
-  requiredKeys: ["CX"],
+await writeTemplatePair({
+  fileBaseName: "template_importacion_semestres",
+  requiredKeys: ["Plan", "Semestre"],
   title: "Importacion semestres",
   importType: "IMPORTAR DATOS UNICOS > semestres",
   rows: baseRows
 });
 
-await writeTemplate({
-  fileName: "template_importacion_horarios.xlsx",
-  requiredKeys: ["ID Clase"],
+await writeTemplatePair({
+  fileBaseName: "template_importacion_horarios",
+  requiredKeys: ["Dia", "Modulo"],
   title: "Importacion horarios",
   importType: "IMPORTAR DATOS UNICOS > horarios",
   rows: baseRows,

@@ -79,8 +79,22 @@ body {
 
 .header-controls {
   display: flex;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.header-controls-left {
+  display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  align-items: center;
+}
+
+.header-controls-right {
+  margin-left: auto;
+  display: flex;
   align-items: center;
 }
 
@@ -454,6 +468,28 @@ body {
 .event-meta {
   font-size: 11px;
   opacity: 0.86;
+}
+
+/* Alert icon inside an event card */
+.event-alerts {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  pointer-events: none;
+}
+
+.event-alert-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff3cd;
+  color: #856404;
+  font-size: 12px;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.12);
 }
 
 .hidden {

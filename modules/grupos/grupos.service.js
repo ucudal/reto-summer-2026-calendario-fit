@@ -1,8 +1,11 @@
 import {
+    asegurarCodigoGrupoNoUnico,
     asignarCarrerasAGrupo,
     crearGrupo,
     crearSemestre,
     eliminarGrupo,
+    limpiarProfesoresDeGrupo,
+    limpiarHorariosDeGrupo,
     obtenerGrupoPorId,
     obtenerSemestrePorNumeroYAnio,
     modificarGrupo,
@@ -16,24 +19,58 @@ const MODULOS_VALIDOS = { 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 
 
 export function altaGrupo(data) {
   validarGrupo(data);
+  asegurarCodigoGrupoNoUnico();
   const idSemestre = resolverIdSemestre(data);
+  const requestedCareers = [
+    ...new Set((data.carreras || []).map((name) => String(name || "").trim()).filter(Boolean))
+  ];
 
-  const result = crearGrupo({
-    codigo: data.codigo.trim(),
-    idMateria: data.idMateria,
-    horasSemestrales: data.horasSemestrales,
-    esContrasemestre: data.esContrasemestre,
-    cupo: data.cupo,
-    color: String(data.color || "#A0C4FF"),
-    idSemestre
-  });
+  if (requestedCareers.length <= 1) {
+    const result = crearGrupo({
+      codigo: data.codigo.trim(),
+      idMateria: data.idMateria,
+      horasSemestrales: data.horasSemestrales,
+      esContrasemestre: data.esContrasemestre,
+      cupo: data.cupo,
+      color: String(data.color || "#A0C4FF"),
+      idSemestre
+    });
 
-  const idGrupo = Number(result?.lastInsertRowid || 0);
-  if (idGrupo > 0) {
-    asignarCarrerasAGrupo(idGrupo, data.carreras || []);
+    const idGrupo = Number(result?.lastInsertRowid || 0);
+    if (idGrupo > 0) {
+      asignarCarrerasAGrupo(idGrupo, requestedCareers);
+    }
+    return result;
   }
 
-  return result;
+  const createdIds = [];
+  let totalChanges = 0;
+
+  for (const careerName of requestedCareers) {
+    const row = crearGrupo({
+      codigo: data.codigo.trim(),
+      idMateria: data.idMateria,
+      horasSemestrales: data.horasSemestrales,
+      esContrasemestre: data.esContrasemestre,
+      cupo: data.cupo,
+      color: String(data.color || "#A0C4FF"),
+      idSemestre
+    });
+
+    const idGrupo = Number(row?.lastInsertRowid || 0);
+    if (idGrupo > 0) {
+      asignarCarrerasAGrupo(idGrupo, [careerName]);
+      createdIds.push(idGrupo);
+    }
+
+    totalChanges += Number(row?.changes || 0);
+  }
+
+  return {
+    lastInsertRowid: createdIds[createdIds.length - 1] || 0,
+    changes: totalChanges,
+    ids: createdIds
+  };
 };
 
 export function actualizarGrupo(data) {
@@ -48,7 +85,7 @@ export function actualizarGrupo(data) {
 
   validarGrupo(data);
 
-  return modificarGrupo(data.id, {
+  const result = modificarGrupo(data.id, {
     codigo: data.codigo.trim(),
     idMateria: data.idMateria,
     horasSemestrales: data.horasSemestrales,
@@ -57,6 +94,12 @@ export function actualizarGrupo(data) {
     color: data.color,
     idSemestre: data.idSemestre
   });
+
+  if (Array.isArray(data.carreras)) {
+    asignarCarrerasAGrupo(data.id, data.carreras);
+  }
+
+  return result;
 };
 
 export function bajaGrupo(id) {
@@ -121,6 +164,60 @@ export async function agregarHorarioGrupo(idGrupo, horarios) {
   }
 
   return await insertarHorarios(idGrupo, horarios);
+}
+
+export async function reemplazarHorariosGrupo(idGrupo, horarios) {
+  if (!idGrupo) {
+    throw new Error("ID de grupo requerido");
+  }
+
+  if (!Array.isArray(horarios) || horarios.length === 0) {
+    throw new Error("Debe enviar horarios");
+  }
+
+  for (const h of horarios) {
+    if (!DIAS_VALIDOS.includes(h.dia.toLowerCase())) {
+      throw new Error(`Día inválido: ${h.dia}`);
+    }
+
+    if (!MODULOS_VALIDOS[h.modulo]) {
+      throw new Error(`Módulo inválido: ${h.modulo}`);
+    }
+  }
+
+  limpiarHorariosDeGrupo(idGrupo);
+  return await insertarHorarios(idGrupo, horarios);
+}
+
+export async function reemplazarProfesoresGrupo(idGrupo, profesoresData) {
+  if (!idGrupo) {
+    throw new Error("ID de grupo requerido");
+  }
+  if (!Array.isArray(profesoresData)) {
+    throw new Error("Debe enviar profesores");
+  }
+
+  limpiarProfesoresDeGrupo(idGrupo);
+
+  const inserted = [];
+  for (let i = 0; i < profesoresData.length; i += 1) {
+    const profesor = profesoresData[i] || {};
+    const idProfesor = Number(profesor.idProfesor || 0);
+    if (!idProfesor) {
+      throw new Error("ID de profesor inválido");
+    }
+
+    inserted.push(
+      await asignarProfesor({
+        idProfesor,
+        idGrupo,
+        carga: profesor.carga || (i === 0 ? "Titular" : "Ayudante"),
+        esPrincipal: typeof profesor.esPrincipal === "boolean" ? profesor.esPrincipal : i === 0
+      })
+    );
+  }
+
+  return inserted;
 }
 
 /* export async function agregarRequerimientosGrupo(idGrupo, requerimientos) {

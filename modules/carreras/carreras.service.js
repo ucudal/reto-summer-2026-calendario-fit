@@ -40,7 +40,6 @@ export function bajaCarrera(id) {
   if (!existente) {
     throw new Error('Carrera no encontrada');
   }
-
   return eliminarCarrera(id);
 }
 

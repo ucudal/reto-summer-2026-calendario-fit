@@ -10,6 +10,9 @@ function App() {
     visibleCalendars,
     visibleAlerts,
     toggleCalendarVisible,
+    lectiveTerms,
+    activeLectiveTerm,
+    setActiveLectiveTerm,
 
     // Career
     isCareersListOpen,
@@ -27,6 +30,7 @@ function App() {
     selectCareerToManage,
     updateCareerForm,
     confirmCreateCareer,
+    deleteCareer,
 
     // Teacher
     teachers,
@@ -112,9 +116,11 @@ function App() {
     <>
       <HeaderBar
         careers={careers}
+        lectiveTerms={lectiveTerms}
         selectedCareer={selectedCareer}
-        currentLectiveTerm={currentLectiveTerm}
+        currentLectiveTerm={activeLectiveTerm || currentLectiveTerm}
         onCareerChange={setSelectedCareer}
+        onLectiveTermChange={setActiveLectiveTerm}
         onOpenCreateSemester={openCreateSemesterModal}
         onOpenCreateCareer={openCreateCareerModal}
         onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
@@ -175,6 +181,7 @@ function App() {
         isOpen={isSubjectGroupsModalOpen}
         subject={selectedSubject}
         careers={careers}
+        selectedCareer={selectedCareer}
         calendars={data.calendars}
         days={DAYS}
         currentLectiveTerm={currentLectiveTerm}
@@ -212,6 +219,7 @@ function App() {
         onBack={careerOpenedFromList ? backToCareersListFromModal : null}
         onChange={updateCareerForm}
         onSubmit={confirmCreateCareer}
+        onDelete={careerEditMode ? deleteCareer : null}
         isEditMode={Boolean(careerEditMode)}
       />
 

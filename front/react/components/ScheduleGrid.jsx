@@ -214,9 +214,8 @@ function ScheduleGrid(props) {
     const columnWidthExpr = `((${dayPercent}% - ${perColumnGap}px) / ${columns})`;
 
     return {
-      left: `calc(${dayStartPercent}% + 4px + ${safeSlotIndex} * (${columnWidthExpr} + ${
-        columns > 1 ? innerGap : 0
-      }px))`,
+      left: `calc(${dayStartPercent}% + 4px + ${safeSlotIndex} * (${columnWidthExpr} + ${columns > 1 ? innerGap : 0
+        }px))`,
       width: `calc(${columnWidthExpr} - 8px)`,
       top: `${top}px`,
       height: `${height}px`,
@@ -278,15 +277,20 @@ function ScheduleGrid(props) {
                 }}
               >
                 <div className="event-title">{classItem.title}</div>
+                {Array.isArray(classItem._alerts) && classItem._alerts.length > 0 && (
+                  <div className="event-alerts">
+                    <span className="event-alert-icon" title={classItem._alerts.join(', ')}>⚠</span>
+                  </div>
+                )}
                 {classItem.classNumber && (
                   <div className="event-meta">N° de clase: {classItem.classNumber}</div>
                 )}
                 {Number.isFinite(classItem.credits) && classItem.credits > 0 && (
                   <div className="event-meta">Créditos: {classItem.credits}</div>
                 )}
-                {Array.isArray(classItem.teachers) && classItem.teachers.length > 0 && (
-                  <div className="event-meta">Docente: {classItem.teachers.join(", ")}</div>
-                )}
+                <div className="event-meta">
+                  Docente: {Array.isArray(classItem.teachers) && classItem.teachers.length > 0 ? classItem.teachers.join(", ") : "TBD"}
+                </div>
               </article>
             ))}
           </div>
