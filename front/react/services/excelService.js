@@ -30,6 +30,24 @@
         return "FF" + six.toUpperCase();
     }
 
+    function pickClassHexColor(cls, COLOR_BY_TYPE) {
+        // ✅ Prioridad 1: color del grupo (la app ya lo guarda en GROUP_COLORS)
+        const direct = String(cls?.color || "").trim();
+        if (direct) return direct;
+
+        // ✅ Prioridad 2: si viene como cls.groups[0].color
+        const groups = Array.isArray(cls?.groups) ? cls.groups : [];
+        const groupColor = String(groups[0]?.color || "").trim();
+        if (groupColor) return groupColor;
+
+        // ✅ Fallback: por tipo (lo viejo)
+        const t = String(cls?.type || "").trim();
+        const byType = t && COLOR_BY_TYPE ? COLOR_BY_TYPE[t] : "";
+        if (byType) return byType;
+
+        return "#D9D9D9";
+    }
+
     function normalizeText(s) {
         return String(s || "").trim().toLowerCase();
     }
@@ -546,9 +564,8 @@
                         wrapText: true
                     };
 
-                    const hex = (COLOR_BY_TYPE && COLOR_BY_TYPE[cls.type]) ? COLOR_BY_TYPE[cls.type] : "#D9D9D9";
-                    const argb = hexToArgb(hex);
-                    setFill(cell, argb);
+                    const hex = pickClassHexColor(cls, COLOR_BY_TYPE);
+                    setFill(cell, hexToArgb(hex));
 
                     setBorder(cell, borderAllThin());
                 }
