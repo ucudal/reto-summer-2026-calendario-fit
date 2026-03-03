@@ -16,7 +16,8 @@ function CreateSemesterModal(props) {
     onSubmit
   } = props;
 
-  const yearOptions = Array.from({ length: 10 }, (_, i) => String(2026 + i));
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 10 }, (_, i) => String(currentYear + i));
   const isBlank = form.sourceSemester === "__blank__";
 
   if (!isOpen) return null;
