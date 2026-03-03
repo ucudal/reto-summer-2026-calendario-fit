@@ -1,7 +1,6 @@
 import {
   crearDocente,
   eliminarDocente,
-  eliminarRelacionesProfesorGrupo,
   modificarDocente,
   obtenerDocentePorId,
   listarDocentes
@@ -58,9 +57,7 @@ export function bajaDocente(id) {
     throw new Error("Docente no encontrado");
   }
 
-  // Eliminar relaciones profesor-grupo antes de eliminar el docente
-  eliminarRelacionesProfesorGrupo(id);
-
+  // Ambas operaciones se ejecutan atómicamente en el repositorio
   return eliminarDocente(id);
 }
 

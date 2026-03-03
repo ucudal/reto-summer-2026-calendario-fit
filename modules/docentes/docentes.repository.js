@@ -19,19 +19,18 @@ export function crearDocente(docente) {
  * Eliminar docente
  */
 export function eliminarDocente(id) {
-  return db.delete(profesores)
-    .where(eq(profesores.id, id))
-    .run();
-}
+  // Realiza la eliminación en transacción, borrando primero las relaciones
+  // profesor-grupo para mantener la integridad referencial. Si alguna de las
+  // dos operaciones falla, ninguna se aplicará.
+  return db.transaction((tx) => {
+    tx.delete(profesorGrupo)
+      .where(eq(profesorGrupo.idProfesor, id))
+      .run();
 
-
-/**
- * Eliminar relaciones profesor-grupo de un docente
- */
-export function eliminarRelacionesProfesorGrupo(idProfesor) {
-  return db.delete(profesorGrupo)
-    .where(eq(profesorGrupo.idProfesor, idProfesor))
-    .run();
+    return tx.delete(profesores)
+      .where(eq(profesores.id, id))
+      .run();
+  });
 }
 
 
