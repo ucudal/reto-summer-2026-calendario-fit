@@ -15,7 +15,7 @@
     const sem = Number(semestre) === 2 ? "2do s" : "1er s";
     const year = Number(anio) >= 1 && Number(anio) <= 5 ? Number(anio) : 1;
     const yearLabel = year === 1 ? "1er" : year === 2 ? "2do" : year === 3 ? "3er" : year === 4 ? "4to" : "5to";
-    return `${sem} ${yearLabel} ano`;
+    return `${sem} ${yearLabel} año`;
   }
 
   function useSubjectManagement() {
@@ -140,7 +140,7 @@
         if (!nextCareers.includes(career)) {
           delete nextCarrerasSemestre[career];
         } else if (!nextCarrerasSemestre[career]) {
-          nextCarrerasSemestre[career] = "1er s 1er ano";
+          nextCarrerasSemestre[career] = "1er s 1er año";
         }
 
         return {
