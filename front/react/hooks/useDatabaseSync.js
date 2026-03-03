@@ -4,6 +4,7 @@
 
         const [dbGroups, setDbGroups] = React.useState([]);
         const [careers, setCareers] = React.useState([]);
+        const [careersData, setCareersData] = React.useState([]);
 
         function normalizeText(value) {
             return String(value || "")
@@ -105,16 +106,23 @@
         }, []);
 
         React.useEffect(() => {
+            if (!selectedCareer) return;
+            reloadGroupsFromDb();
+        }, [selectedCareer]);
+
+        React.useEffect(() => {
             let cancelled = false;
 
             async function loadCareers() {
                 if (!window.api?.carreras?.listar) return;
                 const response = await window.api.carreras.listar();
                 if (!cancelled && response?.success) {
-                    const names = (response.data || [])
-                        .map((r) => String(r?.nombre || "").trim())
+                    const rawData = (response.data || []).filter(r => r?.nombre);
+                    const names = rawData
+                        .map((r) => String(r.nombre).trim())
                         .filter(Boolean);
                     setCareers(names);
+                    setCareersData(rawData.map(r => ({ id: r.id, nombre: String(r.nombre).trim() })));
                 }
             }
 
@@ -122,13 +130,24 @@
             return () => { cancelled = true; };
         }, []);
 
+        async function reloadCareersFromDb() {
+            if (!window.api?.carreras?.listar) return;
+            const response = await window.api.carreras.listar();
+            if (response?.success) {
+                const names = (response.data || [])
+                    .map((r) => String(r?.nombre || "").trim())
+                    .filter(Boolean);
+                setCareers(names);
+            }
+        }
+
         React.useEffect(() => {
             const selectedCareerNormalized = normalizeText(selectedCareer);
             const classesByCalendar = new Map();
 
             const filteredGroups = dbGroups.filter((grupo) => {
                 const groupCareers = Array.isArray(grupo.carreras) ? grupo.carreras : [];
-                if (!selectedCareer) return true;
+                if (!selectedCareer) return false;
                 if (groupCareers.length === 0) return false;
                 return groupCareers.some(
                     (name) => normalizeText(name) === selectedCareerNormalized
@@ -191,7 +210,7 @@
             }));
         }, [dbGroups, selectedCareer]);
 
-        return { careers, setCareers, reloadGroupsFromDb };
+        return { dbGroups, careers, setCareers, careersData, setCareersData, reloadGroupsFromDb, reloadCareersFromDb };
     }
 
     window.useDatabaseSync = useDatabaseSync;
