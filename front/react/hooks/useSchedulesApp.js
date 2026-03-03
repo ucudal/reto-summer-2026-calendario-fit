@@ -47,6 +47,7 @@
     const excel = window.useExcelActions({
       data,
       selectedCareer,
+      selectedLectiveTerm: semester.activeLectiveTerm,
       reloadGroupsFromDb: db.reloadGroupsFromDb,
       reloadCareersFromDb: db.reloadCareersFromDb,
     });

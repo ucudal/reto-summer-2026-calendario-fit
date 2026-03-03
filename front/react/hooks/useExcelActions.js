@@ -10,6 +10,7 @@ function useExcelActions(params) {
     const {
         data,
         selectedCareer,
+        selectedLectiveTerm, // 👈 viene del dropdown
         reloadGroupsFromDb,
         reloadCareersFromDb
     } = params;
@@ -34,19 +35,6 @@ function useExcelActions(params) {
         return "";
     }, [data, selectedCareer]);
 
-    const getCurrentLectiveTerm = React.useCallback(function () {
-        const calendars = data?.calendars || [];
-        const visible = calendars.find(function (c) {
-            return c?.visible;
-        });
-
-        return (
-            visible?.lectiveTerm ||
-            calendars?.[0]?.lectiveTerm ||
-            ""
-        );
-    }, [data]);
-
     /*
       -----------------------------------------
       1️⃣ Export visual (Excel calendario)
@@ -61,23 +49,32 @@ function useExcelActions(params) {
             }
 
             const career = getFallbackSelectedCareer();
+
             if (!career) {
                 throw new Error("Payload inválido: falta selectedCareer");
             }
 
-            const currentLectiveTerm = getCurrentLectiveTerm();
+            const currentLectiveTerm =
+                selectedLectiveTerm ||
+                data?.calendars?.find(c => c?.visible)?.lectiveTerm ||
+                data?.calendars?.[0]?.lectiveTerm ||
+                "";
+
+            if (!currentLectiveTerm) {
+                throw new Error("No se pudo determinar el semestre lectivo activo.");
+            }
 
             await window.exportSchedulesToExcel({
                 calendars: data?.calendars || [],
                 selectedCareer: career,
-                currentLectiveTerm,
-                selectedPlan: "2026" // 👈 plan fijo
+                currentLectiveTerm: currentLectiveTerm, // ✅ usar la variable calculada
+                selectedPlan: "2026"
             });
 
         } catch (error) {
             console.error("Error exportando calendario Excel:", error);
         }
-    }, [data, getFallbackSelectedCareer, getCurrentLectiveTerm]);
+    }, [data, getFallbackSelectedCareer, selectedLectiveTerm]);
 
     /*
       -----------------------------------------
@@ -193,21 +190,13 @@ function useExcelActions(params) {
 
         const aliases = {
             carrera: "carreras",
-            carreras: "carreras",
             materia: "materias",
-            materias: "materias",
             grupo: "grupos",
-            grupos: "grupos",
             profesor: "profesores",
-            profesores: "profesores",
             docente: "profesores",
-            docentes: "profesores",
             salon: "salones",
-            salones: "salones",
             semestre: "semestres",
-            semestres: "semestres",
-            horario: "horarios",
-            horarios: "horarios"
+            horario: "horarios"
         };
 
         const rawEntity = String(entityInput || "").trim().toLowerCase();
@@ -227,20 +216,10 @@ function useExcelActions(params) {
         });
 
         if (response?.success) {
-            const summary = response.data || {};
-            const ins = summary.inserted || {};
-            const upd = summary.updated || {};
-            const skipped = summary.skipped || {};
-
-            const message = [
+            await window.api?.mensajes?.mostrar?.(
                 `Importacion parcial finalizada (${entity}).`,
-                `Filas procesadas: ${summary.totalRows || 0}`,
-                `Insertados -> carreras:${ins.carreras || 0}, semestres:${ins.semestres || 0}, materias:${ins.materias || 0}, grupos:${ins.grupos || 0}, profesores:${ins.profesores || 0}, salones:${ins.salones || 0}, horarios:${ins.horarios || 0}`,
-                `Actualizados -> materias:${upd.materias || 0}, grupos:${upd.grupos || 0}`,
-                `Omitidos -> sin curso:${skipped.rowsWithoutCourse || 0}, sin ID clase:${skipped.rowsWithoutClassId || 0}, sin semestre:${skipped.rowsWithoutSemestre || 0}`
-            ].join("\n");
-
-            await window.api?.mensajes?.mostrar?.(message, "info");
+                "info"
+            );
             await reloadGroupsFromDb?.();
             await reloadCareersFromDb?.();
             return;
@@ -253,12 +232,6 @@ function useExcelActions(params) {
             );
         }
     }
-
-    /*
-      -----------------------------------------
-      Return API
-      -----------------------------------------
-    */
 
     return {
         handleExportExcel,
