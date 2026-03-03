@@ -106,7 +106,8 @@ function SubjectGroupsModal(props) {
         const names = response.data
           .map((row) => {
             const nombre = String(row?.nombre || "").trim();
-            const apellido = String(row?.apellido || "").trim();
+            const apellidoRaw = String(row?.apellido || "").trim();
+            const apellido = apellidoRaw === "." ? "" : apellidoRaw;
             return `${nombre} ${apellido}`.trim();
           })
           .filter(Boolean);
