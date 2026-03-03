@@ -1,15 +1,91 @@
-function useExcelActions({ data, selectedCareer, reloadGroupsFromDb, reloadCareersFromDb, reloadSubjectsFromDb }) {
-    async function handleExportExcel() {
+/*
+  Hook: useExcelActions
+  - Export visual calendario (plan fijo 2026)
+  - Export datos BD (Electron)
+  - Import completo
+  - Import por entidad
+*/
+
+function useExcelActions(params) {
+    const {
+        data,
+        selectedCareer,
+        selectedLectiveTerm, // 👈 viene del dropdown
+        reloadGroupsFromDb,
+        reloadCareersFromDb,
+        reloadSubjectsFromDb
+    } = params;
+
+    /*
+      -----------------------------------------
+      Helpers
+      -----------------------------------------
+    */
+
+    const getFallbackSelectedCareer = React.useCallback(function () {
+        if (selectedCareer) return selectedCareer;
+
+        const careers = data?.careers || [];
+        if (careers.length > 0) {
+            const first = careers[0];
+
+            if (typeof first === "string") return first;
+            if (typeof first === "object") return first.name || first.id || "";
+        }
+
+        return "";
+    }, [data, selectedCareer]);
+
+    /*
+      -----------------------------------------
+      1️⃣ Export visual (Excel calendario)
+      -----------------------------------------
+    */
+
+    const handleExportExcel = React.useCallback(async function () {
         try {
-            if (!window.exportSchedulesToExcel) return;
-            await window.exportSchedulesToExcel(data);
+            if (!window.exportSchedulesToExcel) {
+                console.error("No existe window.exportSchedulesToExcel");
+                return;
+            }
+
+            const career = getFallbackSelectedCareer();
+
+            if (!career) {
+                throw new Error("Payload inválido: falta selectedCareer");
+            }
+
+            const currentLectiveTerm =
+                selectedLectiveTerm ||
+                data?.calendars?.find(c => c?.visible)?.lectiveTerm ||
+                data?.calendars?.[0]?.lectiveTerm ||
+                "";
+
+            if (!currentLectiveTerm) {
+                throw new Error("No se pudo determinar el semestre lectivo activo.");
+            }
+
+            await window.exportSchedulesToExcel({
+                calendars: data?.calendars || [],
+                selectedCareer: career,
+                currentLectiveTerm: currentLectiveTerm, // ✅ usar la variable calculada
+                selectedPlan: "2026"
+            });
+
         } catch (error) {
             console.error("Error exportando calendario Excel:", error);
         }
-    }
+    }, [data, getFallbackSelectedCareer, selectedLectiveTerm]);
+
+    /*
+      -----------------------------------------
+      2️⃣ Export datos BD (Electron)
+      -----------------------------------------
+    */
 
     async function handleExportExcelDatos() {
         const exportApi = window.api?.exportaciones;
+
         if (!exportApi?.guardarExcel) {
             window.alert("No se pudo acceder a la API de Electron (preload). Reinicia la app.");
             await window.api?.mensajes?.mostrar?.(
@@ -23,12 +99,15 @@ function useExcelActions({ data, selectedCareer, reloadGroupsFromDb, reloadCaree
             defaultFileName: "calendario-bd.xlsx",
             sheetName: "DatosBD",
             filters: {
-                carrera: selectedCareer
+                carrera: getFallbackSelectedCareer()
             }
         });
 
         if (response?.success) {
-            await window.api?.mensajes?.mostrar?.(`Excel exportado en:\n${response.data.path}`, "info");
+            await window.api?.mensajes?.mostrar?.(
+                `Excel exportado en:\n${response.data.path}`,
+                "info"
+            );
             return;
         }
 
@@ -40,15 +119,22 @@ function useExcelActions({ data, selectedCareer, reloadGroupsFromDb, reloadCaree
         }
     }
 
+    /*
+      -----------------------------------------
+      3️⃣ Import completo
+      -----------------------------------------
+    */
+
     async function handleImportExcel() {
         const exportApi = window.api?.exportaciones;
+
         if (!exportApi?.importarExcelModulos) {
             window.alert("No se pudo acceder a la API de importacion.");
             return;
         }
 
         const response = await exportApi.importarExcelModulos({
-            carreraNombre: selectedCareer
+            carreraNombre: getFallbackSelectedCareer()
         });
 
         if (response?.success) {
@@ -56,6 +142,7 @@ function useExcelActions({ data, selectedCareer, reloadGroupsFromDb, reloadCaree
             const ins = summary.inserted || {};
             const linked = summary.linked || {};
             const skipped = summary.skipped || {};
+
             const message = [
                 "Importacion finalizada.",
                 `Filas procesadas: ${summary.totalRows || 0}`,
@@ -79,8 +166,15 @@ function useExcelActions({ data, selectedCareer, reloadGroupsFromDb, reloadCaree
         }
     }
 
+    /*
+      -----------------------------------------
+      4️⃣ Import por entidad
+      -----------------------------------------
+    */
+
     async function importUniqueExcelData(entityInput) {
         const exportApi = window.api?.exportaciones;
+
         if (!exportApi?.importarExcelEntidad) {
             window.alert("No se pudo acceder a la API de importacion por entidad.");
             return;
@@ -95,6 +189,7 @@ function useExcelActions({ data, selectedCareer, reloadGroupsFromDb, reloadCaree
             "semestres",
             "horarios"
         ];
+
         const aliases = {
             carrera: "carreras",
             carreras: "carreras",
@@ -116,6 +211,7 @@ function useExcelActions({ data, selectedCareer, reloadGroupsFromDb, reloadCaree
 
         const rawEntity = String(entityInput || "").trim().toLowerCase();
         const entity = aliases[rawEntity] || rawEntity;
+
         if (!availableEntities.includes(entity)) {
             await window.api?.mensajes?.mostrar?.(
                 `Entidad invalida. Usa una de: ${availableEntities.join(", ")}.`,
@@ -126,7 +222,7 @@ function useExcelActions({ data, selectedCareer, reloadGroupsFromDb, reloadCaree
 
         const response = await exportApi.importarExcelEntidad({
             entity,
-            carreraNombre: selectedCareer
+            carreraNombre: getFallbackSelectedCareer()
         });
 
         if (response?.success) {

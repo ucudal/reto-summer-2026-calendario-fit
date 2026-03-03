@@ -19,7 +19,55 @@
 
     const visibility = window.useCalendarVisibility(data, setData);
 
-        const career = window.useCareerManagement({
+    function normalizeText(value) {
+      return String(value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+    }
+
+    function getLectiveTermFromGroup(grupo) {
+      const semestreLectivo = Number(grupo?.semestreLectivo || 0);
+      const anioLectivo = Number(grupo?.anioLectivo || 0);
+      if ((semestreLectivo !== 1 && semestreLectivo !== 2) || !anioLectivo) return "";
+      return `${semestreLectivo === 1 ? "1er" : "2do"} semestre ${anioLectivo}`;
+    }
+
+    const didAutoSelectLectiveTermRef = React.useRef(false);
+
+    React.useEffect(() => {
+      if (!selectedCareer) return;
+      if (!Array.isArray(db.dbGroups) || db.dbGroups.length === 0) return;
+      if (didAutoSelectLectiveTermRef.current) return;
+      if (visibility.activeLectiveTerm) {
+        didAutoSelectLectiveTermRef.current = true;
+        return;
+      }
+
+      const selectedCareerNormalized = normalizeText(selectedCareer);
+      const termsWithGroups = [];
+      const seen = new Set();
+
+      db.dbGroups.forEach((group) => {
+        const groupCareers = Array.isArray(group?.carreras) ? group.carreras : [];
+        const matchesCareer = groupCareers.some((name) => normalizeText(name) === selectedCareerNormalized);
+        if (!matchesCareer) return;
+
+        const term = getLectiveTermFromGroup(group);
+        if (!term || seen.has(term)) return;
+        seen.add(term);
+        termsWithGroups.push(term);
+      });
+
+      if (termsWithGroups.length === 0) return;
+
+      const preferredTerm = termsWithGroups.sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }))[0];
+      visibility.setActiveLectiveTerm(preferredTerm);
+      didAutoSelectLectiveTermRef.current = true;
+    }, [selectedCareer, db.dbGroups, visibility.activeLectiveTerm]);
+
+    const career = window.useCareerManagement({
             careers: db.careers,
             setCareers: db.setCareers,
             careersData: db.careersData,
@@ -30,7 +78,9 @@
 
     const semester = window.useSemesterManagement(data, setData);
 
-    const teacher = window.useTeacherManagement();
+        const teacher = window.useTeacherManagement({
+            reloadGroupsFromDb: db.reloadGroupsFromDb
+        });
 
     const subject = window.useSubjectManagement({
       careers: db.careers,
@@ -47,6 +97,7 @@
     const excel = window.useExcelActions({
       data,
       selectedCareer,
+      selectedLectiveTerm: semester.activeLectiveTerm,
       reloadGroupsFromDb: db.reloadGroupsFromDb,
       reloadCareersFromDb: db.reloadCareersFromDb,
       reloadSubjectsFromDb: subject.reloadSubjectsFromDb,

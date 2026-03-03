@@ -49,6 +49,7 @@ function App() {
     selectTeacherToManage,
     updateTeacherForm,
     confirmCreateTeacher,
+    deleteTeacher,
 
     // Subject
     subjects,
@@ -240,6 +241,7 @@ function App() {
         onBack={teacherOpenedFromList ? backToTeachersListFromModal : null}
         onChange={updateTeacherForm}
         onSubmit={confirmCreateTeacher}
+        onDelete={deleteTeacher}
         isEditMode={Boolean(teacherEditMode)}
       />
 

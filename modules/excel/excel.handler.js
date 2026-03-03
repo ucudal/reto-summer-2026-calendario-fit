@@ -22,4 +22,22 @@ export function registerExcelHandlers() {
             return { success: false, error: error.message };
         }
     });
+
+    ipcMain.handle("excel:seleccionarPlan", async () => {
+        const { response } = await dialog.showMessageBox({
+            type: "question",
+            buttons: ["PLAN 2021", "PLAN 2026", "Cancelar"],
+            defaultId: 0,
+            cancelId: 2,
+            title: "Seleccionar Plan",
+            message: "Seleccione el plan curricular para exportar:"
+        });
+
+        if (response === 2) return { cancelled: true };
+
+        return {
+            cancelled: false,
+            plan: response === 0 ? "2021" : "2026"
+        };
+    });
 }

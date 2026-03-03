@@ -106,6 +106,11 @@
         }, []);
 
         React.useEffect(() => {
+            if (!selectedCareer) return;
+            reloadGroupsFromDb();
+        }, [selectedCareer]);
+
+        React.useEffect(() => {
             let cancelled = false;
 
             async function loadCareers() {
@@ -225,7 +230,7 @@
             }));
         }, [dbGroups, selectedCareer]);
 
-        return { careers, setCareers, careersData, setCareersData, reloadGroupsFromDb, reloadCareersFromDb };
+        return { dbGroups, careers, setCareers, careersData, setCareersData, reloadGroupsFromDb, reloadCareersFromDb };
     }
 
     window.useDatabaseSync = useDatabaseSync;

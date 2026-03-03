@@ -14,6 +14,7 @@ function CreateTeacherModal(props) {
     onBack,
     onChange,
     onSubmit,
+    onDelete,
     isEditMode = false
   } = props;
 
@@ -83,7 +84,24 @@ function CreateTeacherModal(props) {
 
           {errorMessage && <div className="modal-error">{errorMessage}</div>}
 
-          <button type="submit" className="modal-confirm-btn">Confirmar</button>
+          <div className="modal-actions" style={{ display: 'flex', gap: '8px', justifyContent: isEditMode ? 'space-between' : 'flex-end' }}>
+            {isEditMode && onDelete && (
+              <button
+                type="button"
+                className="modal-delete-btn"
+                style={{ backgroundColor: '#dc3545', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer' }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (window.confirm('¿Estás seguro de que deseas eliminar este docente? Se eliminarán también sus asignaciones a grupos.')) {
+                    onDelete();
+                  }
+                }}
+              >
+                Eliminar
+              </button>
+            )}
+            <button type="submit" className="modal-confirm-btn">Confirmar</button>
+          </div>
         </form>
       </section>
     </div>

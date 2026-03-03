@@ -1,5 +1,6 @@
 import { db } from '../../db/database.js';
 import { profesores }  from "../../db/drizzle/schema/base.js";
+import { profesorGrupo } from "../../db/drizzle/schema/links.js";
 import { asc, eq } from "drizzle-orm";
 
 /**
@@ -18,9 +19,18 @@ export function crearDocente(docente) {
  * Eliminar docente
  */
 export function eliminarDocente(id) {
-  return db.delete(profesores)
-    .where(eq(profesores.id, id))
-    .run();
+  // Realiza la eliminación en transacción, borrando primero las relaciones
+  // profesor-grupo para mantener la integridad referencial. Si alguna de las
+  // dos operaciones falla, ninguna se aplicará.
+  return db.transaction((tx) => {
+    tx.delete(profesorGrupo)
+      .where(eq(profesorGrupo.idProfesor, id))
+      .run();
+
+    return tx.delete(profesores)
+      .where(eq(profesores.id, id))
+      .run();
+  });
 }
 
 
