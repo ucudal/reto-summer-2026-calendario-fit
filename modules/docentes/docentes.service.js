@@ -57,6 +57,7 @@ export function bajaDocente(id) {
     throw new Error("Docente no encontrado");
   }
 
+  // Ambas operaciones se ejecutan atómicamente en el repositorio
   return eliminarDocente(id);
 }
 

@@ -1,5 +1,5 @@
 (function () {
-    function useTeacherManagement() {
+    function useTeacherManagement({ reloadGroupsFromDb } = {}) {
         const createTeacherModalFns = window.CreateTeacherModalFunctions;
 
         const [isTeachersListOpen, setIsTeachersListOpen] = React.useState(false);
@@ -70,14 +70,41 @@
         }
 
         async function confirmCreateTeacher() {
+            const wasOpenedFromList = teacherOpenedFromList;
+
             await createTeacherModalFns.confirmCreateTeacher({
                 teacherForm,
+                teacherEditMode,
                 setTeacherModalError,
                 closeCreateTeacherModal
             });
 
-            if (teacherOpenedFromList) {
+            // Refrescar grupos para que se muestren los nombres actualizados
+            if (reloadGroupsFromDb) await reloadGroupsFromDb();
+
+            if (wasOpenedFromList) {
                 await loadTeachersFromDb();
+                setIsTeachersListOpen(true);
+            }
+        }
+
+        async function deleteTeacher() {
+            if (!teacherEditMode || !teacherEditMode.id) return;
+
+            const wasOpenedFromList = teacherOpenedFromList;
+
+            await createTeacherModalFns.deleteTeacher({
+                teacherId: teacherEditMode.id,
+                setTeacherModalError,
+                closeCreateTeacherModal
+            });
+
+            // Refrescar grupos para que se quiten los docentes eliminados
+            if (reloadGroupsFromDb) await reloadGroupsFromDb();
+
+            if (wasOpenedFromList) {
+                await loadTeachersFromDb();
+                setIsTeachersListOpen(true);
             }
         }
 
@@ -108,7 +135,8 @@
             backToTeachersListFromModal,
             selectTeacherToManage,
             updateTeacherForm,
-            confirmCreateTeacher
+            confirmCreateTeacher,
+            deleteTeacher
         };
     }
 
