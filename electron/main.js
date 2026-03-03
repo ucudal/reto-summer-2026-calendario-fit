@@ -35,6 +35,14 @@ function createWindow() {
 
 app.whenReady().then(async () => {
   try {
+    const basePath = app.isPackaged
+    ? app.getPath("userData")
+    : path.join(__dirname, "..", "db");
+
+    const dbPath = path.join(basePath, "local-dev.sqlite");
+    console.log("USER DATA PATH:", app.getPath("userData"));
+
+    await runMigrations(dbPath);
     // await runMigrations();
     // await initializeDatabase(); @todo eliminar si esta todo ok
     registerAllHandlers();

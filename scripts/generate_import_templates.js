@@ -337,7 +337,7 @@ await writeTemplatePair({
 
 await writeTemplatePair({
   fileBaseName: "template_importacion_horarios",
-  requiredKeys: ["Dia", "Modulo"],
+  requiredKeys: ["ID Clase", "Dia", "Modulo"],
   title: "Importacion horarios",
   importType: "IMPORTAR DATOS UNICOS > horarios",
   rows: baseRows,

@@ -8,8 +8,7 @@ import { dirname } from "path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-export async function runMigrations() {
-  const dbPath = path.join(__dirname, "local-dev.sqlite");
+export async function runMigrations(dbPath) {
   const client = createClient({ url: `file:${dbPath}` });
   const db = drizzle(client);
 

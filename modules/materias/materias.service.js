@@ -153,6 +153,14 @@ async function construirFilasMateriaCarrera(idMateria, carrerasSemestre) {
 
 function parseSemestreTexto(texto) {
   const value = String(texto || "").toLowerCase();
+  const rawNumberMatch = value.match(/^\s*(\d{1,2})\s*$/);
+  if (rawNumberMatch) {
+    const total = Number(rawNumberMatch[1]);
+    const semestre = total % 2 === 0 ? 2 : 1;
+    const anio = Math.max(1, Math.min(5, Math.floor((total - 1) / 2) + 1));
+    return { semestre, anio };
+  }
+
   const semestre = value.includes("2do") ? 2 : 1;
 
   const yearMatch = value.match(/([1-5])\s*(er|do|to)?\s*a/);

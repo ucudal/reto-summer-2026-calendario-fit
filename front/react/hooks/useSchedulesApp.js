@@ -100,6 +100,7 @@
       selectedLectiveTerm: semester.activeLectiveTerm,
       reloadGroupsFromDb: db.reloadGroupsFromDb,
       reloadCareersFromDb: db.reloadCareersFromDb,
+      reloadSubjectsFromDb: subject.reloadSubjectsFromDb,
     });
 
     

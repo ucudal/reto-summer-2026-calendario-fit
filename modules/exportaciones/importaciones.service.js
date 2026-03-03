@@ -110,12 +110,31 @@ function parseSemestreNumber(raw, fallbackSemestre = 1) {
   return Number.isFinite(semestre) && semestre > 0 ? semestre : fallbackSemestre;
 }
 
+function mapSemestreAcumulado(rawSemestre) {
+  const total = Number(rawSemestre);
+  if (!Number.isFinite(total) || total <= 0) {
+    return { semestre: 1, anioCarrera: 1 };
+  }
+
+  // Formato acumulado:
+  // 1 -> 1er sem 1er año, 2 -> 2do sem 1er año
+  // 3 -> 1er sem 2do año, 4 -> 2do sem 2do año, etc.
+  const anioCarrera = Math.max(1, Math.min(5, Math.floor((total - 1) / 2) + 1));
+  const semestre = total % 2 === 0 ? 2 : 1;
+  return { semestre, anioCarrera };
+}
+
 function parsePlanAndSemestre({ cx, plan, semestre, fallbackYear = 2026 }) {
   const fromCx = parsePlanAndSemestreFromCx(cx, fallbackYear);
   const planYear = parsePlanYear(plan, fromCx.anioPlan);
   const semestreNumero = parseSemestreNumber(semestre, fromCx.semestre);
+  const mapped = mapSemestreAcumulado(semestreNumero);
   return {
-    semestre: semestreNumero,
+    // Para la tabla semestres (lectivo), solo existen 1 o 2.
+    semestreLectivo: mapped.semestre,
+    // Para materia_carrera: semestre dentro del año y año de carrera.
+    semestreCarrera: mapped.semestre,
+    anioCarrera: mapped.anioCarrera,
     plan: normalizePlanLabel(plan, planYear),
     anioPlan: planYear
   };
@@ -155,7 +174,7 @@ function splitName(fullName) {
   const clean = normalizeText(fullName);
   if (!clean) return { nombre: "", apellido: "" };
   const parts = clean.split(/\s+/);
-  if (parts.length === 1) return { nombre: parts[0], apellido: "." };
+  if (parts.length === 1) return { nombre: parts[0], apellido: "" };
   return {
     nombre: parts.slice(0, -1).join(" "),
     apellido: parts.slice(-1).join(" ")
@@ -535,9 +554,9 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
       });
       const carrera = ensureCarrera(carreraRowName || carreraNombre);
       if (!carrera) continue;
-      let semestre = getSemestre.get(planData.semestre, planData.anioPlan);
+      let semestre = getSemestre.get(planData.semestreLectivo, planData.anioPlan);
       if (!semestre) {
-        const semResult = insertSemestre.run(planData.semestre, planData.anioPlan);
+        const semResult = insertSemestre.run(planData.semestreLectivo, planData.anioPlan);
         semestre = { id: Number(semResult.lastInsertRowid) };
         summary.inserted.semestres += 1;
       }
@@ -553,16 +572,16 @@ export function importarModulosDesdeExcel(filePath, options = {}) {
         materia.id,
         carrera.id,
         planData.plan,
-        planData.semestre,
-        planData.anioPlan
+        planData.semestreCarrera,
+        planData.anioCarrera
       );
       if (mcResult.changes > 0) {
         summary.linked.materiaCarrera += 1;
       } else {
         updateMateriaCarrera.run(
           planData.plan,
-          planData.semestre,
-          planData.anioPlan,
+          planData.semestreCarrera,
+          planData.anioCarrera,
           materia.id,
           carrera.id
         );
@@ -844,6 +863,9 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
 
   const getHorario = sqlite.prepare("SELECT id FROM horarios WHERE dia = ? AND modulo = ?");
   const insertHorario = sqlite.prepare("INSERT INTO horarios (dia, modulo) VALUES (?, ?)");
+  const linkGrupoHorario = sqlite.prepare(
+    "INSERT OR IGNORE INTO grupo_horario (id_grupo, id_horario) VALUES (?, ?)"
+  );
 
   const summary = {
     filePath,
@@ -937,15 +959,15 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
           semestre: semestreRaw,
           fallbackYear: anioLectivo
         });
-        if (!planData?.semestre) {
+        if (!planData?.semestreLectivo) {
           summary.skipped.rowsWithoutSemestre += 1;
           continue;
         }
       }
 
       if (entity === "semestres") {
-        if (!getSemestre.get(planData.semestre, planData.anioPlan)) {
-          insertSemestre.run(planData.semestre, planData.anioPlan);
+        if (!getSemestre.get(planData.semestreLectivo, planData.anioPlan)) {
+          insertSemestre.run(planData.semestreLectivo, planData.anioPlan);
           summary.inserted.semestres += 1;
         }
         continue;
@@ -982,14 +1004,14 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
           materia.id,
           carrera.id,
           planData.plan,
-          planData.semestre,
-          planData.anioPlan
+          planData.semestreCarrera,
+          planData.anioCarrera
         );
         if (mcResult.changes === 0) {
           updateMateriaCarrera.run(
             planData.plan,
-            planData.semestre,
-            planData.anioPlan,
+            planData.semestreCarrera,
+            planData.anioCarrera,
             materia.id,
             carrera.id
           );
@@ -1016,9 +1038,9 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
           summary.inserted.materias += 1;
         }
 
-        let semestre = getSemestre.get(planData.semestre, planData.anioPlan);
+        let semestre = getSemestre.get(planData.semestreLectivo, planData.anioPlan);
         if (!semestre) {
-          const semResult = insertSemestre.run(planData.semestre, planData.anioPlan);
+          const semResult = insertSemestre.run(planData.semestreLectivo, planData.anioPlan);
           semestre = { id: Number(semResult.lastInsertRowid) };
           summary.inserted.semestres += 1;
         }
@@ -1135,19 +1157,32 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
       if (entity === "horarios") {
         const directDia = normalizeText(getCell(row, idx.dia));
         const directModulo = parseIntSafe(getCell(row, idx.modulo), 0);
-        if (directDia && directModulo > 0) {
-          if (!getHorario.get(directDia, directModulo)) {
-            insertHorario.run(directDia, directModulo);
+        const grupo = idClase ? getGrupo.get(idClase) : null;
+
+        const ensureHorario = (dia, modulo) => {
+          if (!dia || !modulo) return null;
+          let horario = getHorario.get(dia, modulo);
+          if (!horario) {
+            const result = insertHorario.run(dia, modulo);
+            horario = { id: Number(result.lastInsertRowid) };
             summary.inserted.horarios += 1;
+          }
+          return horario;
+        };
+
+        if (directDia && directModulo > 0) {
+          const horario = ensureHorario(directDia, directModulo);
+          if (horario?.id && grupo?.id) {
+            linkGrupoHorario.run(Number(grupo.id), Number(horario.id));
           }
         } else {
           const horarios = horarioMap?.get(idClase) || new Set();
           for (const item of horarios) {
             const [dia, moduloStr] = item.split("|");
             const modulo = Number(moduloStr);
-            if (!getHorario.get(dia, modulo)) {
-              insertHorario.run(dia, modulo);
-              summary.inserted.horarios += 1;
+            const horario = ensureHorario(dia, modulo);
+            if (horario?.id && grupo?.id) {
+              linkGrupoHorario.run(Number(grupo.id), Number(horario.id));
             }
           }
         }

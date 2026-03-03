@@ -195,17 +195,37 @@
                 classesByCalendar.set(calendarId, Array.from(mergedByCode.values()));
             });
 
+            function getClassesForCalendar(baseId, lectiveTerm) {
+                const normalizedBaseId = String(baseId || "").toLowerCase();
+                const normalizedLectiveTerm = String(lectiveTerm || "").trim();
+                const exactKey = `${normalizedBaseId}|${normalizedLectiveTerm}`;
+                const noTermKey = `${normalizedBaseId}|`;
+
+                if (classesByCalendar.has(exactKey)) {
+                    return classesByCalendar.get(exactKey) || [];
+                }
+
+                if (classesByCalendar.has(noTermKey)) {
+                    return classesByCalendar.get(noTermKey) || [];
+                }
+
+                // Fallback: si no existe el semestre lectivo exacto en UI,
+                // usar el primer bucket disponible para ese calendario base.
+                const anyKey = Array.from(classesByCalendar.keys()).find(
+                    (key) => key.startsWith(`${normalizedBaseId}|`)
+                );
+                return anyKey ? (classesByCalendar.get(anyKey) || []) : [];
+            }
+
             setData((prev) => ({
                 ...prev,
                 calendars: prev.calendars.map((calendar) => ({
                     ...calendar,
                     subtitle: selectedCareer || calendar.subtitle,
-                    classes:
-                        classesByCalendar.get(
-                            `${getCalendarBaseId(calendar.id)}|${String(calendar?.lectiveTerm || "").trim()}`
-                        ) ||
-                        classesByCalendar.get(`${getCalendarBaseId(calendar.id)}|`) ||
-                        []
+                    classes: getClassesForCalendar(
+                        getCalendarBaseId(calendar.id),
+                        String(calendar?.lectiveTerm || "").trim()
+                    )
                 }))
             }));
         }, [dbGroups, selectedCareer]);

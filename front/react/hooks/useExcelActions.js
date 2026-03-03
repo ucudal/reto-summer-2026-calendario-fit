@@ -12,7 +12,8 @@ function useExcelActions(params) {
         selectedCareer,
         selectedLectiveTerm, // 👈 viene del dropdown
         reloadGroupsFromDb,
-        reloadCareersFromDb
+        reloadCareersFromDb,
+        reloadSubjectsFromDb
     } = params;
 
     /*
@@ -153,6 +154,7 @@ function useExcelActions(params) {
             await window.api?.mensajes?.mostrar?.(message, "info");
             await reloadGroupsFromDb?.();
             await reloadCareersFromDb?.();
+            await reloadSubjectsFromDb?.();
             return;
         }
 
@@ -239,6 +241,7 @@ function useExcelActions(params) {
             await window.api?.mensajes?.mostrar?.(message, "info");
             await reloadGroupsFromDb?.();
             await reloadCareersFromDb?.();
+            await reloadSubjectsFromDb?.();
             return;
         }
 
