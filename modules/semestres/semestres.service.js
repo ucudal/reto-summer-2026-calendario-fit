@@ -33,28 +33,12 @@ export async function crearSemestreLectivoService(data) {
 
   const existente = obtenerSemestrePorNumeroYAnio(numeroSemestre, anio);
   if (existente?.id) {
-    return {
-      id: Number(existente.id),
-      numeroSemestre,
-      anio,
-      lectiveTerm: parseTermLabel(numeroSemestre, anio),
-      created: false
-    };
+    throw new Error(`El semestre ${parseTermLabel(numeroSemestre, anio)} ya existe`);
   }
 
   const result = crearSemestreLectivo(numeroSemestre, anio);
   const id = Number(result?.lastInsertRowid || 0);
   if (!id) {
-    const retry = obtenerSemestrePorNumeroYAnio(numeroSemestre, anio);
-    if (retry?.id) {
-      return {
-        id: Number(retry.id),
-        numeroSemestre,
-        anio,
-        lectiveTerm: parseTermLabel(numeroSemestre, anio),
-        created: false
-      };
-    }
     throw new Error("No se pudo crear el semestre lectivo");
   }
 
@@ -91,24 +75,27 @@ export async function replicarSemestreService({ sourceNumero, sourceAnio, newNum
     throw new Error(`No se encontró el semestre ${Number(sourceNumero) === 1 ? "1er" : "2do"} semestre de ${sourceAnio}`);
   }
 
-  // 2. Obtener o crear el semestre destino
-  let semestreDestino = obtenerSemestrePorNumeroYAnio(Number(newNumero), Number(newAnio));
-  if (!semestreDestino?.id) {
-    const created = crearSemestreLectivo(Number(newNumero), Number(newAnio));
-    const newId = Number(created?.lastInsertRowid || 0);
-    if (!newId) {
-      throw new Error("No se pudo crear el semestre destino");
-    }
-    semestreDestino = { id: newId };
+  // 2. Verificar que el semestre destino no exista ya
+  const semestreDestinoExistente = obtenerSemestrePorNumeroYAnio(Number(newNumero), Number(newAnio));
+  if (semestreDestinoExistente?.id) {
+    throw new Error(`El semestre destino ${parseTermLabel(newNumero, newAnio)} ya existe`);
   }
 
-  // 3. Obtener todos los grupos del semestre origen
+  // 3. Crear el semestre destino
+  const created = crearSemestreLectivo(Number(newNumero), Number(newAnio));
+  const newId = Number(created?.lastInsertRowid || 0);
+  if (!newId) {
+    throw new Error("No se pudo crear el semestre destino");
+  }
+  const semestreDestino = { id: newId };
+
+  // 4. Obtener todos los grupos del semestre origen
   const gruposOrigen = obtenerGruposPorSemestre(semestreOrigen.id);
   if (gruposOrigen.length === 0) {
     return { created: 0, errors: ["El semestre origen no tiene grupos para copiar"] };
   }
 
-  // 4. Replicar grupos en el semestre destino
+  // 5. Replicar grupos en el semestre destino
   const resultado = replicarGruposEnSemestre(gruposOrigen, semestreDestino.id);
 
   return {
