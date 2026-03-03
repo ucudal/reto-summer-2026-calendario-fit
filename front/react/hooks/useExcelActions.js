@@ -1,4 +1,4 @@
-function useExcelActions({ data, selectedCareer, reloadGroupsFromDb, reloadCareersFromDb }) {
+function useExcelActions({ data, selectedCareer, reloadGroupsFromDb, reloadCareersFromDb, reloadSubjectsFromDb }) {
     async function handleExportExcel() {
         try {
             if (!window.exportSchedulesToExcel) return;
@@ -67,6 +67,7 @@ function useExcelActions({ data, selectedCareer, reloadGroupsFromDb, reloadCaree
             await window.api?.mensajes?.mostrar?.(message, "info");
             await reloadGroupsFromDb?.();
             await reloadCareersFromDb?.();
+            await reloadSubjectsFromDb?.();
             return;
         }
 
@@ -144,6 +145,7 @@ function useExcelActions({ data, selectedCareer, reloadGroupsFromDb, reloadCaree
             await window.api?.mensajes?.mostrar?.(message, "info");
             await reloadGroupsFromDb?.();
             await reloadCareersFromDb?.();
+            await reloadSubjectsFromDb?.();
             return;
         }
 

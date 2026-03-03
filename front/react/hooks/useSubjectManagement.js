@@ -90,6 +90,12 @@
       reloadSubjectsFromDb();
     }, [reloadSubjectsFromDb]);
 
+    // Refresca al abrir el listado para reflejar imports/cambios hechos fuera del modal.
+    React.useEffect(() => {
+      if (!isSubjectsListOpen) return;
+      reloadSubjectsFromDb();
+    }, [isSubjectsListOpen, reloadSubjectsFromDb]);
+
     function openSubjectsListModal() {
       setIsSubjectsListOpen(true);
     }

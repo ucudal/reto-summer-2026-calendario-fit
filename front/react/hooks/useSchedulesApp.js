@@ -49,6 +49,7 @@
       selectedCareer,
       reloadGroupsFromDb: db.reloadGroupsFromDb,
       reloadCareersFromDb: db.reloadCareersFromDb,
+      reloadSubjectsFromDb: subject.reloadSubjectsFromDb,
     });
 
     
