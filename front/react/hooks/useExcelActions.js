@@ -190,13 +190,21 @@ function useExcelActions(params) {
 
         const aliases = {
             carrera: "carreras",
+            carreras: "carreras",
             materia: "materias",
+            materias: "materias",
             grupo: "grupos",
+            grupos: "grupos",
             profesor: "profesores",
+            profesores: "profesores",
             docente: "profesores",
+            docentes: "profesores",
             salon: "salones",
+            salones: "salones",
             semestre: "semestres",
-            horario: "horarios"
+            semestres: "semestres",
+            horario: "horarios",
+            horarios: "horarios"
         };
 
         const rawEntity = String(entityInput || "").trim().toLowerCase();
@@ -216,10 +224,19 @@ function useExcelActions(params) {
         });
 
         if (response?.success) {
-            await window.api?.mensajes?.mostrar?.(
+            const summary = response.data || {};
+            const ins = summary.inserted || {};
+            const upd = summary.updated || {};
+            const skipped = summary.skipped || {};
+            const message = [
                 `Importacion parcial finalizada (${entity}).`,
-                "info"
-            );
+                `Filas procesadas: ${summary.totalRows || 0}`,
+                `Insertados -> carreras:${ins.carreras || 0}, semestres:${ins.semestres || 0}, materias:${ins.materias || 0}, grupos:${ins.grupos || 0}, profesores:${ins.profesores || 0}, salones:${ins.salones || 0}, horarios:${ins.horarios || 0}`,
+                `Actualizados -> materias:${upd.materias || 0}, grupos:${upd.grupos || 0}`,
+                `Omitidos -> sin curso:${skipped.rowsWithoutCourse || 0}, sin ID clase:${skipped.rowsWithoutClassId || 0}, sin semestre:${skipped.rowsWithoutSemestre || 0}`
+            ].join("\n");
+
+            await window.api?.mensajes?.mostrar?.(message, "info");
             await reloadGroupsFromDb?.();
             await reloadCareersFromDb?.();
             return;
