@@ -6,6 +6,7 @@ import { registerCarrerasHandlers } from "./carreras/carreras.handlers.js";
 import {registerExcelHandlers} from "./excel/excel.handler.js";
 import { registerGruposHandlers } from "./grupos/grupos.handlers.js";
 import { registerExportacionesHandlers } from "./exportaciones/exportaciones.handlers.js";
+import { registerSemestresHandlers } from "./semestres/semestres.handlers.js";
 // más adelante:
 // import { registerAlumnosHandlers } from "./alumnos/alumnos.handlers.js";
 
@@ -16,6 +17,7 @@ export function registerAllHandlers() {
   registerProfesorGrupoHandlers();
   registerCarrerasHandlers();
   registerGruposHandlers();
+  registerSemestresHandlers();
   registerExcelHandlers();
   registerExportacionesHandlers();
   // registerAlumnosHandlers();

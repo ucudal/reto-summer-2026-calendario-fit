@@ -8,6 +8,97 @@
             newYear: "2026"
         });
 
+        function parseLectiveTerm(term) {
+            const match = String(term || "").trim().match(/^(1er|2do)\s+semestre\s+(\d{4})$/i);
+            if (!match) return null;
+            return {
+                numeroSemestre: String(match[1]).toLowerCase() === "2do" ? 2 : 1,
+                anio: Number(match[2])
+            };
+        }
+
+        function buildTermSlug(term) {
+            return String(term || "")
+                .toLowerCase()
+                .replace(/\s+/g, "-")
+                .replace(/[^\w-]/g, "");
+        }
+
+        function buildCalendarsForTerm(existingCalendars, lectiveTerm, makeVisible = false) {
+            const slug = buildTermSlug(lectiveTerm);
+            const baseByCalendar = new Map();
+
+            (existingCalendars || []).forEach((calendar) => {
+                const id = String(calendar?.id || "");
+                const match = id.match(/^(s[12]y[1-5])/i);
+                if (!match) return;
+                const baseId = match[1].toLowerCase();
+                if (!baseByCalendar.has(baseId)) baseByCalendar.set(baseId, calendar);
+            });
+
+            const result = [];
+            for (let year = 1; year <= 5; year += 1) {
+                for (let semester = 1; semester <= 2; semester += 1) {
+                    const baseId = `s${semester}y${year}`;
+                    const template = baseByCalendar.get(baseId);
+                    result.push({
+                        id: `${baseId}-${slug}`,
+                        name: template?.name || `${semester === 1 ? "1er" : "2do"} semestre ${year}° año`,
+                        subtitle: String(template?.subtitle || ""),
+                        lectiveTerm,
+                        visible: makeVisible,
+                        classes: [],
+                        alerts: []
+                    });
+                }
+            }
+
+            return result;
+        }
+
+        React.useEffect(() => {
+            let cancelled = false;
+
+            async function loadSemestresFromDb() {
+                if (!window.api?.semestres?.listarLectivos) return;
+                const response = await window.api.semestres.listarLectivos();
+                if (cancelled || !response?.success) return;
+
+                const terms = Array.from(
+                    new Set(
+                        (response.data || [])
+                            .map((row) => String(row?.lectiveTerm || "").trim())
+                            .filter(Boolean)
+                    )
+                );
+                if (terms.length === 0) return;
+
+                setData((prev) => {
+                    const existingTerms = new Set(
+                        (prev.calendars || [])
+                            .map((calendar) => String(calendar?.lectiveTerm || "").trim())
+                            .filter(Boolean)
+                    );
+                    const missingTerms = terms.filter((term) => !existingTerms.has(term));
+                    if (missingTerms.length === 0) return prev;
+
+                    const appended = missingTerms.flatMap((term) =>
+                        buildCalendarsForTerm(prev.calendars, term, false)
+                    );
+
+                    return {
+                        ...prev,
+                        calendars: prev.calendars.concat(appended)
+                    };
+                });
+            }
+
+            loadSemestresFromDb();
+            return () => {
+                cancelled = true;
+            };
+        }, [setData]);
+
         function openCreateSemesterModal() {
             setSemesterForm({
                 sourceLectiveTerm: "",
@@ -27,11 +118,12 @@
             setSemesterForm(prev => ({ ...prev, [field]: value }));
         }
 
-        function confirmCreateSemester() {
+        async function confirmCreateSemester() {
             const sourceTerm = String(semesterForm.sourceLectiveTerm || "").trim();
             const selectedSemester = String(semesterForm.newSemester || "").trim();
             const selectedYear = String(semesterForm.newYear || "").trim();
             const newName = `${selectedSemester} ${selectedYear}`.trim();
+            const parsed = parseLectiveTerm(newName);
 
             if (!sourceTerm) {
                 setSemesterModalError("Debe seleccionar el semestre lectivo a copiar.");
@@ -43,6 +135,11 @@
                 return;
             }
 
+            if (!parsed) {
+                setSemesterModalError("Semestre lectivo inválido.");
+                return;
+            }
+
             const alreadyExists = (data.calendars || []).some(
                 (calendar) => String(calendar?.lectiveTerm || "").trim().toLowerCase() === newName.toLowerCase()
             );
@@ -51,75 +148,23 @@
                 return;
             }
 
-            const isBlankSemester = sourceTerm === "__blank__";
-            let calendarsToCopy = [];
-
-            if (isBlankSemester) {
-                const templates = [];
-                const seen = new Set();
-                data.calendars.forEach((calendar) => {
-                    const id = String(calendar.id || "");
-                    const match = id.match(/^s([12])y([1-5])/);
-                    if (!match) return;
-                    const key = `${match[1]}-${match[2]}-${String(calendar.subtitle || "")}`;
-                    if (seen.has(key)) return;
-                    seen.add(key);
-                    templates.push({
-                        semester: match[1],
-                        year: match[2],
-                        subtitle: String(calendar.subtitle || "")
-                    });
+            if (window.api?.semestres?.crearLectivo) {
+                const created = await window.api.semestres.crearLectivo({
+                    numeroSemestre: parsed.numeroSemestre,
+                    anio: parsed.anio
                 });
-
-                if (templates.length === 0) {
-                    for (let year = 1; year <= 5; year += 1) {
-                        for (let semester = 1; semester <= 2; semester += 1) {
-                            templates.push({
-                                semester: String(semester),
-                                year: String(year),
-                                subtitle: ""
-                            });
-                        }
-                    }
+                if (!created?.success) {
+                    setSemesterModalError(created?.error || "No se pudo crear el semestre lectivo en base de datos.");
+                    return;
                 }
-
-                calendarsToCopy = templates.map((tpl, index) => ({
-                    id: `s${tpl.semester}y${tpl.year}-blank-${index}`,
-                    name: `${tpl.semester === "1" ? "1er" : "2do"} semestre ${Number(tpl.year)}° año`,
-                    subtitle: tpl.subtitle,
-                    lectiveTerm: newName,
-                    visible: true,
-                    classes: [],
-                    alerts: []
-                }));
-            } else {
-                calendarsToCopy = data.calendars.filter(
-                    (c) => String(c.lectiveTerm || "") === sourceTerm
-                );
             }
 
-            if (calendarsToCopy.length === 0) {
-                setSemesterModalError("No hay calendarios para ese semestre lectivo.");
-                return;
-            }
-
-            const now = Date.now();
-            const copies = calendarsToCopy.map((calendar, index) => ({
-                ...calendar,
-                id: `${calendar.id}-copy-${now}-${index}`,
-                lectiveTerm: newName,
-                visible: true,
-                classes: isBlankSemester ? [] : (calendar.classes || []).map(item => ({ ...item })),
-                alerts: []
-            }));
+            const copies = buildCalendarsForTerm(data.calendars, newName, true);
 
             setData(prev => ({
                 ...prev,
                 calendars: prev.calendars
-                    .map((c) => {
-                        if (isBlankSemester) return { ...c, visible: false };
-                        return String(c.lectiveTerm || "") === sourceTerm ? { ...c, visible: false } : c;
-                    })
+                    .map((c) => ({ ...c, visible: false }))
                     .concat(copies)
             }));
 

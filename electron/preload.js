@@ -49,7 +49,11 @@ contextBridge.exposeInMainWorld("api", {
     agregarRequerimientos: (idGrupo, requerimientos) => ipcRenderer.invoke("grupos:agregarRequerimientos", { idGrupo, requerimientos })
   },
 
-  //Generar calendario excel
+  semestres: {
+    listarLectivos: () => ipcRenderer.invoke("semestres:listarLectivos"),
+    crearLectivo: (data) => ipcRenderer.invoke("semestres:crearLectivo", data)
+  },
+
   excel: {
     guardarArchivo: (buffer) =>
         ipcRenderer.invoke("excel:guardarArchivo", buffer),
