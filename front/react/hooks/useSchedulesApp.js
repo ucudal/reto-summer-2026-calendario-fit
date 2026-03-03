@@ -76,7 +76,7 @@
             reloadGroupsFromDb: db.reloadGroupsFromDb
         });
 
-    const semester = window.useSemesterManagement(data, setData);
+    const semester = window.useSemesterManagement(data, setData, db.reloadGroupsFromDb);
 
         const teacher = window.useTeacherManagement({
             reloadGroupsFromDb: db.reloadGroupsFromDb

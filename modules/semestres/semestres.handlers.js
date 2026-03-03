@@ -1,7 +1,8 @@
 import { ipcMain } from "electron";
 import {
   crearSemestreLectivoService,
-  listarSemestresLectivosService
+  listarSemestresLectivosService,
+  replicarSemestreService
 } from "./semestres.service.js";
 
 export function registerSemestresHandlers() {
@@ -19,6 +20,16 @@ export function registerSemestresHandlers() {
       const created = await crearSemestreLectivoService(payload);
       return { success: true, data: created };
     } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle("semestres:replicar", async (_, payload) => {
+    try {
+      const result = await replicarSemestreService(payload);
+      return { success: true, data: result };
+    } catch (error) {
+      console.error("Error en semestres:replicar \u2192", error);
       return { success: false, error: error.message };
     }
   });

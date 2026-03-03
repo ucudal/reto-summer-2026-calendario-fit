@@ -75,6 +75,7 @@ function App() {
     isCreateSemesterOpen,
     semesterForm,
     semesterModalError,
+    semesterLoading,
     openCreateSemesterModal,
     closeCreateSemesterModal,
     updateSemesterForm,
@@ -273,8 +274,8 @@ function App() {
       <CreateSemesterModal
         isOpen={isCreateSemesterOpen}
         form={semesterForm}
-        availableSemesters={data.calendars}
         errorMessage={semesterModalError}
+        isLoading={semesterLoading}
         onClose={closeCreateSemesterModal}
         onChange={updateSemesterForm}
         onSubmit={confirmCreateSemester}

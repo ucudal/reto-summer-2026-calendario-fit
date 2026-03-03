@@ -1,30 +1,24 @@
 /*
   Componente: CreateSemesterModal
   --------------------------------
-  Modal para crear un nuevo semestre copiando desde uno existente.
-  Recibe todo por props y no guarda estado interno.
+  Modal para crear un nuevo semestre, opcionalmente copiando desde uno existente.
+  El semestre a copiar se elige con número (1 o 2) + año.
 */
 
 function CreateSemesterModal(props) {
   const {
     isOpen,
     form,
-    availableSemesters,
     errorMessage,
+    isLoading,
     onClose,
     onChange,
     onSubmit
   } = props;
 
-  // Extraer términos lectivos únicos de los calendarios disponibles
-  const uniqueLectiveTerms = [...new Set(
-    availableSemesters
-      .map((calendar) => calendar.lectiveTerm)
-      .filter((term) => term)
-  )].sort();
-
-  const hasLectiveTerms = uniqueLectiveTerms.length > 0;
-  const yearOptions = Array.from({ length: 10 }, (_, i) => String(2026 + i));
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 10 }, (_, i) => String(currentYear + i));
+  const isBlank = form.sourceSemester === "__blank__";
 
   if (!isOpen) return null;
 
@@ -47,25 +41,40 @@ function CreateSemesterModal(props) {
             onSubmit();
           }}
         >
-          <label className="form-label">
-            Semestre lectivo a copiar
-            <select
-              className="form-input"
-              value={form.sourceLectiveTerm}
-              onChange={(event) => onChange("sourceLectiveTerm", event.target.value)}
-              required
-            >
-              <option value="">
-                {hasLectiveTerms
-                  ? "-- Seleccione semestre lectivo --"
-                  : "-- No hay semestres disponibles --"}
-              </option>
-              <option value="__blank__">Nuevo semestre en blanco</option>
-              {uniqueLectiveTerms.map((term) => (
-                <option key={term} value={term}>{term}</option>
-              ))}
-            </select>
-          </label>
+          <fieldset style={{ border: "1px solid #ddd", borderRadius: 8, padding: "12px 16px", marginBottom: 12 }}>
+            <legend style={{ fontWeight: 600, fontSize: 14, padding: "0 6px" }}>Semestre lectivo a copiar</legend>
+
+            <label className="form-label" style={{ marginBottom: 8 }}>
+              Tipo
+              <select
+                className="form-input"
+                value={form.sourceSemester}
+                onChange={(event) => onChange("sourceSemester", event.target.value)}
+                required
+              >
+                <option value="">-- Seleccione --</option>
+                <option value="__blank__">Nuevo semestre en blanco</option>
+                <option value="1">1er semestre</option>
+                <option value="2">2do semestre</option>
+              </select>
+            </label>
+
+            {!isBlank && form.sourceSemester !== "" && (
+              <label className="form-label">
+                Año del semestre a copiar
+                <select
+                  className="form-input"
+                  value={form.sourceYear}
+                  onChange={(event) => onChange("sourceYear", event.target.value)}
+                  required
+                >
+                  {yearOptions.map((year) => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </fieldset>
 
           <label className="form-label">
             Nuevo semestre
@@ -95,7 +104,9 @@ function CreateSemesterModal(props) {
           </label>
 
           <div className="checkbox-empty">
-            Se copiarán todos los calendarios (carreras/planes/años académicos) del semestre lectivo seleccionado con el nuevo nombre.
+            {isBlank
+              ? "Se creará un semestre lectivo vacío."
+              : "Se copiarán todos los grupos y horarios del semestre lectivo seleccionado al nuevo semestre."}
           </div>
 
           {errorMessage && <div className="modal-error">{errorMessage}</div>}
@@ -103,9 +114,9 @@ function CreateSemesterModal(props) {
           <button
             type="submit"
             className="modal-confirm-btn"
-            disabled={!form.sourceLectiveTerm || !form.newSemester || !form.newYear}
+            disabled={!form.sourceSemester || !form.newSemester || !form.newYear || isLoading}
           >
-            Crear semestre lectivo
+            {isLoading ? "Creando..." : "Crear semestre lectivo"}
           </button>
         </form>
       </section>

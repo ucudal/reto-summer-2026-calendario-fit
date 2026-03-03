@@ -51,7 +51,8 @@ contextBridge.exposeInMainWorld("api", {
 
   semestres: {
     listarLectivos: () => ipcRenderer.invoke("semestres:listarLectivos"),
-    crearLectivo: (data) => ipcRenderer.invoke("semestres:crearLectivo", data)
+    crearLectivo: (data) => ipcRenderer.invoke("semestres:crearLectivo", data),
+    replicar: (data) => ipcRenderer.invoke("semestres:replicar", data)
   },
 
   excel: {
