@@ -56,7 +56,12 @@ contextBridge.exposeInMainWorld("api", {
 
   excel: {
     guardarArchivo: (buffer) =>
-        ipcRenderer.invoke("excel:guardarArchivo", buffer)},
+        ipcRenderer.invoke("excel:guardarArchivo", buffer),
+
+    seleccionarPlan: () =>
+        ipcRenderer.invoke("excel:seleccionarPlan")
+  },
+
   // Expose Exportaciones
   exportaciones: {
     guardarExcel: (payload) => ipcRenderer.invoke("exportaciones:guardarExcel", payload),
