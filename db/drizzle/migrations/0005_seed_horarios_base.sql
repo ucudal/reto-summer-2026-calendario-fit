@@ -3,6 +3,7 @@
 
 CREATE UNIQUE INDEX IF NOT EXISTS horarios_dia_modulo_unique
 ON horarios (dia, modulo);
+--> statement-breakpoint
 
 INSERT OR IGNORE INTO horarios (modulo, dia) VALUES
   (1, 'Lunes'), (2, 'Lunes'), (3, 'Lunes'), (4, 'Lunes'), (5, 'Lunes'), (6, 'Lunes'), (7, 'Lunes'), (8, 'Lunes'),

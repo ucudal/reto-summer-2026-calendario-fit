@@ -1,20 +1,15 @@
-import { createClient } from "@libsql/client";
-import { drizzle } from "drizzle-orm/libsql";
-import { migrate } from "drizzle-orm/libsql/migrator";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import { db } from "./database.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export async function runMigrations() {
-  const dbPath = path.join(__dirname, "local-dev.sqlite");
-  const client = createClient({ url: `file:${dbPath}` });
-  const db = drizzle(client);
-
   try {
-    await migrate(db, {
+    migrate(db, {
       migrationsFolder: path.join(__dirname, "./drizzle/migrations")
     });
 
@@ -33,7 +28,5 @@ export async function runMigrations() {
     }
 
     throw error;
-  } finally {
-    await client.close();
   }
 }

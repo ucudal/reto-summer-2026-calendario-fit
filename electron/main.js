@@ -35,7 +35,7 @@ function createWindow() {
 
 app.whenReady().then(async () => {
   try {
-    // await runMigrations();
+    await runMigrations();
     // await initializeDatabase(); @todo eliminar si esta todo ok
     registerAllHandlers();
     createWindow();
