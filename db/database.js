@@ -4,12 +4,17 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
+import { app } from "electron";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const basePath = app.isPackaged
+  ? app.getPath("userData")
+  : __dirname;
+
 // Base en la carpeta del proyecto
-const dbPath = path.join(__dirname, "", "local-dev.sqlite");
+const dbPath = path.join(basePath, "local-dev.sqlite");
 console.log("DB PATH:", dbPath);
 
 // Añadir timeout para evitar bloqueos largos; 5000 ms es razonable
