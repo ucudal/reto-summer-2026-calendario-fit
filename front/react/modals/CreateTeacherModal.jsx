@@ -71,14 +71,13 @@ function CreateTeacherModal(props) {
           </label>
 
           <label className="form-label">
-            Correo
+            Correo (opcional)
             <input
               className="form-input"
               type="email"
               value={form.correo}
               onChange={(event) => onChange("correo", event.target.value)}
               placeholder="ejemplo@ucu.edu.uy"
-              required
             />
           </label>
 

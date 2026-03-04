@@ -64,7 +64,7 @@ export const profesores = sqliteTable(
         id: integer("id").primaryKey({autoIncrement: true}),
         nombre: text("nombre").notNull(),
         apellido: text("apellido").notNull(),
-        correo: text("correo").notNull(),
+        correo: text("correo"),
         // disponibilidad: text("disponibilidad") //puede aportar algo en el futuro
     },
     (table) => ({
