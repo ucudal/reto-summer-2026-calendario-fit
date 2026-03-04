@@ -59,8 +59,8 @@ function SubjectGroupsModal(props) {
     "Diego Lopez"
   ];
 
-  const startTimes = ["08:00", "09:30", "11:00", "12:25", "16:50", "18:15", "19:45", "21:15"];
-  const endTimes = ["09:20", "10:50", "12:20", "13:45", "18:10", "19:35", "21:05", "22:35"];
+  const startTimes = ["08:00", "09:30", "11:00", "12:25", "13:50", "15:20", "16:50", "18:15", "19:45", "21:15"];
+  const endTimes = ["09:20", "10:50", "12:20", "13:45", "15:10", "16:40","18:10", "19:35", "21:05", "22:35"];
   const groupColors = window.AppData?.GROUP_COLORS || ["#A0C4FF"];
 
   React.useEffect(() => {

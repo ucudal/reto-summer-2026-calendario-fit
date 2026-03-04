@@ -9,9 +9,10 @@ import { app } from "electron";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const basePath = app.isPackaged
+/* const basePath = app.isPackaged
   ? app.getPath("userData")
-  : __dirname;
+  : __dirname; */
+  const basePath = app.getPath("userData");
 
 // Base en la carpeta del proyecto
 const dbPath = path.join(basePath, "local-dev.sqlite");
