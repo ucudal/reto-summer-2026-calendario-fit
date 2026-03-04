@@ -34,6 +34,8 @@ function SubjectGroupsModal(props) {
   const [editScopeCareers, setEditScopeCareers] = React.useState([]);
   const [error, setError] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
   const careerDropdownRef = React.useRef(null);
 
   const subjectName = typeof subject === "string"
@@ -81,6 +83,8 @@ function SubjectGroupsModal(props) {
     setEditScopeCareers(draftEditCareers);
     setError("");
     setIsSaving(false);
+    setIsDeleting(false);
+    setShowDeleteConfirm(false);
   }, [isOpen, subject, careers, draftEditCareersKey]);
 
   React.useEffect(() => {
@@ -455,6 +459,82 @@ function SubjectGroupsModal(props) {
     }
 
     return assignments;
+  }
+
+  async function handleDeleteGroup() {
+    if (isDeleting || isSaving) return;
+
+    setError("");
+    setIsDeleting(true);
+
+    try {
+      if (!window.api?.grupos?.eliminar || !window.api?.grupos?.listar) {
+        setError("No está disponible la API para eliminar grupos.");
+        setIsDeleting(false);
+        return;
+      }
+
+      const originalGroupId = toGroupId(editContext?.draft?.groupRef);
+      if (!originalGroupId) {
+        setError("No se pudo identificar el grupo a eliminar.");
+        setIsDeleting(false);
+        return;
+      }
+
+      const groupsResp = await window.api.grupos.listar();
+      const allGroups = groupsResp?.success && Array.isArray(groupsResp.data) ? groupsResp.data : [];
+      const originalGroup = allGroups.find((group) => Number(group?.id) === originalGroupId);
+
+      if (!originalGroup) {
+        setError("No se encontró el grupo en la base de datos.");
+        setIsDeleting(false);
+        return;
+      }
+
+      // Si "Aplicar a todas las carreras", eliminar también los grupos hermanos
+      // (mismo código, materia, semestre lectivo)
+      const groupIdsToDelete = [originalGroupId];
+
+      if (applyChangesToAllCareers) {
+        const siblingGroups = allGroups.filter((group) => {
+          if (!group || Number(group.id) <= 0) return false;
+          if (Number(group.id) === originalGroupId) return false;
+          const sameCode = String(group.codigo || "").trim() === String(originalGroup.codigo || "").trim();
+          const sameSubject = Number(group.idMateria) === Number(originalGroup.idMateria);
+          const sameSemester = Number(group.idSemestre) === Number(originalGroup.idSemestre);
+          const sameLectiveSemester = Number(group.semestreLectivo || 0) === Number(originalGroup.semestreLectivo || 0);
+          const sameLectiveYear = Number(group.anioLectivo || 0) === Number(originalGroup.anioLectivo || 0);
+          return sameCode && sameSubject && sameSemester && sameLectiveSemester && sameLectiveYear;
+        });
+
+        for (const sibling of siblingGroups) {
+          groupIdsToDelete.push(Number(sibling.id));
+        }
+      }
+
+      // Eliminar cada grupo (el backend limpia las relaciones antes de borrar)
+      for (const groupId of groupIdsToDelete) {
+        const deleteResp = await window.api.grupos.eliminar(groupId);
+        if (!deleteResp?.success) {
+          setError(deleteResp?.error || `No se pudo eliminar el grupo ID ${groupId}.`);
+          setIsDeleting(false);
+          return;
+        }
+      }
+
+      // Refresca datos del calendario
+      if (onGroupCreated) {
+        await onGroupCreated();
+      }
+
+      setShowDeleteConfirm(false);
+      if (onClose) onClose();
+      else onBack();
+    } catch (e) {
+      setError(e?.message || "Ocurrió un error eliminando el grupo.");
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   async function handleAddGroup() {
@@ -1083,9 +1163,60 @@ function SubjectGroupsModal(props) {
 
           {error && <div className="modal-error">{error}</div>}
 
-          <button type="button" className="add-schedule-btn second-step-submit" onClick={handleAddGroup} disabled={isSaving}>
+          <button type="button" className="add-schedule-btn second-step-submit" onClick={handleAddGroup} disabled={isSaving || isDeleting}>
             {isSaving ? "Guardando..." : isEditMode ? "Guardar cambios" : "+ Agregar grupo"}
           </button>
+
+          {isEditMode && !showDeleteConfirm && (
+            <button
+              type="button"
+              className="add-schedule-btn second-step-submit"
+              style={{
+                backgroundColor: "#e74c3c",
+                marginTop: "8px"
+              }}
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={isSaving || isDeleting}
+            >
+              Eliminar grupo
+            </button>
+          )}
+
+          {isEditMode && showDeleteConfirm && (
+            <div style={{
+              marginTop: "10px",
+              padding: "12px",
+              border: "1px solid #e74c3c",
+              borderRadius: "8px",
+              backgroundColor: "#fff5f5"
+            }}>
+              <p style={{ margin: "0 0 8px", color: "#c0392b", fontWeight: "bold" }}>
+                {applyChangesToAllCareers
+                  ? "¿Eliminar este grupo y todos sus grupos hermanos (mismas carreras)?"
+                  : "¿Eliminar este grupo? Se borrarán sus horarios, docentes asignados y relaciones con carreras."}
+              </p>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  type="button"
+                  className="add-schedule-btn second-step-submit"
+                  style={{ backgroundColor: "#e74c3c", flex: 1 }}
+                  onClick={handleDeleteGroup}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? "Eliminando..." : "Sí, eliminar"}
+                </button>
+                <button
+                  type="button"
+                  className="add-schedule-btn second-step-submit"
+                  style={{ backgroundColor: "#95a5a6", flex: 1 }}
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={isDeleting}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </section>
     </div>

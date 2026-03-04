@@ -6,6 +6,7 @@ import {
     eliminarGrupo,
     limpiarProfesoresDeGrupo,
     limpiarHorariosDeGrupo,
+    limpiarTodasLasRelacionesDeGrupo,
     obtenerGrupoPorId,
     obtenerSemestrePorNumeroYAnio,
     modificarGrupo,
@@ -110,6 +111,9 @@ export function bajaGrupo(id) {
   if (!existente) {
     throw new Error("Grupo no encontrado");
   }
+  // Limpia explícitamente todas las relaciones del grupo antes de eliminarlo
+  // para garantizar consistencia incluso si el CASCADE de FK no aplica.
+  limpiarTodasLasRelacionesDeGrupo(id);
   return eliminarGrupo(id);
 };
 
