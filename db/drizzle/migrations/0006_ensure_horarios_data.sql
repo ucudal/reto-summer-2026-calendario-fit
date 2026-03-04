@@ -1,4 +1,4 @@
--- Garantiza 48 horarios base (6 dias x 8 modulos) sin depender de seed
+-- Garantiza 60 horarios base (6 dias x 10 modulos) sin depender de seed
 WITH dias(dia) AS (
   VALUES
     ('Lunes'),
@@ -9,7 +9,7 @@ WITH dias(dia) AS (
     ('Sabado')
 ),
 modulos(modulo) AS (
-  VALUES (1),(2),(3),(4),(5),(6),(7),(8)
+  VALUES (1),(2),(3),(4),(5),(6),(7),(8),(9),(10)
 )
 INSERT OR IGNORE INTO horarios (modulo, dia)
 SELECT m.modulo, d.dia

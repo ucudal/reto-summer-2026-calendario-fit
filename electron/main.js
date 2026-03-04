@@ -1,7 +1,6 @@
 import path from "path";
 import { fileURLToPath } from "url";
 import { app, BrowserWindow } from "electron";
-import { initializeDatabase } from "../db/init.js";
 import { runMigrations } from "../db/runMigrations.js";
 import { closeDatabase } from "../db/database.js";
 
@@ -24,10 +23,8 @@ function createWindow() {
     }
   });
 
-  win.webContents.openDevTools(); // 👈 ADD THIS
-
   const filePath = path.join(__dirname, "..", "front", "index.html");
-
+  win.maximize();
   win.loadFile(filePath).catch((error) => {
     console.error("Error cargando front/index.html:", error);
   });
@@ -35,16 +32,9 @@ function createWindow() {
 
 app.whenReady().then(async () => {
   try {
-    const basePath = app.isPackaged
-    ? app.getPath("userData")
-    : path.join(__dirname, "..", "db");
+    // runMigrations will determine the correct file path internally
+    await runMigrations();
 
-    const dbPath = path.join(basePath, "local-dev.sqlite");
-    console.log("USER DATA PATH:", app.getPath("userData"));
-
-    await runMigrations(dbPath);
-    // await runMigrations();
-    // await initializeDatabase(); @todo eliminar si esta todo ok
     registerAllHandlers();
     createWindow();
   } catch (error) {
