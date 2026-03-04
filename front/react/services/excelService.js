@@ -90,7 +90,7 @@
 
     // “Carreras de X” según selectedCareer:
     // tus reglas de matching + quitar "Ingeniería " del resultado final.
-    function resolveCarreraHeader(selectedCareer) {
+    /* function resolveCarreraHeader(selectedCareer) {
         if (!selectedCareer) return "Carreras";
 
         let value = String(selectedCareer)
@@ -116,7 +116,7 @@
             value.charAt(0).toUpperCase() + value.slice(1);
 
         return `Carreras de ${finalName}`;
-    }
+    } */
 
     function rangesOverlap(aStart, aEnd, bStart, bEnd) {
         return aStart <= bEnd && bStart <= aEnd;
@@ -284,7 +284,7 @@
         const currentLectiveTerm = payload?.currentLectiveTerm;
 
         // ✅ default 2026
-        const selectedPlan = "20__";
+        const selectedPlan = "2026";
 
         if (!Array.isArray(calendars)) throw new Error("Payload inválido: falta calendars[]");
         if (!selectedCareer) throw new Error("Payload inválido: falta selectedCareer");
@@ -327,7 +327,7 @@
             console.warn("No se pudo cargar el logo base64 (txt). Exportará sin logo. Detalle:", e?.message || e);
         }
 
-        const headerCarreraLine = resolveCarreraHeader(selectedCareer);
+        const headerCarreraLine = (selectedCareer);
 
         for (const calendar of calendarsToExport) {
             // ====== LANES POR DÍA ======

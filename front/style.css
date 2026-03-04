@@ -426,14 +426,15 @@ body {
   background: #e7ddcb;
   color: #6f7679;
   font-weight: 700;
-  font-size: 10px;
+  font-size: 15px;
   text-align: center;
   letter-spacing: 0.7px;
 }
 
 .cell.time {
-  text-align: right;
-  padding-right: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
 }
 
 .events-layer {
