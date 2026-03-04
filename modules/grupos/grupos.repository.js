@@ -317,3 +317,23 @@ export function insertarHorarios(idGrupo, horariosPayload) {
 export function limpiarHorariosDeGrupo(idGrupo) {
   return sqlite.prepare("DELETE FROM grupo_horario WHERE id_grupo = ?").run(idGrupo);
 }
+
+export function limpiarCarrerasDeGrupo(idGrupo) {
+  ensureGrupoCarreraTable();
+  return sqlite.prepare("DELETE FROM grupo_carrera WHERE id_grupo = ?").run(idGrupo);
+}
+
+export function limpiarSalonesDeGrupo(idGrupo) {
+  try {
+    return sqlite.prepare("DELETE FROM salon_grupo WHERE id_grupo = ?").run(idGrupo);
+  } catch (_) {
+    return { changes: 0 };
+  }
+}
+
+export function limpiarTodasLasRelacionesDeGrupo(idGrupo) {
+  limpiarHorariosDeGrupo(idGrupo);
+  limpiarProfesoresDeGrupo(idGrupo);
+  limpiarCarrerasDeGrupo(idGrupo);
+  limpiarSalonesDeGrupo(idGrupo);
+}

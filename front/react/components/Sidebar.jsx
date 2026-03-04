@@ -6,6 +6,7 @@
 function Sidebar(props) {
   const {
     calendars = [],
+    activeLectiveTerm = "",
     onToggleCalendarVisible = () => {},
     onOpenSubjects = () => {},
     onOpenCreateGroup = () => {},
@@ -20,6 +21,10 @@ function Sidebar(props) {
 
   const [isCalendarsDropdownOpen, setIsCalendarsDropdownOpen] = React.useState(false);
   const [isUniqueImportOpen, setIsUniqueImportOpen] = React.useState(false);
+  const normalizedActiveLectiveTerm = String(activeLectiveTerm || "").trim();
+  const calendarsForActiveTerm = normalizedActiveLectiveTerm
+    ? calendars.filter((calendar) => String(calendar?.lectiveTerm || "").trim() === normalizedActiveLectiveTerm)
+    : calendars;
 
   return (
     <aside className="sidebar">
@@ -45,7 +50,7 @@ function Sidebar(props) {
           {isCalendarsDropdownOpen && (
             <div className="calendar-dropdown-menu">
               <div className="calendar-list">
-                {calendars.map((calendar) => (
+                {calendarsForActiveTerm.map((calendar) => (
                   <label key={calendar.id} className="calendar-option">
                     <input
                       type="checkbox"

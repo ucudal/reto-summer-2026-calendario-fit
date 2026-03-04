@@ -6,6 +6,7 @@ import {
     eliminarGrupo,
     limpiarProfesoresDeGrupo,
     limpiarHorariosDeGrupo,
+    limpiarTodasLasRelacionesDeGrupo,
     obtenerGrupoPorId,
     obtenerSemestrePorNumeroYAnio,
     modificarGrupo,
@@ -110,6 +111,7 @@ export function bajaGrupo(id) {
   if (!existente) {
     throw new Error("Grupo no encontrado");
   }
+  limpiarTodasLasRelacionesDeGrupo(id);
   return eliminarGrupo(id);
 };
 

@@ -132,6 +132,7 @@ function App() {
         <section className="layout">
           <Sidebar
             calendars={data.calendars}
+            activeLectiveTerm={activeLectiveTerm || currentLectiveTerm}
             onToggleCalendarVisible={toggleCalendarVisible}
             onOpenSubjects={openSubjectsListModal}
             onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
@@ -175,6 +176,7 @@ function App() {
         calendars={data.calendars}
         subjectsList={[]}
         selectedCareer={selectedCareer}
+        currentLectiveTerm={activeLectiveTerm || currentLectiveTerm}
         onClose={groupsModalHandlers.closeGroupsListModal}
         onSelectSubject={groupsModalHandlers.openSubjectGroupsModal}
       />
@@ -186,7 +188,7 @@ function App() {
         selectedCareer={selectedCareer}
         calendars={data.calendars}
         days={DAYS}
-        currentLectiveTerm={currentLectiveTerm}
+        currentLectiveTerm={activeLectiveTerm || currentLectiveTerm}
         onBack={subjectGroupsModalHandlers.backToGroupsList}
         onClose={subjectGroupsModalHandlers.closeSubjectGroupsModal}
         onSaveGroups={subjectGroupsModalHandlers.saveGroupsToCalendar}
