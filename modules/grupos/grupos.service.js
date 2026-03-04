@@ -16,7 +16,10 @@ import {
 } from './grupos.repository.js';
 
 const DIAS_VALIDOS = ["lunes", "martes", "miercoles", "miércoles", "jueves", "viernes", "sabado", "sábado"];
-const MODULOS_VALIDOS = { 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true, 8: true };
+const MODULOS_VALIDOS = {
+  1: true, 2: true, 3: true, 4: true, 5: true,
+  6: true, 7: true, 8: true, 9: true, 10: true
+};
 
 export function altaGrupo(data) {
   validarGrupo(data);

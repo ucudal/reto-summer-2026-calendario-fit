@@ -62,29 +62,38 @@ function GroupsModal(props) {
           if (!isMounted) return;
 
           if (groupsResponse?.success && Array.isArray(groupsResponse.data)) {
-            const normalize = (value) =>
-              String(value || "")
-                .toLowerCase()
-                .normalize("NFD")
-                .replace(/[\u0300-\u036f]/g, "")
-                .trim();
-
-            const selectedCareerNormalized = normalize(selectedCareer);
-            const counts = {};
+            const uniqueBySubject = new Map();
 
             groupsResponse.data.forEach((groupItem) => {
               const subjectName = String(groupItem?.nombreMateria || "").trim();
               if (!subjectName) return;
 
-              const groupCareers = Array.isArray(groupItem?.carreras) ? groupItem.carreras : [];
-              if (selectedCareerNormalized) {
-                const matchesCareer = groupCareers.some(
-                  (careerName) => normalize(careerName) === selectedCareerNormalized
-                );
-                if (!matchesCareer) return;
-              }
+              // Un "grupo logico" puede existir en varias filas (una por carrera).
+              // Para el contador, deduplicamos por identidad + horario.
+              const scheduleSignature = (Array.isArray(groupItem?.horarios) ? groupItem.horarios : [])
+                .map((h) => `${String(h?.dia || "").trim().toLowerCase()}|${Number(h?.modulo || 0)}`)
+                .filter((token) => token && !token.endsWith("|0"))
+                .sort()
+                .join(",");
 
-              counts[subjectName] = (counts[subjectName] || 0) + 1;
+              const logicalGroupKey = [
+                String(groupItem?.codigo || "").trim().toLowerCase(),
+                String(groupItem?.idMateria || "").trim(),
+                String(groupItem?.idSemestre || "").trim(),
+                String(groupItem?.semestreLectivo || "").trim(),
+                String(groupItem?.anioLectivo || "").trim(),
+                scheduleSignature
+              ].join("|");
+
+              if (!uniqueBySubject.has(subjectName)) {
+                uniqueBySubject.set(subjectName, new Set());
+              }
+              uniqueBySubject.get(subjectName).add(logicalGroupKey);
+            });
+
+            const counts = {};
+            uniqueBySubject.forEach((groupKeys, subjectName) => {
+              counts[subjectName] = groupKeys.size;
             });
 
             setGroupCountBySubject(counts);

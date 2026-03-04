@@ -411,6 +411,32 @@ function SubjectGroupsModal(props) {
     return true;
   }
 
+  function buildNextGroupCode(baseCode, existingCodes) {
+    const trimmedBase = String(baseCode || "").trim();
+    if (!trimmedBase) return "";
+
+    const normalizedExisting = new Set(
+      (existingCodes || []).map((code) => String(code || "").trim().toLowerCase()).filter(Boolean)
+    );
+
+    const match = trimmedBase.match(/^(.*?)(\d+)$/);
+    let prefix = trimmedBase;
+    let nextNumber = 2;
+
+    if (match) {
+      prefix = String(match[1] || "").trim();
+      nextNumber = Number(match[2]) + 1;
+    }
+
+    let candidate = `${prefix}${nextNumber}`.trim();
+    while (candidate && normalizedExisting.has(candidate.toLowerCase())) {
+      nextNumber += 1;
+      candidate = `${prefix}${nextNumber}`.trim();
+    }
+
+    return candidate || `${trimmedBase}2`;
+  }
+
   function buildDbHorariosPayloadFromSelection() {
     const payload = [];
     for (const day of selectedDays) {
@@ -628,6 +654,16 @@ function SubjectGroupsModal(props) {
           return;
         }
 
+        const siblingGroups = allGroups.filter((group) => {
+          if (!group || Number(group.id) <= 0) return false;
+          const sameCode = String(group.codigo || "").trim() === String(originalGroup.codigo || "").trim();
+          const sameSubject = Number(group.idMateria) === Number(originalGroup.idMateria);
+          const sameSemester = Number(group.idSemestre) === Number(originalGroup.idSemestre);
+          const sameLectiveSemester = Number(group.semestreLectivo || 0) === Number(originalGroup.semestreLectivo || 0);
+          const sameLectiveYear = Number(group.anioLectivo || 0) === Number(originalGroup.anioLectivo || 0);
+          return sameCode && sameSubject && sameSemester && sameLectiveSemester && sameLectiveYear;
+        });
+
         const originalCareers = toNormalizedCareerList(
           Array.isArray(originalGroup?.carreras) && originalGroup.carreras.length > 0
             ? originalGroup.carreras
@@ -659,16 +695,6 @@ function SubjectGroupsModal(props) {
         }
 
         if (applyChangesToAllCareers) {
-          const siblingGroups = allGroups.filter((group) => {
-            if (!group || Number(group.id) <= 0) return false;
-            const sameCode = String(group.codigo || "").trim() === String(originalGroup.codigo || "").trim();
-            const sameSubject = Number(group.idMateria) === Number(originalGroup.idMateria);
-            const sameSemester = Number(group.idSemestre) === Number(originalGroup.idSemestre);
-            const sameLectiveSemester = Number(group.semestreLectivo || 0) === Number(originalGroup.semestreLectivo || 0);
-            const sameLectiveYear = Number(group.anioLectivo || 0) === Number(originalGroup.anioLectivo || 0);
-            return sameCode && sameSubject && sameSemester && sameLectiveSemester && sameLectiveYear;
-          });
-
           if (siblingGroups.length === 0) {
             setError("No se encontraron grupos vinculados para actualizar.");
             setIsSaving(false);
@@ -722,6 +748,53 @@ function SubjectGroupsModal(props) {
         }
 
         if (sameCareerSelection) {
+          const hasSiblingGroups = siblingGroups.some((group) => Number(group?.id) !== Number(originalGroupId));
+
+          if (hasSiblingGroups) {
+            const originalCode = String(originalGroup?.codigo || "").trim();
+            const requestedCode = String(groupName || "").trim();
+            const codeBase = requestedCode || originalCode;
+            const existingCodes = allGroups.map((group) => String(group?.codigo || "").trim());
+            const splitCode = buildNextGroupCode(codeBase, existingCodes);
+
+            if (!splitCode) {
+              setError("No se pudo definir un código para el nuevo grupo.");
+              setIsSaving(false);
+              return;
+            }
+
+            const splitUpdateResp = await window.api.grupos.actualizar({
+              id: originalGroupId,
+              codigo: splitCode,
+              idMateria: Number(originalGroup.idMateria),
+              horasSemestrales: totalModules * 20,
+              esContrasemestre: Boolean(originalGroup.esContrasemestre),
+              cupo: Number(originalGroup.cupo || 30),
+              color: editedGroupColor || String(originalGroup.color || "#A0C4FF"),
+              idSemestre: Number(originalGroup.idSemestre),
+              carreras: selectedCareerList
+            });
+
+            if (!splitUpdateResp?.success) {
+              setError(splitUpdateResp?.error || "No se pudo separar el grupo para la carrera seleccionada.");
+              setIsSaving(false);
+              return;
+            }
+
+            const splitReplaceResp = await window.api.grupos.reemplazarHorarios(originalGroupId, horariosPayload);
+            if (!splitReplaceResp?.success) {
+              setError(splitReplaceResp?.error || "No se pudieron reemplazar horarios.");
+              setIsSaving(false);
+              return;
+            }
+
+            const splitReplaceTeachersResp = await window.api.grupos.reemplazarProfesores(originalGroupId, teacherAssignments);
+            if (!splitReplaceTeachersResp?.success) {
+              setError(splitReplaceTeachersResp?.error || "No se pudieron reemplazar docentes.");
+              setIsSaving(false);
+              return;
+            }
+          } else {
           const updateResp = await window.api.grupos.actualizar({
             id: originalGroupId,
             codigo: groupName.trim(),
@@ -753,6 +826,7 @@ function SubjectGroupsModal(props) {
             setIsSaving(false);
             return;
           }
+          }
         } else {
           const originalCareerSet = new Set(originalCareers);
           const splitCareers = selectedCareerList.filter((career) => originalCareerSet.has(career));
@@ -772,7 +846,9 @@ function SubjectGroupsModal(props) {
 
           const originalCode = String(originalGroup?.codigo || "").trim();
           const requestedCode = String(groupName || "").trim();
-          const splitCode = requestedCode || originalCode;
+          const codeBase = requestedCode || originalCode;
+          const existingCodes = allGroups.map((group) => String(group?.codigo || "").trim());
+          const splitCode = buildNextGroupCode(codeBase, existingCodes);
 
           if (!splitCode) {
             setError("No se pudo definir un código para el nuevo grupo.");
