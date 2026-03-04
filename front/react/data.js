@@ -20,7 +20,7 @@ const TIME_BLOCKS = [
 
 const START_HOUR = 8;
 const END_HOUR = 23;
-const ROW_HEIGHT = 88;
+const ROW_HEIGHT = 130;
 const HEADER_HEIGHT = 28;
 const TIME_COL_WIDTH = 72;
 
@@ -76,15 +76,29 @@ function ordinalYearLabel(year) {
   return "5to";
 }
 
+function semesterOrdinalLabel(number) {
+  if (number === 1) return "1er";
+  if (number === 2) return "2do";
+  if (number === 3) return "3er";
+  if (number === 4) return "4to";
+  if (number === 5) return "5to";
+  if (number === 6) return "6to";
+  if (number === 7) return "7mo";
+  if (number === 8) return "8vo";
+  if (number === 9) return "9no";
+  return "10mo";
+}
+
 function buildCalendars() {
   const calendars = [];
   const defaultLectiveTerm = "1er semestre 2026";
 
   for (let year = 1; year <= 5; year += 1) {
     for (let semester = 1; semester <= 2; semester += 1) {
+      const semesterNumber = (year - 1) * 2 + semester;
       calendars.push({
         id: `s${semester}y${year}`,
-        name: `${semester === 1 ? "1er" : "2do"} semestre ${ordinalYearLabel(year)} año`,
+        name: `${semesterOrdinalLabel(semesterNumber)} semestre`,
         subtitle: "Ingenieria en Sistemas 2021",
         lectiveTerm: defaultLectiveTerm,
         visible: true,

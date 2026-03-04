@@ -30,7 +30,7 @@ function SubjectGroupsModal(props) {
   const [selectedCareers, setSelectedCareers] = React.useState([]);
   const [selectedDays, setSelectedDays] = React.useState([]);
   const [dayTimeRanges, setDayTimeRanges] = React.useState({});
-  const [applyChangesToAllCareers, setApplyChangesToAllCareers] = React.useState(false);
+  const [applyChangesToAllCareers, setApplyChangesToAllCareers] = React.useState(true);
   const [editScopeCareers, setEditScopeCareers] = React.useState([]);
   const [error, setError] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
@@ -80,7 +80,7 @@ function SubjectGroupsModal(props) {
     setSelectedCareers(Array.isArray(draft?.selectedCareers) ? [...draft.selectedCareers] : []);
     setSelectedDays(Array.isArray(draft?.selectedDays) ? [...draft.selectedDays] : []);
     setDayTimeRanges(draft?.dayTimeRanges && typeof draft.dayTimeRanges === "object" ? { ...draft.dayTimeRanges } : {});
-    setApplyChangesToAllCareers(false);
+    setApplyChangesToAllCareers(true);
     setEditScopeCareers(draftEditCareers);
     setError("");
     setIsSaving(false);
@@ -355,18 +355,21 @@ function SubjectGroupsModal(props) {
       (calendar) => !currentLectiveTerm || String(calendar.lectiveTerm || "") === String(currentLectiveTerm)
     );
     const targetCalendars = byLective.length > 0 ? byLective : byPrefix;
+    const targetCalendar = targetCalendars.find((calendar) => Boolean(calendar?.visible)) || targetCalendars[0];
 
-    const usedColors = new Set();
-    targetCalendars.forEach((calendar) => {
-      (calendar.classes || []).forEach((item) => {
-        const color = String(item?.color || "").trim();
-        if (color) usedColors.add(color);
-      });
+    if (!targetCalendar) {
+      return groupColors[0] || "#A0C4FF";
+    }
+
+    const groupKeys = new Set();
+    (targetCalendar.classes || []).forEach((item) => {
+      if (String(item?.type || "").toLowerCase() !== "practice") return;
+      const key = String(item?.groupRef || item?.classNumber || item?.group || "").trim();
+      if (key) groupKeys.add(key);
     });
 
-    const firstAvailable = groupColors.find((color) => !usedColors.has(color));
-    if (firstAvailable) return firstAvailable;
-    return groupColors[usedColors.size % groupColors.length] || "#A0C4FF";
+    const nextIndex = groupKeys.size;
+    return groupColors[nextIndex % groupColors.length] || "#A0C4FF";
   }
 
   function getVisibleCalendarAcademicTarget() {
