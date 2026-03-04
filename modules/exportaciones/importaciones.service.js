@@ -6,10 +6,12 @@ const MODULO_BY_START = {
   "09:30": 2,
   "11:00": 3,
   "12:25": 4,
-  "16:50": 5,
-  "18:15": 6,
-  "19:45": 7,
-  "21:15": 8
+  "13:50": 5,
+  "15:20": 6,
+  "16:50": 7,
+  "18:15": 8,
+  "19:45": 9,
+  "21:15": 10
 };
 
 const DAY_MAP = {
@@ -1193,5 +1195,4 @@ export function importarDatosUnicosDesdeExcel(filePath, options = {}) {
   run();
   return summary;
 }
-
 
