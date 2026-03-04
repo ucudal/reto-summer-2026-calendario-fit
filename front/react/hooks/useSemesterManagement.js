@@ -26,6 +26,19 @@
                 .replace(/[^\w-]/g, "");
         }
 
+        function semesterOrdinalLabel(number) {
+            if (number === 1) return "1er";
+            if (number === 2) return "2do";
+            if (number === 3) return "3er";
+            if (number === 4) return "4to";
+            if (number === 5) return "5to";
+            if (number === 6) return "6to";
+            if (number === 7) return "7mo";
+            if (number === 8) return "8vo";
+            if (number === 9) return "9no";
+            return "10mo";
+        }
+
         function buildCalendarsForTerm(existingCalendars, lectiveTerm, makeVisible = false) {
             const slug = buildTermSlug(lectiveTerm);
             const baseByCalendar = new Map();
@@ -42,10 +55,11 @@
             for (let year = 1; year <= 5; year += 1) {
                 for (let semester = 1; semester <= 2; semester += 1) {
                     const baseId = `s${semester}y${year}`;
+                    const semesterNumber = (year - 1) * 2 + semester;
                     const template = baseByCalendar.get(baseId);
                     result.push({
                         id: `${baseId}-${slug}`,
-                        name: template?.name || `${semester === 1 ? "1er" : "2do"} semestre ${year}° año`,
+                        name: template?.name || `${semesterOrdinalLabel(semesterNumber)} semestre`,
                         subtitle: String(template?.subtitle || ""),
                         lectiveTerm,
                         visible: makeVisible,
