@@ -46,6 +46,7 @@ function SubjectGroupsModal(props) {
   );
   const draftEditCareersKey = draftEditCareers.join("|");
   const editGroupCareersText = editScopeCareers.length > 0 ? editScopeCareers.join(", ") : "sin carreras";
+  const lectiveTermLabel = String(currentLectiveTerm || "").trim() || "Sin semestre lectivo";
 
   // Fallback por si no hay backend de docentes disponible.
   const fallbackTeachers = [
@@ -911,7 +912,7 @@ function SubjectGroupsModal(props) {
     >
       <section className="group-modal groups-list-modal second-step-modal" role="dialog" aria-modal="true">
         <div className="modal-header-with-button">
-          <h2 className="modal-title">Grupos por horario / {subjectName}</h2>
+          <h2 className="modal-title">{`Paso 2 - Grupos por horario / ${subjectName} (${lectiveTermLabel})`}</h2>
           <button
             type="button"
             className="modal-close-btn"
