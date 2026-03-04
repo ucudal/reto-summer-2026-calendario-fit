@@ -138,7 +138,7 @@ function ScheduleGrid(props) {
 
   function buildEditPayload(classItem) {
     const calendarId = String(calendar?.id || "");
-    const selectedYearMatch = calendarId.match(/y(\d+)$/i);
+    const selectedYearMatch = calendarId.match(/s[12]y([1-5])/i);
     const selectedYear = selectedYearMatch ? selectedYearMatch[1] : "1";
     const groupRef = getClassGroupRef(classItem);
 
