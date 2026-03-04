@@ -132,6 +132,7 @@ function App() {
         <section className="layout">
           <Sidebar
             calendars={data.calendars}
+            activeLectiveTerm={activeLectiveTerm || currentLectiveTerm}
             onToggleCalendarVisible={toggleCalendarVisible}
             onOpenSubjects={openSubjectsListModal}
             onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}

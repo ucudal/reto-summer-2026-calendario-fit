@@ -209,12 +209,7 @@
                     return classesByCalendar.get(noTermKey) || [];
                 }
 
-                // Fallback: si no existe el semestre lectivo exacto en UI,
-                // usar el primer bucket disponible para ese calendario base.
-                const anyKey = Array.from(classesByCalendar.keys()).find(
-                    (key) => key.startsWith(`${normalizedBaseId}|`)
-                );
-                return anyKey ? (classesByCalendar.get(anyKey) || []) : [];
+                return [];
             }
 
             setData((prev) => ({
