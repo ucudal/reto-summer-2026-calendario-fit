@@ -94,8 +94,16 @@ export function listarGrupos() {
     .all();
 
   const careersByGroup = new Map();
-  for (const row of [...careerRows, ...fallbackCareerRows]) {
+  for (const row of careerRows) {
     const groupId = row.idGrupo;
+    if (!careersByGroup.has(groupId)) careersByGroup.set(groupId, new Set());
+    if (row.carreraNombre) careersByGroup.get(groupId).add(row.carreraNombre);
+  }
+
+  // Fallback solo para grupos sin mapeo explícito en grupo_carrera.
+  for (const row of fallbackCareerRows) {
+    const groupId = row.idGrupo;
+    if (careersByGroup.has(groupId) && careersByGroup.get(groupId).size > 0) continue;
     if (!careersByGroup.has(groupId)) careersByGroup.set(groupId, new Set());
     if (row.carreraNombre) careersByGroup.get(groupId).add(row.carreraNombre);
   }
