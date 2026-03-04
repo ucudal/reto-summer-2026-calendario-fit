@@ -31,12 +31,7 @@ async function confirmCreateTeacher(params) {
     return;
   }
 
-  if (!correo) {
-    setTeacherModalError("El correo es obligatorio.");
-    return;
-  }
-
-  if (!isValidEmail(correo)) {
+  if (correo && !isValidEmail(correo)) {
     setTeacherModalError("El correo no tiene formato valido.");
     return;
   }
