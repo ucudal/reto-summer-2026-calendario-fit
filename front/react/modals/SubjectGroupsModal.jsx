@@ -523,7 +523,19 @@ function SubjectGroupsModal(props) {
         }
       }
 
-      // Refresca datos del calendario
+      // Paso 1: Remover inmediatamente del calendario local para que la UI
+      // se actualice en el mismo ciclo de render que el cierre del modal.
+      if (onSaveGroups) {
+        for (const groupId of groupIdsToDelete) {
+          onSaveGroups([], subjectName, String(editContext?.selectedYear || ""), {
+            mode: "edit",
+            calendarId: String(editContext?.calendarId || ""),
+            groupRef: String(groupId)
+          });
+        }
+      }
+
+      // Paso 2: Sincronizar estado completo desde la DB
       if (onGroupCreated) {
         await onGroupCreated();
       }
