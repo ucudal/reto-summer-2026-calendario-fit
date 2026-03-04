@@ -12,6 +12,7 @@ function GroupsModal(props) {
     calendars,
     subjectsList,
     selectedCareer,
+    currentLectiveTerm = "",
     onClose,
     onSelectSubject
   } = props;
@@ -132,13 +133,14 @@ function GroupsModal(props) {
   }
 
   const subjects = getSubjectsWithGroupCount();
+  const lectiveTermLabel = String(currentLectiveTerm || "").trim() || "Sin semestre lectivo";
 
   return (
     <div className="modal-backdrop groups-list-backdrop" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <section className="group-modal groups-list-modal" role="dialog" aria-modal="true" aria-labelledby="groupModalTitle">
 
         <div className="modal-header-with-button">
-          <h2 id="groupModalTitle" className="modal-title">Grupos por asignatura</h2>
+          <h2 id="groupModalTitle" className="modal-title">{`Paso 1 - Grupos por asignatura (${lectiveTermLabel})`}</h2>
         </div>
 
         <div className="subject-search-container">
