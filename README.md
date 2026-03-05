@@ -39,6 +39,11 @@ Clonar el repositorio:
 ```bash
 git clone https://github.com/usuario/calendariofit.git
 cd calendariofit
+```
+
+Instalar dependencias:
+
+```bash
 npm install
 npm install --save-dev electron-builder
 npm install xlsx
