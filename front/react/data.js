@@ -1,0 +1,168 @@
+/*
+  Datos base de la app de calendario.
+  Este archivo mantiene constantes y funciones simples reutilizables.
+*/
+
+const DAYS = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB"];
+
+const TIME_BLOCKS = [
+  { start: "08:00", end: "09:20", label: "08:00 - 09:20" },
+  { start: "09:30", end: "10:50", label: "09:30 - 10:50" },
+  { start: "11:00", end: "12:20", label: "11:00 - 12:20" },
+  { start: "12:25", end: "13:45", label: "12:25 - 13:45" },
+  { start: "13:50", end: "15:10", label: "13:50 - 15:10" },
+  { start: "15:20", end: "16:40", label: "15:20 - 16:40" },
+  { start: "16:50", end: "18:10", label: "16:50 - 18:10" },
+  { start: "18:15", end: "19:35", label: "18:15 - 19:35" },
+  { start: "19:45", end: "21:05", label: "19:45 - 21:05" },
+  { start: "21:15", end: "22:35", label: "21:15 - 22:35" }
+];
+
+const START_HOUR = 8;
+const END_HOUR = 23;
+const ROW_HEIGHT = 130;
+const HEADER_HEIGHT = 28;
+const TIME_COL_WIDTH = 72;
+
+const COLOR_BY_TYPE = {
+  theory: "#ef8a3b",
+  practice: "#3ba9ab",
+  lab: "#cb6345"
+};
+
+const GROUP_COLORS = [
+  "#FFADAD",
+  "#FFD6A5",
+  "#FDFFB6",
+  "#CAFFBF",
+  "#9BF6FF",
+  "#A0C4FF",
+  "#BDB2FF",
+  "#FFC6FF",
+  "#FDE2E4",
+  "#E2F0CB",
+  "#CDE7F0",
+  "#E4C1F9",
+  "#F1C0E8",
+  "#FEC5BB",
+  "#FCD5CE",
+  "#FFF1E6",
+  "#E8F8F5",
+  "#D0F4DE",
+  "#B8F2E6",
+  "#ADE8F4",
+  "#CAF0F8",
+  "#C3BEF0",
+  "#D5B6E8",
+  "#F7D6E0",
+  "#F9E2AE",
+  "#E6F2A2",
+  "#C1FBA4",
+  "#A9DEF9",
+  "#C3F0CA",
+  "#E0BBE4",
+  "#FEC8D8",
+  "#FFDFD3",
+  "#D6EADF",
+  "#F4F1DE",
+  "#D8E2DC"
+];
+
+function ordinalYearLabel(year) {
+  if (year === 1) return "1er";
+  if (year === 2) return "2do";
+  if (year === 3) return "3er";
+  if (year === 4) return "4to";
+  return "5to";
+}
+
+function semesterOrdinalLabel(number) {
+  if (number === 1) return "1er";
+  if (number === 2) return "2do";
+  if (number === 3) return "3er";
+  if (number === 4) return "4to";
+  if (number === 5) return "5to";
+  if (number === 6) return "6to";
+  if (number === 7) return "7mo";
+  if (number === 8) return "8vo";
+  if (number === 9) return "9no";
+  return "10mo";
+}
+
+function buildCalendars() {
+  const calendars = [];
+  const defaultLectiveTerm = "1er semestre 2026";
+
+  for (let year = 1; year <= 5; year += 1) {
+    for (let semester = 1; semester <= 2; semester += 1) {
+      const semesterNumber = (year - 1) * 2 + semester;
+      calendars.push({
+        id: `s${semester}y${year}`,
+        name: `${semesterOrdinalLabel(semesterNumber)} semestre`,
+        subtitle: "Ingenieria en Sistemas 2021",
+        lectiveTerm: defaultLectiveTerm,
+        visible: true,
+        classes: [],
+        alerts: []
+      });
+    }
+  }
+
+  return calendars;
+}
+
+const INITIAL_DATA = {
+  careers: [
+    "Ingenieria en Sistemas 2021",
+    "Ingenieria en Sistemas 2026",
+    "Ingenieria Electrica 2021"
+  ],
+  calendars: buildCalendars()
+};
+
+function cloneInitialData() {
+  return JSON.parse(JSON.stringify(INITIAL_DATA));
+}
+
+function timeToMinutes(time) {
+  const [hours, minutes] = String(time).split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+function yearFromCalendarName(name) {
+  const normalized = String(name || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  if (normalized.includes("1er")) return "1";
+  if (normalized.includes("2do")) return "2";
+  if (normalized.includes("3er")) return "3";
+  if (normalized.includes("4to")) return "4";
+  if (normalized.includes("5to")) return "5";
+  return "";
+}
+
+function yearLabel(year) {
+  if (year === "1") return "1er";
+  if (year === "2") return "2do";
+  if (year === "3") return "3er";
+  if (year === "4") return "4to";
+  return "5to";
+}
+
+window.AppData = {
+  DAYS,
+  TIME_BLOCKS,
+  START_HOUR,
+  END_HOUR,
+  ROW_HEIGHT,
+  HEADER_HEIGHT,
+  TIME_COL_WIDTH,
+  COLOR_BY_TYPE,
+  GROUP_COLORS,
+  cloneInitialData,
+  timeToMinutes,
+  yearFromCalendarName,
+  yearLabel
+};

@@ -1,0 +1,347 @@
+import { and, asc, eq } from "drizzle-orm";
+import { db, sqlite } from "../../db/database.js";
+import { carreras, grupos, horarios, materias, profesores, semestres } from "../../db/drizzle/schema/base.js";
+import { grupoHorario, profesorGrupo } from "../../db/drizzle/schema/links.js";
+
+function ensureGrupoCarreraTable() {
+  sqlite
+    .prepare(`
+      CREATE TABLE IF NOT EXISTS grupo_carrera (
+        id_grupo INTEGER NOT NULL,
+        id_carrera INTEGER NOT NULL,
+        PRIMARY KEY (id_grupo, id_carrera),
+        FOREIGN KEY (id_grupo) REFERENCES grupos(id) ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY (id_carrera) REFERENCES carreras(id) ON DELETE CASCADE ON UPDATE CASCADE
+      )
+    `)
+    .run();
+}
+
+export function asegurarCodigoGrupoNoUnico() {
+  sqlite.prepare("DROP INDEX IF EXISTS grupos_codigo_unico_idx").run();
+}
+
+export function crearGrupo(grupo) {
+  return db
+    .insert(grupos)
+    .values({
+      codigo: grupo.codigo,
+      idMateria: grupo.idMateria,
+      horasSemestrales: grupo.horasSemestrales,
+      esContrasemestre: grupo.esContrasemestre,
+      cupo: grupo.cupo,
+      idSemestre: grupo.idSemestre,
+      color: grupo.color
+    })
+    .run();
+}
+
+export function eliminarGrupo(id) {
+  return db.delete(grupos).where(eq(grupos.id, id)).run();
+}
+
+export function modificarGrupo(id, datos) {
+  return db.update(grupos).set(datos).where(eq(grupos.id, id)).run();
+}
+
+export function obtenerGrupoPorId(id) {
+  return db.select().from(grupos).where(eq(grupos.id, id)).get();
+}
+
+export function listarGrupos() {
+  ensureGrupoCarreraTable();
+
+  const rows = db
+    .select({
+      id: grupos.id,
+      codigo: grupos.codigo,
+      idMateria: grupos.idMateria,
+      nombreMateria: materias.nombre,
+      creditosMateria: materias.creditos,
+      horasSemestrales: grupos.horasSemestrales,
+      esContrasemestre: grupos.esContrasemestre,
+      cupo: grupos.cupo,
+      idSemestre: grupos.idSemestre,
+      color: grupos.color,
+      semestreLectivo: semestres.numeroSemestre,
+      anioLectivo: semestres.anio,
+      dia: horarios.dia,
+      modulo: horarios.modulo
+    })
+    .from(grupos)
+    .leftJoin(materias, eq(materias.id, grupos.idMateria))
+    .leftJoin(semestres, eq(semestres.id, grupos.idSemestre))
+    .leftJoin(grupoHorario, eq(grupoHorario.idGrupo, grupos.id))
+    .leftJoin(horarios, eq(horarios.id, grupoHorario.idHorario))
+    .orderBy(asc(grupos.codigo))
+    .all();
+
+  const careerRows = sqlite
+    .prepare(`
+      SELECT gc.id_grupo AS idGrupo, c.nombre AS carreraNombre
+      FROM grupo_carrera gc
+      INNER JOIN carreras c ON c.id = gc.id_carrera
+    `)
+    .all();
+
+  const fallbackCareerRows = sqlite
+    .prepare(`
+      SELECT g.id AS idGrupo, c.nombre AS carreraNombre
+      FROM grupos g
+      INNER JOIN materia_carrera mc ON mc.id_materia = g.id_materia
+      INNER JOIN carreras c ON c.id = mc.id_carrera
+    `)
+    .all();
+
+  const careersByGroup = new Map();
+  for (const row of careerRows) {
+    const groupId = row.idGrupo;
+    if (!careersByGroup.has(groupId)) careersByGroup.set(groupId, new Set());
+    if (row.carreraNombre) careersByGroup.get(groupId).add(row.carreraNombre);
+  }
+
+  // Fallback solo para grupos sin mapeo explícito en grupo_carrera.
+  for (const row of fallbackCareerRows) {
+    const groupId = row.idGrupo;
+    if (careersByGroup.has(groupId) && careersByGroup.get(groupId).size > 0) continue;
+    if (!careersByGroup.has(groupId)) careersByGroup.set(groupId, new Set());
+    if (row.carreraNombre) careersByGroup.get(groupId).add(row.carreraNombre);
+  }
+
+  const academicRows = sqlite
+    .prepare(`
+      SELECT g.id AS idGrupo, s.numero_semestre AS semestre, s.anio AS anio
+      FROM grupos g
+      LEFT JOIN semestres s ON s.id = g.id_semestre
+      ORDER BY g.id ASC
+    `)
+    .all();
+
+  const academicRowsByCareer = sqlite
+    .prepare(`
+      SELECT gc.id_grupo AS idGrupo, c.nombre AS carreraNombre, mc.semestre AS semestre, mc.anio AS anio
+      FROM grupo_carrera gc
+      INNER JOIN carreras c ON c.id = gc.id_carrera
+      INNER JOIN grupos g ON g.id = gc.id_grupo
+      INNER JOIN materia_carrera mc ON mc.id_materia = g.id_materia AND mc.id_carrera = gc.id_carrera
+      ORDER BY gc.id_grupo ASC
+    `)
+    .all();
+
+  const academicByGroup = new Map();
+  const academicByGroupCareer = new Map();
+
+  for (const row of academicRows) {
+    if (academicByGroup.has(row.idGrupo)) continue;
+    academicByGroup.set(row.idGrupo, {
+      semestre: Number(row.semestre || 1),
+      anio: Number(row.anio || 1)
+    });
+  }
+
+  for (const row of academicRowsByCareer) {
+    const normalized = {
+      carrera: String(row.carreraNombre || "").trim(),
+      semestre: Number(row.semestre || 1),
+      anio: Number(row.anio || 1)
+    };
+    if (!academicByGroupCareer.has(row.idGrupo)) {
+      academicByGroupCareer.set(row.idGrupo, []);
+    }
+    academicByGroupCareer.get(row.idGrupo).push(normalized);
+  }
+
+  const teacherRows = db
+    .select({
+      idGrupo: profesorGrupo.idGrupo,
+      nombre: profesores.nombre,
+      apellido: profesores.apellido
+    })
+    .from(profesorGrupo)
+    .leftJoin(profesores, eq(profesores.id, profesorGrupo.idProfesor))
+    .all();
+
+  const teachersByGroup = new Map();
+  for (const row of teacherRows) {
+    const groupId = row.idGrupo;
+    if (!teachersByGroup.has(groupId)) teachersByGroup.set(groupId, new Set());
+    const fullName = `${String(row.nombre || "").trim()} ${String(row.apellido || "").trim()}`.trim();
+    if (fullName) teachersByGroup.get(groupId).add(fullName);
+  }
+
+  const byId = new Map();
+
+  for (const row of rows) {
+    if (!byId.has(row.id)) {
+      byId.set(row.id, {
+        id: row.id,
+        codigo: row.codigo,
+        idMateria: row.idMateria,
+        nombreMateria: row.nombreMateria,
+        creditosMateria: row.creditosMateria,
+        horasSemestrales: row.horasSemestrales,
+        esContrasemestre: row.esContrasemestre,
+        cupo: row.cupo,
+        idSemestre: row.idSemestre,
+        semestre: academicByGroup.get(row.id)?.semestre || 1,
+        anio: academicByGroup.get(row.id)?.anio || 1,
+        semestreLectivo: row.semestreLectivo,
+        anioLectivo: row.anioLectivo,
+        color: row.color,
+        carreras: Array.from(careersByGroup.get(row.id) || []),
+        academicByCareer: academicByGroupCareer.get(row.id) || [],
+        docentes: Array.from(teachersByGroup.get(row.id) || []),
+        horarios: []
+      });
+    }
+
+    if (row.dia && row.modulo != null) {
+      byId.get(row.id).horarios.push({
+        dia: row.dia,
+        modulo: row.modulo
+      });
+    }
+  }
+
+  return Array.from(byId.values());
+}
+
+export function asignarCarrerasAGrupo(idGrupo, carrerasNombres = []) {
+  ensureGrupoCarreraTable();
+
+  const nombres = [...new Set((carrerasNombres || []).map((n) => String(n || "").trim()).filter(Boolean))];
+  sqlite.prepare("DELETE FROM grupo_carrera WHERE id_grupo = ?").run(idGrupo);
+  if (nombres.length === 0) return;
+
+  const placeholders = nombres.map(() => "?").join(", ");
+  const rows = sqlite
+    .prepare(`SELECT id, nombre FROM carreras WHERE nombre IN (${placeholders})`)
+    .all(...nombres);
+
+  const insertStmt = sqlite.prepare(
+    "INSERT OR IGNORE INTO grupo_carrera (id_grupo, id_carrera) VALUES (?, ?)"
+  );
+
+  rows.forEach((row) => {
+    insertStmt.run(idGrupo, Number(row.id));
+  });
+}
+
+export function obtenerSemestrePorNumeroYAnio(numeroSemestre, anio) {
+  return db
+    .select({ id: semestres.id })
+    .from(semestres)
+    .where(and(eq(semestres.numeroSemestre, Number(numeroSemestre)), eq(semestres.anio, Number(anio))))
+    .get();
+}
+
+export function crearSemestre(numeroSemestre, anio) {
+  return db
+    .insert(semestres)
+    .values({
+      numeroSemestre: Number(numeroSemestre),
+      anio: Number(anio)
+    })
+    .run();
+}
+
+export function obtenerAcademicoPorMateriaYCarrera(idMateria, nombreCarrera) {
+  return sqlite
+    .prepare(`
+      SELECT mc.semestre AS semestre, mc.anio AS anio
+      FROM materia_carrera mc
+      INNER JOIN carreras c ON c.id = mc.id_carrera
+      WHERE mc.id_materia = ?
+        AND lower(trim(c.nombre)) = lower(trim(?))
+      LIMIT 1
+    `)
+    .get(Number(idMateria), String(nombreCarrera || ""));
+}
+
+export function asignarProfesor(data) {
+  return db
+    .insert(profesorGrupo)
+    .values({
+      idProfesor: data.idProfesor,
+      idGrupo: data.idGrupo,
+      carga: data.carga ?? "titular",
+      confirmado: true,
+      esPrincipal: data.esPrincipal
+    })
+    .run();
+}
+
+export function limpiarProfesoresDeGrupo(idGrupo) {
+  return sqlite.prepare("DELETE FROM profesor_grupo WHERE id_grupo = ?").run(idGrupo);
+}
+
+export function insertarHorarios(idGrupo, horariosPayload) {
+  const inserted = [];
+
+  for (const h of horariosPayload) {
+    let horarioRow = db
+      .select({ id: horarios.id })
+      .from(horarios)
+      .where(and(eq(horarios.modulo, h.modulo), eq(horarios.dia, h.dia)))
+      .get();
+
+    if (!horarioRow) {
+      const createHorario = db
+        .insert(horarios)
+        .values({
+          modulo: Number(h.modulo),
+          dia: String(h.dia)
+        })
+        .run();
+
+      const newHorarioId = Number(createHorario?.lastInsertRowid || 0);
+      if (newHorarioId > 0) {
+        horarioRow = { id: newHorarioId };
+      } else {
+        horarioRow = db
+          .select({ id: horarios.id })
+          .from(horarios)
+          .where(and(eq(horarios.modulo, h.modulo), eq(horarios.dia, h.dia)))
+          .get();
+      }
+    }
+
+    if (!horarioRow?.id) continue;
+
+    inserted.push(
+      db
+        .insert(grupoHorario)
+        .values({
+          idGrupo,
+          idHorario: horarioRow.id
+        })
+        .run()
+    );
+  }
+
+  return inserted;
+}
+
+export function limpiarHorariosDeGrupo(idGrupo) {
+  return sqlite.prepare("DELETE FROM grupo_horario WHERE id_grupo = ?").run(idGrupo);
+}
+
+export function limpiarCarrerasDeGrupo(idGrupo) {
+  ensureGrupoCarreraTable();
+  return sqlite.prepare("DELETE FROM grupo_carrera WHERE id_grupo = ?").run(idGrupo);
+}
+
+export function limpiarSalonesDeGrupo(idGrupo) {
+  try {
+    return sqlite.prepare("DELETE FROM salon_grupo WHERE id_grupo = ?").run(idGrupo);
+  } catch (_) {
+    return { changes: 0 };
+  }
+}
+
+export function limpiarTodasLasRelacionesDeGrupo(idGrupo) {
+  limpiarHorariosDeGrupo(idGrupo);
+  limpiarProfesoresDeGrupo(idGrupo);
+  limpiarCarrerasDeGrupo(idGrupo);
+  limpiarSalonesDeGrupo(idGrupo);
+}

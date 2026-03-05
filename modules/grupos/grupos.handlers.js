@@ -1,0 +1,118 @@
+import { ipcMain } from "electron";
+
+import{
+    altaGrupo,
+    actualizarGrupo,
+    bajaGrupo,
+    obtenerGrupo,
+    listarGruposService,
+    asignarProfesorGrupo,
+    agregarHorarioGrupo,
+    reemplazarHorariosGrupo,
+    reemplazarProfesoresGrupo
+} from './grupos.service.js';
+
+export function registerGruposHandlers() {
+
+    // Crear
+    ipcMain.handle('grupos:crear', async (event, data) => {
+        try {
+            const result = altaGrupo(data);
+            const id = Number(result?.lastInsertRowid || 0);
+            const ids = Array.isArray(result?.ids)
+                ? result.ids.map((value) => Number(value)).filter((value) => Number.isFinite(value) && value > 0)
+                : (id > 0 ? [id] : []);
+            return {
+                success: true,
+                data: {
+                    id,
+                    ids,
+                    changes: Number(result?.changes || 0)
+                }
+            };
+        } catch (error) {
+            console.error("Error en grupos:crear →", error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    // Actualizar
+    ipcMain.handle('grupos:actualizar', async (event, data) => {
+        try {
+            const result = actualizarGrupo(data);
+            return { success: true, data: result };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    });
+
+    // Eliminar
+    ipcMain.handle('grupos:eliminar', async (event, id) => {
+        try {
+            const result = bajaGrupo(id);
+            return { success: true, data: result };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    });
+
+    // Obtener uno
+    ipcMain.handle('grupos:obtener', async (event, id) => {
+        try {
+            const grupo = await obtenerGrupo(id);
+            return { success: true, data: grupo };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    });
+
+    // Listar todos
+    ipcMain.handle('grupos:listar', async () => {
+        try {
+            const grupos = await listarGruposService();
+            return { success: true, data: grupos };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    });
+
+    // Asignar docente a grupo
+    ipcMain.handle('grupos:asignarProfesor', async (event, data) => {
+        try {
+            const result = await asignarProfesorGrupo(data);
+            return { success: true, data: result };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    });
+
+    // Agregar horarios a grupo
+    ipcMain.handle('grupos:agregarHorarios', async (event, { idGrupo, horarios }) => {
+        try {
+            const result = await agregarHorarioGrupo(idGrupo, horarios);
+            return { success: true, data: result };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    });
+
+    // Reemplazar todos los horarios de un grupo
+    ipcMain.handle('grupos:reemplazarHorarios', async (event, { idGrupo, horarios }) => {
+        try {
+            const result = await reemplazarHorariosGrupo(idGrupo, horarios);
+            return { success: true, data: result };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    });
+
+    // Reemplazar todos los profesores de un grupo (permite vaciar)
+    ipcMain.handle('grupos:reemplazarProfesores', async (event, { idGrupo, profesores }) => {
+        try {
+            const result = await reemplazarProfesoresGrupo(idGrupo, profesores);
+            return { success: true, data: result };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    });
+}

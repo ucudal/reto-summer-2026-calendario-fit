@@ -1,0 +1,289 @@
+function App() {
+  const {
+    data,
+    selectedCareer,
+    setSelectedCareer,
+
+    careers,
+    reloadGroupsFromDb,
+
+    visibleCalendars,
+    visibleAlerts,
+    toggleCalendarVisible,
+    lectiveTerms,
+    activeLectiveTerm,
+    setActiveLectiveTerm,
+
+    // Career
+    isCareersListOpen,
+    isCreateCareerOpen,
+    careerForm,
+    careerModalError,
+    careerEditMode,
+    careerOpenedFromList,
+    openCareersListModal,
+    closeCareersListModal,
+    openCreateCareerModal,
+    openCreateCareerFromList,
+    closeCreateCareerModal,
+    backToCareersListFromModal,
+    selectCareerToManage,
+    updateCareerForm,
+    confirmCreateCareer,
+    deleteCareer,
+
+    // Teacher
+    teachers,
+    isTeachersListOpen,
+    isCreateTeacherOpen,
+    teacherForm,
+    teacherModalError,
+    teacherEditMode,
+    teacherOpenedFromList,
+    openTeachersListModal,
+    closeTeachersListModal,
+    openCreateTeacherModal,
+    openCreateTeacherFromList,
+    closeCreateTeacherModal,
+    backToTeachersListFromModal,
+    selectTeacherToManage,
+    updateTeacherForm,
+    confirmCreateTeacher,
+    deleteTeacher,
+
+    // Subject
+    subjects,
+    isSubjectsListOpen,
+    isCreateSubjectOpen,
+    subjectModalError,
+    subjectForm,
+    subjectEditMode,
+    subjectOpenedFromList,
+    openSubjectsListModal,
+    closeSubjectsListModal,
+    openCreateSubjectFromList,
+    closeCreateSubjectModal,
+    backToSubjectsListFromModal,
+    updateSubjectForm,
+    toggleSubjectCareer,
+    changeSubjectCareerSemester,
+    selectSubjectToManage,
+    confirmCreateSubject,
+    deleteSubject,
+
+    // Semester
+    isCreateSemesterOpen,
+    semesterForm,
+    semesterModalError,
+    semesterLoading,
+    openCreateSemesterModal,
+    closeCreateSemesterModal,
+    updateSemesterForm,
+    confirmCreateSemester,
+
+    // Groups
+    isGroupsListOpen,
+    isSubjectGroupsModalOpen,
+    isCreateNewGroupOpen,
+    selectedSubject,
+    groupForm,
+    modalError,
+    groupsModalHandlers,
+    subjectGroupsModalHandlers,
+    createNewGroupHandlers,
+
+    // Excel
+    handleExportExcel,
+    handleExportExcelDatos,
+    handleImportExcel,
+    importUniqueExcelData
+
+  } = window.useSchedulesApp();
+
+  const {
+    DAYS,
+    TIME_BLOCKS,
+    ROW_HEIGHT,
+    HEADER_HEIGHT,
+    TIME_COL_WIDTH,
+    COLOR_BY_TYPE
+  } = window.AppData;
+
+  const currentLectiveTerm =
+    visibleCalendars[0]?.lectiveTerm ||
+    data.calendars[0]?.lectiveTerm ||
+    "";
+
+  return (
+    <>
+      <HeaderBar
+        careers={careers}
+        lectiveTerms={lectiveTerms}
+        selectedCareer={selectedCareer}
+        currentLectiveTerm={activeLectiveTerm || currentLectiveTerm}
+        onCareerChange={setSelectedCareer}
+        onLectiveTermChange={setActiveLectiveTerm}
+        onOpenCreateSemester={openCreateSemesterModal}
+        onOpenCreateCareer={openCreateCareerModal}
+        onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
+      />
+
+      <main className="page">
+        <section className="layout">
+          <Sidebar
+            calendars={data.calendars}
+            activeLectiveTerm={activeLectiveTerm || currentLectiveTerm}
+            onToggleCalendarVisible={toggleCalendarVisible}
+            onOpenSubjects={openSubjectsListModal}
+            onOpenCreateGroup={groupsModalHandlers.openGroupsListModal}
+            onOpenCreateCareer={openCareersListModal}
+            onOpenCreateTeacher={openTeachersListModal}
+            onExportExcel={handleExportExcel}
+            onExportExcelDatos={handleExportExcelDatos}
+            onImportExcel={handleImportExcel}
+            onImportExcelUnique={importUniqueExcelData}
+            alerts={visibleAlerts}
+          />
+
+          <section className="main-column">
+            <div className="schedules-root">
+              {visibleCalendars.length === 0 && (
+                <section className="card schedule-card">
+                  No hay calendarios visibles. Marca al menos uno en la izquierda.
+                </section>
+              )}
+
+              {visibleCalendars.map((calendar) => (
+                <ScheduleGrid
+                  key={calendar.id}
+                  calendar={calendar}
+                  days={DAYS}
+                  timeBlocks={TIME_BLOCKS}
+                  rowHeight={ROW_HEIGHT}
+                  headerHeight={HEADER_HEIGHT}
+                  timeColWidth={TIME_COL_WIDTH}
+                  colorByType={COLOR_BY_TYPE}
+                />
+              ))}
+            </div>
+          </section>
+        </section>
+      </main>
+
+      {/* GROUP MODALS */}
+      <GroupsModal
+        isOpen={isGroupsListOpen}
+        calendars={data.calendars}
+        subjectsList={[]}
+        selectedCareer={selectedCareer}
+        currentLectiveTerm={activeLectiveTerm || currentLectiveTerm}
+        onClose={groupsModalHandlers.closeGroupsListModal}
+        onSelectSubject={groupsModalHandlers.openSubjectGroupsModal}
+      />
+
+      <SubjectGroupsModal
+        isOpen={isSubjectGroupsModalOpen}
+        subject={selectedSubject}
+        careers={careers}
+        selectedCareer={selectedCareer}
+        calendars={data.calendars}
+        days={DAYS}
+        currentLectiveTerm={activeLectiveTerm || currentLectiveTerm}
+        onBack={subjectGroupsModalHandlers.backToGroupsList}
+        onClose={subjectGroupsModalHandlers.closeSubjectGroupsModal}
+        onSaveGroups={subjectGroupsModalHandlers.saveGroupsToCalendar}
+        onGroupCreated={reloadGroupsFromDb}
+      />
+
+      <CreateNewGroupModal
+        isOpen={isCreateNewGroupOpen}
+        form={groupForm}
+        careerOptions={careers}
+        onClose={createNewGroupHandlers.closeCreateNewGroupModal}
+        onChange={createNewGroupHandlers.updateGroupForm}
+        onToggleList={createNewGroupHandlers.toggleGroupFormList}
+        onSubmit={createNewGroupHandlers.confirmCreateGroup}
+        errorMessage={modalError}
+      />
+
+      {/* CAREER MODALS */}
+      <CareersListModal
+        isOpen={isCareersListOpen}
+        careers={careers}
+        onClose={closeCareersListModal}
+        onSelectCareer={selectCareerToManage}
+        onCreateNew={openCreateCareerFromList}
+      />
+
+      <CreateCareerModal
+        isOpen={isCreateCareerOpen}
+        form={careerForm}
+        errorMessage={careerModalError}
+        onClose={closeCreateCareerModal}
+        onBack={careerOpenedFromList ? backToCareersListFromModal : null}
+        onChange={updateCareerForm}
+        onSubmit={confirmCreateCareer}
+        onDelete={careerEditMode ? deleteCareer : null}
+        isEditMode={Boolean(careerEditMode)}
+      />
+
+      {/* TEACHER MODALS */}
+      <TeachersListModal
+        isOpen={isTeachersListOpen}
+        teachers={teachers}
+        onClose={closeTeachersListModal}
+        onSelectTeacher={selectTeacherToManage}
+        onCreateNew={openCreateTeacherFromList}
+      />
+
+      <CreateTeacherModal
+        isOpen={isCreateTeacherOpen}
+        form={teacherForm}
+        errorMessage={teacherModalError}
+        onClose={closeCreateTeacherModal}
+        onBack={teacherOpenedFromList ? backToTeachersListFromModal : null}
+        onChange={updateTeacherForm}
+        onSubmit={confirmCreateTeacher}
+        onDelete={deleteTeacher}
+        isEditMode={Boolean(teacherEditMode)}
+      />
+
+      {/* SUBJECT MODALS */}
+      <SubjectsListModal
+        isOpen={isSubjectsListOpen}
+        subjects={subjects}
+        onClose={closeSubjectsListModal}
+        onSelectSubject={selectSubjectToManage}
+        onCreateNew={openCreateSubjectFromList}
+      />
+
+      <CreateSubjectModal
+        isOpen={isCreateSubjectOpen}
+        form={subjectForm}
+        errorMessage={subjectModalError}
+        onClose={closeCreateSubjectModal}
+        onBack={subjectOpenedFromList ? backToSubjectsListFromModal : null}
+        onChange={updateSubjectForm}
+        onCareerToggle={toggleSubjectCareer}
+        onCareerSemesterChange={changeSubjectCareerSemester}
+        onSubmit={confirmCreateSubject}
+        onDelete={subjectEditMode ? deleteSubject : null}
+        isEditMode={Boolean(subjectEditMode)}
+        availableCareers={careers}
+      />
+
+      {/* SEMESTER MODAL */}
+      <CreateSemesterModal
+        isOpen={isCreateSemesterOpen}
+        form={semesterForm}
+        errorMessage={semesterModalError}
+        isLoading={semesterLoading}
+        onClose={closeCreateSemesterModal}
+        onChange={updateSemesterForm}
+        onSubmit={confirmCreateSemester}
+      />
+    </>
+  );
+}
+
+window.App = App;

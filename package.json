@@ -1,14 +1,68 @@
 {
   "name": "calendariofit",
   "version": "1.0.0",
-  "main": "main.js",
+  "type": "module",
+  "main": "./electron/main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "postinstall": "electron-rebuild -f -w better-sqlite3",
+    "build": "electron-builder --win",
+    "build:dir": "electron-builder --win --dir",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "node db/seedAll.js",
+    "templates:import": "node scripts/generate_import_templates.js"
   },
   "devDependencies": {
-    "electron": "^31.0.0"
+    "@electron/rebuild": "^4.0.3",
+    "concurrently": "^8.2.2",
+    "drizzle-kit": "^0.31.6",
+    "electron": "^31.0.0",
+    "electron-builder": "^25.1.8",
+    "electron-rebuild": "^3.2.9"
   },
   "dependencies": {
-    "sqlite3": "^5.1.7"
+    "@babel/standalone": "^7.28.4",
+    "@libsql/client": "^0.17.0",
+    "better-sqlite3": "^12.6.2",
+    "drizzle-orm": "^0.44.7",
+    "exceljs": "^4.4.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "xlsx": "^0.18.5"
+  },
+  "build": {
+    "appId": "com.calendariofit.app",
+    "productName": "CalendarioFIT",
+    "directories": {
+      "output": "dist"
+    },
+    "extraResources": [
+      {
+        "from": "db/drizzle/migrations",
+        "to": "migrations",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**",
+      "node_modules/@libsql/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }

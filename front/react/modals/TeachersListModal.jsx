@@ -1,0 +1,101 @@
+﻿/*
+  Componente: TeachersListModal
+  Que hace:
+  - Muestra modal con listado de docentes existentes.
+  // Permite buscar docentes alfabeticamente.
+  - Permite seleccionar un docente para ver/editar/eliminar.
+  - Permite crear nuevo docente.
+*/
+
+// IMPORTANTE: Esta lista esta hardcodeada y no se conecta con el backend.
+// Solo es para mostrar la UI. El listado real se obtiene en App.jsx y se pasa por props desde ahi.
+// Pero funciona y apunta al mismo lugar que a la hora de buscar profesores al crear grupos.
+function TeachersListModal(props) {
+  const {
+    isOpen,
+    teachers,
+    onClose,
+    onSelectTeacher,
+    onCreateNew
+  } = props;
+
+  // Estado del buscador
+  const [searchTerm, setSearchTerm] = React.useState("");
+
+  // Si no esta abierto, no renderiza nada.
+  if (!isOpen) return null;
+
+  function normalizeSurname(rawSurname) {
+    const value = String(rawSurname || "").trim();
+    return value === "." ? "" : value;
+  }
+
+  function getDisplayName(teacher) {
+    const nombre = String(teacher?.nombre || "").trim();
+    const apellido = normalizeSurname(teacher?.apellido);
+    if (apellido && nombre) return `${apellido}, ${nombre}`;
+    return apellido || nombre || "(Sin nombre)";
+  }
+
+  // Filtra docentes segun termino de busqueda
+  const filteredTeachers = teachers
+    .filter((teacher) => {
+      const fullName = `${String(teacher?.nombre || "").trim()} ${normalizeSurname(teacher?.apellido)}`.toLowerCase();
+      return fullName.includes(searchTerm.toLowerCase()) ||
+             String(teacher?.correo || "").toLowerCase().includes(searchTerm.toLowerCase());
+    })
+    .sort((a, b) => {
+      const nameA = getDisplayName(a);
+      const nameB = getDisplayName(b);
+      return nameA.localeCompare(nameB, "es", { sensitivity: "base" });
+    });
+
+  return (
+    <div className="modal-backdrop groups-list-backdrop" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section className="group-modal groups-list-modal" role="dialog" aria-modal="true" aria-labelledby="teachersModalTitle">
+
+        <div className="modal-header-with-button">
+          <h2 id="teachersModalTitle" className="modal-title">Gestion de Docentes</h2>
+          <button type="button" className="modal-header-btn" onClick={onCreateNew}>
+            + Nuevo Docente
+          </button>
+        </div>
+
+        <div className="subject-search-container">
+          <input
+            type="text"
+            className="subject-search-input"
+            placeholder="Buscar docente por nombre o correo..."
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+          />
+        </div>
+
+        <div className="subjects-list">
+          {filteredTeachers.length === 0 ? (
+            <p className="no-subjects-message">
+              {teachers.length === 0
+                ? "No hay docentes disponibles"
+                : "No se encontraron docentes"}
+            </p>
+          ) : (
+            filteredTeachers.map((teacher) => (
+              <div
+                key={teacher.id}
+                className="subject-item"
+                onClick={() => onSelectTeacher(teacher)}
+              >
+                <div className="subject-info">
+                  <span className="subject-name">{getDisplayName(teacher)}</span>
+                  <span className="subject-group-count">{teacher.correo}</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+window.TeachersListModal = TeachersListModal;

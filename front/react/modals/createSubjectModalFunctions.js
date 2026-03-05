@@ -1,0 +1,162 @@
+/*
+  Archivo: createSubjectModalFunctions.js
+  Logica del modal de materias (crear/editar/eliminar).
+*/
+
+function normalizeText(value) {
+  return String(value || "").trim();
+}
+
+function parseCredits(value) {
+  return Number.parseInt(String(value || ""), 10);
+}
+
+function validateSubjectForm(subjectForm, subjects, isEditMode, originalSubject) {
+  const nombre = normalizeText(subjectForm.nombre);
+  const tipo = normalizeText(subjectForm.tipo);
+  const creditos = parseCredits(subjectForm.creditos);
+  const carreras = Array.isArray(subjectForm.carreras) ? subjectForm.carreras : [];
+  const carrerasSemestre = subjectForm.carrerasSemestre || {};
+
+  if (!nombre) {
+    return { ok: false, error: "El nombre de la asignatura es obligatorio." };
+  }
+
+  if (!tipo) {
+    return { ok: false, error: "Debe seleccionar un tipo de asignatura." };
+  }
+
+  if (!Number.isFinite(creditos) || creditos < 1) {
+    return { ok: false, error: "Los creditos deben ser un numero mayor a 0." };
+  }
+
+  if (carreras.length === 0) {
+    return { ok: false, error: "Debe seleccionar al menos una carrera." };
+  }
+
+  for (const carrera of carreras) {
+    if (!carrerasSemestre[carrera]) {
+      return {
+        ok: false,
+        error: `Debe seleccionar semestre y ano para la carrera \"${carrera}\".`
+      };
+    }
+  }
+
+  const exists = subjects.some((item) => {
+    if (isEditMode && originalSubject && item.id === originalSubject.id) return false;
+    return String(item.nombre || "").toLowerCase() === nombre.toLowerCase();
+  });
+
+  if (exists) {
+    return { ok: false, error: "Ya existe una asignatura con ese nombre." };
+  }
+
+  return {
+    ok: true,
+    payload: {
+      nombre,
+      tipo,
+      creditos,
+      requerimientosSalon: normalizeText(subjectForm.requerimientosSalon),
+      carrerasSemestre
+    }
+  };
+}
+
+async function confirmCreateSubject(params) {
+  const {
+    subjectForm,
+    subjects,
+    setSubjectModalError,
+    reloadSubjectsFromDb,
+    closeCreateSubjectModal
+  } = params;
+
+  const validation = validateSubjectForm(subjectForm, subjects, false, null);
+  if (!validation.ok) {
+    setSubjectModalError(validation.error);
+    return;
+  }
+
+  if (!window.api?.materias?.crear) {
+    setSubjectModalError("No esta disponible la API de materias.");
+    return;
+  }
+
+  const response = await window.api.materias.crear(validation.payload);
+  if (!response?.success) {
+    setSubjectModalError(response?.error || "No se pudo crear la asignatura.");
+    return;
+  }
+
+  await reloadSubjectsFromDb();
+  closeCreateSubjectModal();
+}
+
+async function confirmEditSubject(params) {
+  const {
+    subjectForm,
+    subjects,
+    originalSubject,
+    setSubjectModalError,
+    reloadSubjectsFromDb,
+    closeCreateSubjectModal
+  } = params;
+
+  const validation = validateSubjectForm(subjectForm, subjects, true, originalSubject);
+  if (!validation.ok) {
+    setSubjectModalError(validation.error);
+    return;
+  }
+
+  if (!window.api?.materias?.actualizar) {
+    setSubjectModalError("No esta disponible la API de materias.");
+    return;
+  }
+
+  const response = await window.api.materias.actualizar({
+    id: originalSubject.id,
+    datos: validation.payload
+  });
+
+  if (!response?.success) {
+    setSubjectModalError(response?.error || "No se pudo actualizar la asignatura.");
+    return;
+  }
+
+  await reloadSubjectsFromDb();
+  closeCreateSubjectModal();
+}
+
+async function confirmDeleteSubject(params) {
+  const {
+    subjectForm,
+    setSubjectModalError,
+    reloadSubjectsFromDb,
+    closeCreateSubjectModal
+  } = params;
+
+  const ok = window.confirm(`Esta seguro que desea eliminar la asignatura \"${subjectForm.nombre}\"?`);
+  if (!ok) return;
+
+  if (!window.api?.materias?.eliminar) {
+    setSubjectModalError("No esta disponible la API de materias.");
+    return;
+  }
+
+  const response = await window.api.materias.eliminar(subjectForm.id);
+  if (!response?.success) {
+    setSubjectModalError(response?.error || "No se pudo eliminar la asignatura.");
+    return;
+  }
+
+  await reloadSubjectsFromDb();
+  closeCreateSubjectModal();
+}
+
+window.CreateSubjectModalFunctions = {
+  confirmCreateSubject,
+  confirmEditSubject,
+  confirmDeleteSubject
+};
